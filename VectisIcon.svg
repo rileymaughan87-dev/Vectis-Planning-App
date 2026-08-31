@@ -1,0 +1,9 @@
+<svg width="150" height="150" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+  <!-- Vectis app icon — placeholder v1, revisit later -->
+  <!-- Primary color: Vectis teal #1C8C82 -->
+  <!-- Mark: asymmetric curved stroke (short arm + long arm) referencing
+       the lever/Archimedes idea behind the app's name, inside a ring border -->
+  <rect width="150" height="150" rx="16" fill="#1C8C82"/>
+  <circle cx="75" cy="75" r="58" fill="none" stroke="#000000" stroke-width="5"/>
+  <path d="M45,50 Q56,84 75,112 Q95,74 115,42" fill="none" stroke="#000000" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
