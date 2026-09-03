@@ -1,0 +1,464 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		521D42123045892B0000F3F6 /* CalendarModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42113045892B0000F3F6 /* CalendarModels.swift */; };
+		521D42143045893A0000F3F6 /* Challenges.json in Resources */ = {isa = PBXBuildFile; fileRef = 521D42133045893A0000F3F6 /* Challenges.json */; };
+		521D42163045894A0000F3F6 /* VectisIcon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 521D42153045894A0000F3F6 /* VectisIcon.svg */; };
+		521D422030458CCF0000F3F6 /* GoalHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D421F30458CCF0000F3F6 /* GoalHelpers.swift */; };
+		521D422230458CDD0000F3F6 /* GoalSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D422130458CDD0000F3F6 /* GoalSheets.swift */; };
+		521D422430458CE70000F3F6 /* GoalsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D422330458CE70000F3F6 /* GoalsStore.swift */; };
+		521D422630458CF30000F3F6 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D422530458CF30000F3F6 /* GoalsView.swift */; };
+		521D42333045E5D30000F3F6 /* CalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42313045E5D30000F3F6 /* CalendarStore.swift */; };
+		521D42343045E5D30000F3F6 /* CalendarSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42303045E5D30000F3F6 /* CalendarSheets.swift */; };
+		521D42353045E5D30000F3F6 /* CalendarHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D422F3045E5D30000F3F6 /* CalendarHelpers.swift */; };
+		521D42363045E5D30000F3F6 /* DailyCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42323045E5D30000F3F6 /* DailyCalendarView.swift */; };
+		521D423A3045EB580000F3F6 /* LongTermCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42393045EB580000F3F6 /* LongTermCalendarView.swift */; };
+		521D42413045F20E0000F3F6 /* MonthGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42403045F20E0000F3F6 /* MonthGridView.swift */; };
+		521D424F30462A8C0000F3F6 /* NoteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424B30462A8C0000F3F6 /* NoteModels.swift */; };
+		521D425030462A8C0000F3F6 /* NoteSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424C30462A8C0000F3F6 /* NoteSheets.swift */; };
+		521D425130462A8C0000F3F6 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424E30462A8C0000F3F6 /* NotesView.swift */; };
+		521D425230462A8C0000F3F6 /* NotesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424D30462A8C0000F3F6 /* NotesStore.swift */; };
+		521D425630462C1D0000F3F6 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D425530462C1D0000F3F6 /* RichTextEditor.swift */; };
+		521D425A30462D8A0000F3F6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D425930462D8A0000F3F6 /* SettingsView.swift */; };
+		521D4267304633750000F3F6 /* FinanceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D4263304633750000F3F6 /* FinanceModels.swift */; };
+		521D4268304633750000F3F6 /* FinanceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D4265304633750000F3F6 /* FinanceStore.swift */; };
+		521D4269304633750000F3F6 /* FinanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D4266304633750000F3F6 /* FinanceView.swift */; };
+		521D426A304633750000F3F6 /* FinanceSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D4264304633750000F3F6 /* FinanceSheets.swift */; };
+		521D426E3046913A0000F3F6 /* VectisIcon1024.png in Resources */ = {isa = PBXBuildFile; fileRef = 521D426D3046913A0000F3F6 /* VectisIcon1024.png */; };
+		521D4272304695240000F3F6 /* CompletionMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D4271304695240000F3F6 /* CompletionMark.swift */; };
+		521D42803048DD1E0000F3F6 /* AppearanceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D427F3048DD1E0000F3F6 /* AppearanceStore.swift */; };
+		521D42843048E08A0000F3F6 /* NotebookViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42833048E08A0000F3F6 /* NotebookViews.swift */; };
+		521D42883049D2160000F3F6 /* PersistenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42873049D2160000F3F6 /* PersistenceManager.swift */; };
+		521D42923049D42B0000F3F6 /* TasksStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42913049D42B0000F3F6 /* TasksStore.swift */; };
+		521D42933049D42B0000F3F6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D428F3049D42B0000F3F6 /* HomeView.swift */; };
+		521D42943049D42B0000F3F6 /* SidebarMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42903049D42B0000F3F6 /* SidebarMenu.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		521D41FD304586670000F3F6 /* Vectis Planning.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Vectis Planning.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		521D42113045892B0000F3F6 /* CalendarModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CalendarModels.swift; path = "Vectis Planning/CalendarModels.swift"; sourceTree = "<group>"; };
+		521D42133045893A0000F3F6 /* Challenges.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = Challenges.json; path = "Vectis Planning/Challenges.json"; sourceTree = "<group>"; };
+		521D42153045894A0000F3F6 /* VectisIcon.svg */ = {isa = PBXFileReference; lastKnownFileType = text; name = VectisIcon.svg; path = "Vectis Planning/VectisIcon.svg"; sourceTree = "<group>"; };
+		521D421F30458CCF0000F3F6 /* GoalHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GoalHelpers.swift; path = "Vectis Planning/GoalHelpers.swift"; sourceTree = "<group>"; };
+		521D422130458CDD0000F3F6 /* GoalSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GoalSheets.swift; path = "Vectis Planning/GoalSheets.swift"; sourceTree = "<group>"; };
+		521D422330458CE70000F3F6 /* GoalsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GoalsStore.swift; path = "Vectis Planning/GoalsStore.swift"; sourceTree = "<group>"; };
+		521D422530458CF30000F3F6 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GoalsView.swift; path = "Vectis Planning/GoalsView.swift"; sourceTree = "<group>"; };
+		521D422F3045E5D30000F3F6 /* CalendarHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CalendarHelpers.swift; path = "Vectis Planning/CalendarHelpers.swift"; sourceTree = "<group>"; };
+		521D42303045E5D30000F3F6 /* CalendarSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CalendarSheets.swift; path = "Vectis Planning/CalendarSheets.swift"; sourceTree = "<group>"; };
+		521D42313045E5D30000F3F6 /* CalendarStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CalendarStore.swift; path = "Vectis Planning/CalendarStore.swift"; sourceTree = "<group>"; };
+		521D42323045E5D30000F3F6 /* DailyCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DailyCalendarView.swift; path = "Vectis Planning/DailyCalendarView.swift"; sourceTree = "<group>"; };
+		521D42393045EB580000F3F6 /* LongTermCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LongTermCalendarView.swift; path = "Vectis Planning/LongTermCalendarView.swift"; sourceTree = "<group>"; };
+		521D42403045F20E0000F3F6 /* MonthGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MonthGridView.swift; path = "Vectis Planning/MonthGridView.swift"; sourceTree = "<group>"; };
+		521D424B30462A8C0000F3F6 /* NoteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NoteModels.swift; path = "Vectis Planning/NoteModels.swift"; sourceTree = "<group>"; };
+		521D424C30462A8C0000F3F6 /* NoteSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NoteSheets.swift; path = "Vectis Planning/NoteSheets.swift"; sourceTree = "<group>"; };
+		521D424D30462A8C0000F3F6 /* NotesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotesStore.swift; path = "Vectis Planning/NotesStore.swift"; sourceTree = "<group>"; };
+		521D424E30462A8C0000F3F6 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotesView.swift; path = "Vectis Planning/NotesView.swift"; sourceTree = "<group>"; };
+		521D425530462C1D0000F3F6 /* RichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RichTextEditor.swift; path = "Vectis Planning/RichTextEditor.swift"; sourceTree = "<group>"; };
+		521D425930462D8A0000F3F6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = "Vectis Planning/SettingsView.swift"; sourceTree = "<group>"; };
+		521D4263304633750000F3F6 /* FinanceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinanceModels.swift; path = "Vectis Planning/FinanceModels.swift"; sourceTree = "<group>"; };
+		521D4264304633750000F3F6 /* FinanceSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinanceSheets.swift; path = "Vectis Planning/FinanceSheets.swift"; sourceTree = "<group>"; };
+		521D4265304633750000F3F6 /* FinanceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinanceStore.swift; path = "Vectis Planning/FinanceStore.swift"; sourceTree = "<group>"; };
+		521D4266304633750000F3F6 /* FinanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinanceView.swift; path = "Vectis Planning/FinanceView.swift"; sourceTree = "<group>"; };
+		521D426D3046913A0000F3F6 /* VectisIcon1024.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = VectisIcon1024.png; path = "Vectis Planning/VectisIcon1024.png"; sourceTree = "<group>"; };
+		521D4271304695240000F3F6 /* CompletionMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CompletionMark.swift; path = "Vectis Planning/CompletionMark.swift"; sourceTree = "<group>"; };
+		521D427F3048DD1E0000F3F6 /* AppearanceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppearanceStore.swift; path = "Vectis Planning/AppearanceStore.swift"; sourceTree = "<group>"; };
+		521D42833048E08A0000F3F6 /* NotebookViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotebookViews.swift; path = "Vectis Planning/NotebookViews.swift"; sourceTree = "<group>"; };
+		521D42873049D2160000F3F6 /* PersistenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PersistenceManager.swift; path = "Vectis Planning/PersistenceManager.swift"; sourceTree = "<group>"; };
+		521D428F3049D42B0000F3F6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HomeView.swift; path = "Vectis Planning/HomeView.swift"; sourceTree = "<group>"; };
+		521D42903049D42B0000F3F6 /* SidebarMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SidebarMenu.swift; path = "Vectis Planning/SidebarMenu.swift"; sourceTree = "<group>"; };
+		521D42913049D42B0000F3F6 /* TasksStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TasksStore.swift; path = "Vectis Planning/TasksStore.swift"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		521D41FF304586670000F3F6 /* Vectis Planning */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Vectis Planning";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		521D41FA304586670000F3F6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		521D41F4304586670000F3F6 = {
+			isa = PBXGroup;
+			children = (
+				521D42113045892B0000F3F6 /* CalendarModels.swift */,
+				521D421F30458CCF0000F3F6 /* GoalHelpers.swift */,
+				521D422130458CDD0000F3F6 /* GoalSheets.swift */,
+				521D422F3045E5D30000F3F6 /* CalendarHelpers.swift */,
+				521D42303045E5D30000F3F6 /* CalendarSheets.swift */,
+				521D42313045E5D30000F3F6 /* CalendarStore.swift */,
+				521D424B30462A8C0000F3F6 /* NoteModels.swift */,
+				521D425530462C1D0000F3F6 /* RichTextEditor.swift */,
+				521D424C30462A8C0000F3F6 /* NoteSheets.swift */,
+				521D424D30462A8C0000F3F6 /* NotesStore.swift */,
+				521D424E30462A8C0000F3F6 /* NotesView.swift */,
+				521D425930462D8A0000F3F6 /* SettingsView.swift */,
+				521D4263304633750000F3F6 /* FinanceModels.swift */,
+				521D4264304633750000F3F6 /* FinanceSheets.swift */,
+				521D4265304633750000F3F6 /* FinanceStore.swift */,
+				521D4266304633750000F3F6 /* FinanceView.swift */,
+				521D42323045E5D30000F3F6 /* DailyCalendarView.swift */,
+				521D42393045EB580000F3F6 /* LongTermCalendarView.swift */,
+				521D42403045F20E0000F3F6 /* MonthGridView.swift */,
+				521D427F3048DD1E0000F3F6 /* AppearanceStore.swift */,
+				521D426D3046913A0000F3F6 /* VectisIcon1024.png */,
+				521D422330458CE70000F3F6 /* GoalsStore.swift */,
+				521D4271304695240000F3F6 /* CompletionMark.swift */,
+				521D422530458CF30000F3F6 /* GoalsView.swift */,
+				521D42833048E08A0000F3F6 /* NotebookViews.swift */,
+				521D428F3049D42B0000F3F6 /* HomeView.swift */,
+				521D42903049D42B0000F3F6 /* SidebarMenu.swift */,
+				521D42913049D42B0000F3F6 /* TasksStore.swift */,
+				521D42873049D2160000F3F6 /* PersistenceManager.swift */,
+				521D42133045893A0000F3F6 /* Challenges.json */,
+				521D42153045894A0000F3F6 /* VectisIcon.svg */,
+				521D41FF304586670000F3F6 /* Vectis Planning */,
+				521D41FE304586670000F3F6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		521D41FE304586670000F3F6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				521D41FD304586670000F3F6 /* Vectis Planning.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		521D41FC304586670000F3F6 /* Vectis Planning */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 521D4208304586670000F3F6 /* Build configuration list for PBXNativeTarget "Vectis Planning" */;
+			buildPhases = (
+				521D41F9304586670000F3F6 /* Sources */,
+				521D41FA304586670000F3F6 /* Frameworks */,
+				521D41FB304586670000F3F6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				521D41FF304586670000F3F6 /* Vectis Planning */,
+			);
+			name = "Vectis Planning";
+			packageProductDependencies = (
+			);
+			productName = "Vectis Planning";
+			productReference = 521D41FD304586670000F3F6 /* Vectis Planning.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		521D41F5304586670000F3F6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					521D41FC304586670000F3F6 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = 521D41F8304586670000F3F6 /* Build configuration list for PBXProject "Vectis Planning" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 521D41F4304586670000F3F6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 521D41FE304586670000F3F6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				521D41FC304586670000F3F6 /* Vectis Planning */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		521D41FB304586670000F3F6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				521D426E3046913A0000F3F6 /* VectisIcon1024.png in Resources */,
+				521D42163045894A0000F3F6 /* VectisIcon.svg in Resources */,
+				521D42143045893A0000F3F6 /* Challenges.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		521D41F9304586670000F3F6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				521D4272304695240000F3F6 /* CompletionMark.swift in Sources */,
+				521D42123045892B0000F3F6 /* CalendarModels.swift in Sources */,
+				521D423A3045EB580000F3F6 /* LongTermCalendarView.swift in Sources */,
+				521D422630458CF30000F3F6 /* GoalsView.swift in Sources */,
+				521D42333045E5D30000F3F6 /* CalendarStore.swift in Sources */,
+				521D42343045E5D30000F3F6 /* CalendarSheets.swift in Sources */,
+				521D42353045E5D30000F3F6 /* CalendarHelpers.swift in Sources */,
+				521D42363045E5D30000F3F6 /* DailyCalendarView.swift in Sources */,
+				521D42923049D42B0000F3F6 /* TasksStore.swift in Sources */,
+				521D42933049D42B0000F3F6 /* HomeView.swift in Sources */,
+				521D42943049D42B0000F3F6 /* SidebarMenu.swift in Sources */,
+				521D42803048DD1E0000F3F6 /* AppearanceStore.swift in Sources */,
+				521D422230458CDD0000F3F6 /* GoalSheets.swift in Sources */,
+				521D4267304633750000F3F6 /* FinanceModels.swift in Sources */,
+				521D4268304633750000F3F6 /* FinanceStore.swift in Sources */,
+				521D4269304633750000F3F6 /* FinanceView.swift in Sources */,
+				521D426A304633750000F3F6 /* FinanceSheets.swift in Sources */,
+				521D422430458CE70000F3F6 /* GoalsStore.swift in Sources */,
+				521D424F30462A8C0000F3F6 /* NoteModels.swift in Sources */,
+				521D42843048E08A0000F3F6 /* NotebookViews.swift in Sources */,
+				521D425030462A8C0000F3F6 /* NoteSheets.swift in Sources */,
+				521D42883049D2160000F3F6 /* PersistenceManager.swift in Sources */,
+				521D425A30462D8A0000F3F6 /* SettingsView.swift in Sources */,
+				521D425130462A8C0000F3F6 /* NotesView.swift in Sources */,
+				521D425230462A8C0000F3F6 /* NotesStore.swift in Sources */,
+				521D425630462C1D0000F3F6 /* RichTextEditor.swift in Sources */,
+				521D422030458CCF0000F3F6 /* GoalHelpers.swift in Sources */,
+				521D42413045F20E0000F3F6 /* MonthGridView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		521D4206304586670000F3F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 7X33UZCZWU;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		521D4207304586670000F3F6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 7X33UZCZWU;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		521D4209304586670000F3F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7X33UZCZWU;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "VectisApp.Vectis-Planning";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		521D420A304586670000F3F6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7X33UZCZWU;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "VectisApp.Vectis-Planning";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		521D41F8304586670000F3F6 /* Build configuration list for PBXProject "Vectis Planning" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				521D4206304586670000F3F6 /* Debug */,
+				521D4207304586670000F3F6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		521D4208304586670000F3F6 /* Build configuration list for PBXNativeTarget "Vectis Planning" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				521D4209304586670000F3F6 /* Debug */,
+				521D420A304586670000F3F6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 521D41F5304586670000F3F6 /* Project object */;
+}

@@ -47,9 +47,9 @@ struct CalendarEvent: Identifiable, Codable {
     // copy of the category's actual name and color.
     var categoryID: UUID
 
-    // These two flags are the heart of your "calendars feed into each other" idea.
-    var flowsToDaily: Bool = false     // should this appear in the Daily time-blocked view?
-    var flowsToMaster: Bool = false    // should this appear in the Master overview?
+    // Whether this event appears on the Daily calendar's 30-minute grid.
+    // If false, it only lives on the Long-Term calendar.
+    var flowsToDaily: Bool = false
 
     // `UUID?` means "a UUID, or nothing at all" — this is an Optional.
     // Swift forces you to handle the "nothing" case explicitly, which is
@@ -59,6 +59,34 @@ struct CalendarEvent: Identifiable, Codable {
 }
 
 // MARK: - Goal
+
+/// A single checkpoint inside a long-term goal, e.g. "Submit thesis
+/// proposal" as one step toward "Finish degree". Optionally scheduled
+/// onto the calendar with a real date.
+struct Milestone: Identifiable, Codable {
+    var id: UUID = UUID()
+    var title: String
+    var done: Bool = false
+    var addToCalendar: Bool = false
+    var date: Date? = nil   // only meaningful when addToCalendar is true
+}
+
+/// A dated check-in on an open-ended goal, e.g. "Started meal prepping"
+/// for a goal like "Eat healthier" that has no clear milestones.
+struct GoalNote: Identifiable, Codable {
+    var id: UUID = UUID()
+    var date: Date = Date()
+    var text: String
+}
+
+/// Whether a goal lives in the Short-term or Long-term section of the
+/// Goals page. Kept as its own explicit flag rather than inferred from
+/// `frequency`, since "why is this goal showing up here" should always
+/// be obvious just by reading the code.
+enum GoalKind: String, Codable {
+    case shortTerm
+    case longTerm
+}
 
 /// How often a goal repeats.
 ///
@@ -77,6 +105,7 @@ enum RecurrenceFrequency: String, Codable, CaseIterable {
 struct Goal: Identifiable, Codable {
     var id: UUID = UUID()
     var title: String                      // e.g. "Read for 30 minutes"
+    var kind: GoalKind = .shortTerm
     var frequency: RecurrenceFrequency = .none
     var durationMinutes: Int? = nil        // optional — not every goal is time-based
     var categoryID: UUID? = nil            // optional — a goal doesn't have to belong to a category
@@ -86,7 +115,58 @@ struct Goal: Identifiable, Codable {
     // true = done that day, false = missed it, and a day simply not being
     // a key yet means it hasn't happened. This drives both the streak dots
     // and the progress percentage on the Goals page.
-    var completions: [Date: Bool] = [:]
+    // Completion history, keyed by day.
+    //
+    // Stored with String keys rather than Date keys for one specific
+    // reason: JSON requires string keys, and Swift silently encodes a
+    // [Date: Bool] dictionary as a flat alternating array instead —
+    // which works, but produces a file that's confusing to read and
+    // easy to break later. `dayKey(_:)` below converts a Date to the
+    // canonical "yyyy-MM-dd" string, and the helpers in GoalHelpers
+    // mean the rest of the app never has to think about it.
+    var completions: [String: Bool] = [:]
+
+    /// The canonical string key for a given day — always local-calendar
+    /// based, so "today" means today where you are.
+    static func dayKey(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    // The two ways a long-term goal can track progress — milestones with
+    // real dates, or a running log of notes for open-ended goals. A goal
+    // only ever really uses one or the other, decided by whether
+    // `milestones` is empty.
+    var milestones: [Milestone] = []
+    var notes: [GoalNote] = []
+
+    // Set only on a short-term goal that's a "daily habit" belonging to
+    // a specific long-term goal (e.g. "Study 1 hour" under "Finish degree").
+    // `nil` means it's a standalone short-term goal.
+    var linkedToGoalID: UUID? = nil
+
+    // Which days of the week this goal is scheduled for. Numbers follow
+    // Foundation's own weekday convention: 1 = Sunday ... 7 = Saturday
+    // (this matches what `Calendar.component(.weekday, from:)` returns,
+    // which is what the scheduling logic in GoalHelpers.swift checks
+    // against). Defaults to every day.
+    var repeatDays: Set<Int> = Goal.allDays
+
+    static let allDays: Set<Int> = Set(1...7)
+    static let weekdaysOnly: Set<Int> = [2, 3, 4, 5, 6]   // Monday–Friday
+    static let weekendOnly: Set<Int> = [1, 7]              // Saturday–Sunday
+
+    // Optional, on a short-term goal: the last day it's active, e.g.
+    // "read 30 min/day for 2 months". `nil` means it repeats indefinitely.
+    var endDate: Date? = nil
+
+    // Optional, on a long-term goal: an overall deadline for the whole
+    // goal, e.g. "finish the degree by August 2027" — separate from any
+    // individual milestone's own date.
+    var targetDate: Date? = nil
 }
 
 // MARK: - Settings
@@ -103,3 +183,4 @@ struct AppSettings: Codable {
     var dailyCalendarStartHour: Int = 6
     var dailyCalendarEndHour: Int = 24
 }
+
