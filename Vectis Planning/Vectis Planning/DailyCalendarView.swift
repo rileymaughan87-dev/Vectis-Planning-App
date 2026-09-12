@@ -1,44 +1,46 @@
 import SwiftUI
 
 /// The Daily calendar: a scrollable 30-minute time grid for one day.
-/// Press and hold anywhere empty to start a new event, drag while
-/// holding to set its length, and drag an existing event to move it.
+///
+/// Tap an empty slot to add an event, tap an existing one to edit it,
+/// press and hold an event to pick it up and move it, and pinch to
+/// zoom the grid in or out.
 struct DailyCalendarView: View {
-    // Changed from `@StateObject` to `@ObservedObject`, same reasoning
-    // as GoalsStore: this View is handed the store rather than owning
-    // it, so the Long-Term calendar (which reads the same events) always
-    // sees the same up-to-date data.
     @ObservedObject var store: CalendarStore
     @ObservedObject var goalsStore: GoalsStore
     @ObservedObject var appearanceStore: AppearanceStore
+    @ObservedObject var peopleStore: PeopleStore
+    @ObservedObject var linkedAppsStore: LinkedAppsStore
 
     @State private var dayOffset = 0
 
-    // These read from CalendarStore now, which Settings can edit —
-    // replacing what used to be hardcoded constants here.
+    // These read from CalendarStore now, which Settings can edit.
     private var startHour: Int { store.dailyCalendarStartHour }
     private var endHour: Int { store.dailyCalendarEndHour }
     private let leftGutter: CGFloat = 46
 
-    // How tall each 30-minute slot is, in points. This is now the zoom
-    // level — the +/- buttons in the toolbar adjust it directly.
+    // Zoom. `slotHeight` is the committed value; `pinchScale` is the
+    // live multiplier while a pinch is in progress. @GestureState
+    // resets itself to 1 automatically when the gesture ends, so the
+    // scale never gets stuck part-way.
     @State private var slotHeight: CGFloat = 24
-    private let minSlotHeight: CGFloat = 14
-    private let maxSlotHeight: CGFloat = 56
+    @GestureState private var pinchScale: CGFloat = 1
+    private let minSlotHeight: CGFloat = 12
+    private let maxSlotHeight: CGFloat = 64
 
-    // A tap on an empty slot opens the New Event sheet, prefilled with a
-    // default 30-minute block starting at that time — you then adjust
-    // the exact times using the pickers already in that sheet.
+    /// What the grid is actually drawn at right now — the committed
+    /// height, scaled by any in-progress pinch, clamped to sane bounds.
+    private var effectiveSlotHeight: CGFloat {
+        min(max(slotHeight * pinchScale, minSlotHeight), maxSlotHeight)
+    }
+
     @State private var pendingRange: MinuteRange?
-
-    // Tapping an existing event opens the same sheet in edit mode.
     @State private var editingEvent: CalendarEvent?
+    @State private var editingGoal: Goal?
 
-    // Gesture state for dragging an existing event to a new time. An
-    // event only actually becomes draggable once it's been held for a
-    // moment first (see armedEventID) — otherwise a quick scroll swipe
-    // that happens to start on top of an event would get mistaken for
-    // "move this event" instead of "scroll the page".
+    // Dragging an event to a new time. An event has to be "armed" by a
+    // long press first, so a quick scroll swipe that happens to start
+    // on top of an event doesn't get mistaken for moving it.
     @State private var draggingEventID: UUID?
     @State private var dragOffsetMinutes = 0
     @State private var armedEventID: UUID?
@@ -48,39 +50,49 @@ struct DailyCalendarView: View {
     }
 
     private var totalSlots: Int { (endHour - startHour) * 2 }
-    private var gridHeight: CGFloat { CGFloat(totalSlots) * slotHeight }
+    private var gridHeight: CGFloat { CGFloat(totalSlots) * effectiveSlotHeight }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 dayHeader
                 todaysGoalsStrip
-                categoryLegend
                 ScrollView {
                     gridArea
                         .padding(.horizontal)
                         .padding(.bottom, 20)
                 }
             }
-            .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        slotHeight = max(minSlotHeight, slotHeight - 6)
-                    } label: {
-                        Image(systemName: "minus.magnifyingglass")
+            // Swipe left/right to change days, alongside the arrow
+            // buttons. `simultaneousGesture` rather than `gesture` so it
+            // doesn't compete with the ScrollView's own vertical pan —
+            // and requiring the horizontal motion to clearly dominate
+            // the vertical means an ordinary scroll never gets
+            // mistaken for a day-change swipe.
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 40)
+                    .onEnded { value in
+                        let horizontal = value.translation.width
+                        let vertical = value.translation.height
+                        guard abs(horizontal) > abs(vertical) * 1.5 else { return }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            dayOffset += horizontal < 0 ? 1 : -1
+                        }
                     }
-                    Button {
-                        slotHeight = min(maxSlotHeight, slotHeight + 6)
-                    } label: {
-                        Image(systemName: "plus.magnifyingglass")
-                    }
-                }
-            }
+            )
             .sheet(item: $pendingRange) { range in
-                EventEditorSheet(store: store, date: currentDate, startMinutes: range.start, endMinutes: range.end)
+                EventEditorSheet(store: store, peopleStore: peopleStore, goalsStore: goalsStore, date: currentDate, startMinutes: range.start, endMinutes: range.end)
             }
             .sheet(item: $editingEvent) { event in
-                EventEditorSheet(store: store, editing: event)
+                EventEditorSheet(store: store, peopleStore: peopleStore, goalsStore: goalsStore, editing: event)
+            }
+            .sheet(item: $editingGoal) { goal in
+                ShortTermGoalEditorSheet(
+                    goal: goal,
+                    store: goalsStore,
+                    linkedAppsStore: linkedAppsStore,
+                    peopleStore: peopleStore
+                )
             }
         }
     }
@@ -96,7 +108,7 @@ struct DailyCalendarView: View {
             }
             Spacer()
             Text(dayOffset == 0 ? "Today" : currentDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
             Spacer()
             Button {
                 dayOffset += 1
@@ -104,7 +116,8 @@ struct DailyCalendarView: View {
                 Image(systemName: "chevron.right")
             }
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Goals strip
@@ -114,27 +127,18 @@ struct DailyCalendarView: View {
         let todaysGoals = goalsStore.standaloneShortTermGoals.filter { $0.isScheduled(on: currentDate) }
         if !todaysGoals.isEmpty {
             let dayKey = Goal.dayKey(currentDate)
-            let doneCount = todaysGoals.filter { $0.completions[dayKey] == true }.count
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Today's goals")
-                        .font(.caption.weight(.semibold))
-                    Spacer()
-                    Text("\(doneCount) of \(todaysGoals.count) done")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+            VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(todaysGoals) { goal in
                             goalChip(goal, dayKey: dayKey)
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                 }
+                Divider()
             }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
         }
     }
 
@@ -143,36 +147,29 @@ struct DailyCalendarView: View {
         return Button {
             goalsStore.setToday(goal.id, done: !done)
         } label: {
-            HStack(spacing: 5) {
-                CompletionMark(isOn: done, size: 14, color: appearanceStore.primaryColor)
+            HStack(spacing: 6) {
+                CompletionMark(isOn: done, size: 15, color: appearanceStore.primaryColor)
                 Text(goal.title)
+                    .font(.caption)
+                    .strikethrough(done)
+                    .foregroundStyle(done ? .secondary : .primary)
+                    .lineLimit(1)
             }
-            .font(.caption)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
                     .fill(Color(.secondarySystemGroupedBackground))
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                    .strokeBorder(
+                        done ? Color.clear : appearanceStore.primaryColor.opacity(0.25),
+                        lineWidth: 1
+                    )
+            )
         }
         .buttonStyle(.plain)
-    }
-
-    // MARK: - Category legend
-
-    private var categoryLegend: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(store.categories) { category in
-                    HStack(spacing: 4) {
-                        Circle().fill(Color(hex: category.colorHex)).frame(width: 8, height: 8)
-                        Text(category.name).font(.caption2).foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal)
-        }
-        .padding(.bottom, 6)
     }
 
     // MARK: - Grid
@@ -181,18 +178,34 @@ struct DailyCalendarView: View {
         GeometryReader { geo in
             let contentWidth = max(geo.size.width - leftGutter - 8, 40)
             ZStack(alignment: .topLeading) {
+                // The tap-to-create target sits at the BOTTOM of the
+                // stack. Event blocks are drawn above it and handle
+                // their own taps, so tapping an event opens it for
+                // editing instead of also firing "create here" —
+                // which used to queue up two sheets at once.
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(
+                        SpatialTapGesture()
+                            .onEnded { value in
+                                let start = minutes(fromY: value.location.y)
+                                pendingRange = MinuteRange(start: start, end: start + 30)
+                            }
+                    )
+
                 hourLines
                 eventsLayer(contentWidth: contentWidth)
                 currentTimeLine(contentWidth: contentWidth)
             }
         }
         .frame(height: gridHeight)
-        .contentShape(Rectangle())
-        .simultaneousGesture(
-            SpatialTapGesture()
+        .gesture(
+            MagnificationGesture()
+                .updating($pinchScale) { value, state, _ in
+                    state = value
+                }
                 .onEnded { value in
-                    let start = minutes(fromY: value.location.y)
-                    pendingRange = MinuteRange(start: start, end: start + 30)
+                    slotHeight = min(max(slotHeight * value, minSlotHeight), maxSlotHeight)
                 }
         )
     }
@@ -201,20 +214,36 @@ struct DailyCalendarView: View {
         ZStack(alignment: .topLeading) {
             ForEach(0...totalSlots, id: \.self) { i in
                 let minutes = startHour * 60 + i * 30
-                Divider()
-                    .offset(y: CGFloat(i) * slotHeight)
-                if minutes % 60 == 0 {
+                let isHour = minutes % 60 == 0
+                Rectangle()
+                    .fill(Color(.separator).opacity(isHour ? 0.9 : 0.35))
+                    .frame(height: isHour ? 0.5 : 0.5)
+                    .offset(y: CGFloat(i) * effectiveSlotHeight)
+                if isHour {
                     Text(timeLabel(minutes))
-                        .font(.caption2)
+                        .font(.system(size: 10))
                         .foregroundStyle(.secondary)
-                        .offset(y: CGFloat(i) * slotHeight - 7)
+                        .offset(y: CGFloat(i) * effectiveSlotHeight - 6)
                 }
             }
         }
+        .allowsHitTesting(false)
     }
 
     private func eventsLayer(contentWidth: CGFloat) -> some View {
-        let laidOut = layoutEvents(store.events(on: currentDate).filter { $0.flowsToDaily })
+        // All-day events are deliberately excluded — there's no time
+        // slot to draw them in. They show on the Long-Term calendar.
+        let realEvents = store.timedEvents(on: currentDate)
+            .filter { $0.flowsToDaily && !$0.isAllDay }
+
+        // Goals scheduled to the calendar are synthesised here rather
+        // than stored, so they always match the goal's current settings.
+        let fallbackCategory = store.categories.first?.id ?? UUID()
+        let goalBlocks = goalsStore.goals.compactMap { goal in
+            goal.scheduledBlock(on: currentDate, categoryID: goal.categoryID ?? fallbackCategory)
+        }
+
+        let laidOut = layoutEvents(realEvents + goalBlocks)
         return ZStack(alignment: .topLeading) {
             ForEach(laidOut) { item in
                 eventBlock(item, contentWidth: contentWidth)
@@ -225,6 +254,14 @@ struct DailyCalendarView: View {
     private func eventBlock(_ item: LaidOutEvent, contentWidth: CGFloat) -> some View {
         let colWidth = contentWidth / CGFloat(item.columnCount)
         let isDragging = draggingEventID == item.event.id
+        let isArmed = armedEventID == item.event.id
+
+        // Goal-derived blocks are generated on the fly, not stored, so
+        // they behave differently: accent-coloured, tickable, and not
+        // editable as events.
+        let goalID = item.event.linkedGoalID
+        let isGoalBlock = goalID != nil
+        let isDone = item.event.isCompleted
 
         var displayStart = item.event.startDate
         var displayEnd = item.event.endDate
@@ -237,41 +274,80 @@ struct DailyCalendarView: View {
         let startMin = minutesFromMidnight(displayStart)
         let endMin = minutesFromMidnight(displayEnd)
         let top = yOffset(forMinutes: startMin)
-        let height = max(yOffset(forMinutes: endMin) - top, 18)
-        let color = Color(hex: store.category(for: item.event.categoryID)?.colorHex ?? "#999999")
+        let height = max(yOffset(forMinutes: endMin) - top, 16)
 
-        return VStack(alignment: .leading, spacing: 1) {
-            Text(item.event.title)
-                .font(.caption.weight(.medium))
-                .lineLimit(2)
-            if height > 32 {
+        let baseColor = isGoalBlock
+            ? appearanceStore.primaryColor
+            : Color(hex: store.category(for: item.event.categoryID)?.colorHex ?? "#999999")
+        let color = isDone ? baseColor.opacity(0.45) : baseColor
+        let textColor = baseColor.contrastingTextColor
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 3) {
+                if isGoalBlock {
+                    Image(systemName: isDone ? "checkmark.circle.fill" : "target")
+                        .font(.system(size: 9))
+                        .foregroundStyle(textColor.opacity(0.9))
+                }
+                Text(item.event.title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(textColor)
+                    .strikethrough(isDone)
+                    .lineLimit(height > 30 ? 2 : 1)
+            }
+            if height > 34 {
                 Text("\(timeLabel(startMin)) – \(timeLabel(endMin))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 9))
+                    .foregroundStyle(textColor.opacity(0.75))
             }
         }
-        .padding(6)
-        .frame(width: max(colWidth - 4, 20), height: height, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: DesignTokens.smallRadius).fill(color.opacity(0.2)))
-        .overlay(Rectangle().fill(color).frame(width: 3), alignment: .leading)
-        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.smallRadius))
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .frame(width: max(colWidth - 3, 20), height: height, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                .fill(color)
+        )
+        .overlay(
+            // A deeper shade of the block's own colour. Gives each event
+            // a defined edge — against the white page, and against the
+            // next block when two sit side by side in the same slot.
+            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                .strokeBorder(baseColor.darkened(by: 0.3).opacity(isDone ? 0.4 : 1), lineWidth: 1)
+        )
+        .scaleEffect(isArmed ? 1.04 : 1)
+        .shadow(color: .black.opacity(isArmed ? 0.25 : 0), radius: isArmed ? 6 : 0, y: isArmed ? 3 : 0)
+        .animation(.easeOut(duration: 0.15), value: isArmed)
+        .animation(.easeOut(duration: 0.2), value: isDone)
         .offset(x: leftGutter + CGFloat(item.column) * colWidth, y: top)
         .onTapGesture {
-            editingEvent = item.event
+            if let goalID {
+                // Opens the goal rather than ticking it off. Tapping
+                // used to mark it done, which meant a stray tap while
+                // scrolling silently completed something — and the
+                // chip strip at the top already handles ticking. An
+                // accidentally opened sheet is obvious and cancellable;
+                // an accidental completion is neither.
+                editingGoal = goalsStore.goals.first { $0.id == goalID }
+            } else {
+                editingEvent = item.event
+            }
         }
         .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.4, maximumDistance: 20)
+            LongPressGesture(minimumDuration: 0.3, maximumDistance: 20)
                 .onEnded { _ in
+                    // Repeating events still can't be dragged: moving one
+                    // occurrence would shift the whole series' anchor,
+                    // which isn't what anyone means by "move this". Goal
+                    // blocks CAN be dragged — there's only one schedule
+                    // per goal, so moving it just updates that.
+                    guard item.event.recurrence == .none else { return }
                     armedEventID = item.event.id
                 }
         )
         .simultaneousGesture(
             DragGesture(minimumDistance: 2)
                 .onChanged { value in
-                    // Only actually move the event once it's "armed" by
-                    // the long press above — until then, this movement
-                    // is ignored here and left free for the ScrollView
-                    // underneath to interpret as a normal scroll.
                     guard armedEventID == item.event.id else { return }
                     draggingEventID = item.event.id
                     dragOffsetMinutes = minutesDelta(fromTranslation: value.translation.height)
@@ -280,7 +356,17 @@ struct DailyCalendarView: View {
                     defer { armedEventID = nil }
                     guard armedEventID == item.event.id else { return }
                     let delta = minutesDelta(fromTranslation: value.translation.height)
-                    store.moveEvent(item.event.id, newStart: item.event.startDate.addingTimeInterval(TimeInterval(delta * 60)))
+                    if let goalID {
+                        // Sets an override for THIS day only — the
+                        // goal's schedule for every other day is
+                        // untouched. Changing the time in the goal
+                        // editor is the only way to move the whole
+                        // series at once.
+                        let newStartMinutes = minutesFromMidnight(item.event.startDate) + delta
+                        goalsStore.setScheduledTimeOverride(goalID, date: currentDate, startMinutes: newStartMinutes)
+                    } else {
+                        store.moveEvent(item.event.id, newStart: item.event.startDate.addingTimeInterval(TimeInterval(delta * 60)))
+                    }
                     draggingEventID = nil
                     dragOffsetMinutes = 0
                 }
@@ -292,10 +378,17 @@ struct DailyCalendarView: View {
         if dayOffset == 0 {
             let nowMinutes = minutesFromMidnight(Date())
             if nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60 {
-                Rectangle()
-                    .fill(Color.red)
-                    .frame(width: contentWidth, height: 2)
-                    .offset(x: leftGutter, y: yOffset(forMinutes: nowMinutes))
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Color.red)
+                        .frame(width: contentWidth, height: 1.5)
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 6, height: 6)
+                        .offset(x: -3)
+                }
+                .offset(x: leftGutter, y: yOffset(forMinutes: nowMinutes))
+                .allowsHitTesting(false)
             }
         }
     }
@@ -308,17 +401,17 @@ struct DailyCalendarView: View {
     }
 
     private func yOffset(forMinutes minutes: Int) -> CGFloat {
-        CGFloat(minutes - startHour * 60) / 30 * slotHeight
+        CGFloat(minutes - startHour * 60) / 30 * effectiveSlotHeight
     }
 
     private func minutes(fromY y: CGFloat) -> Int {
-        let raw = Int((y / slotHeight) * 30)
+        let raw = Int((y / effectiveSlotHeight) * 30)
         let snapped = (raw / 30) * 30
         return max(startHour * 60, startHour * 60 + snapped)
     }
 
     private func minutesDelta(fromTranslation dy: CGFloat) -> Int {
-        let raw = Int((dy / slotHeight) * 30)
+        let raw = Int((dy / effectiveSlotHeight) * 30)
         return (raw / 30) * 30
     }
 

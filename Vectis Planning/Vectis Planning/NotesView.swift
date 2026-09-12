@@ -23,6 +23,7 @@ struct NotesView: View {
                 section(title: "Lists", icon: "checklist", notes: store.lists.filter(matches))
                 section(title: "Notes", icon: "note.text", notes: store.classicNotes.filter(matches))
             }
+            .scrollContentBackground(.hidden)
             .searchable(text: $searchText, prompt: "Search notes")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

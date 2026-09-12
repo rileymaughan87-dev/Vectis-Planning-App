@@ -8,24 +8,131 @@ import Foundation
 // Goals lives in one place.
 
 extension Goal {
-    /// Whether this goal is scheduled to happen on a given date, based
-    /// on `repeatDays` and, if set, `endDate`. A goal set to weekdays
-    /// only, or one whose 2-month run has finished, simply isn't "due"
-    /// on days outside that window — there's nothing to tick off or miss.
+    /// A calendar block for this goal on a given day, or nil if it isn't
+    /// scheduled to the calendar or isn't due that day.
+    ///
+    /// The returned event is transient — built fresh each time a day is
+    /// drawn and never saved. `linkedGoalID` points back here so the
+    /// planner knows it's goal-derived and can let you tick it off
+    /// directly rather than treating it as an editable event.
+    func scheduledBlock(on date: Date, categoryID: UUID) -> CalendarEvent? {
+        guard scheduledOnCalendar, isScheduled(on: date) else { return nil }
+
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: date)
+        // A day that's been individually dragged uses its own time
+        // instead of the goal's normal schedule — this is what makes
+        // moving one occurrence NOT move every day.
+        let effectiveStartMinutes = scheduledTimeOverrides[Goal.dayKey(date)] ?? scheduledStartMinutes
+        let start = dayStart.addingTimeInterval(TimeInterval(effectiveStartMinutes * 60))
+        let end = start.addingTimeInterval(TimeInterval(max(scheduledDurationMinutes, 5) * 60))
+
+        var event = CalendarEvent(
+            title: title,
+            startDate: start,
+            endDate: end,
+            categoryID: categoryID,
+            flowsToDaily: true
+        )
+        // A STABLE id derived from the goal and the day, not a fresh
+        // random one. This block gets rebuilt from scratch on every
+        // redraw of the Daily grid — including continuously while
+        // dragging it, since dragging updates state on every finger
+        // movement. A random id meant the block you were mid-drag on
+        // stopped existing (by identity) a moment after you touched it,
+        // which is what was breaking dragging: SwiftUI lost track of
+        // which view the gesture belonged to. Deriving the id from
+        // (goal, day) instead means it stays the same across redraws,
+        // and only changes if the goal or day actually changes.
+        event.id = Goal.stableBlockID(goalID: id, dayKey: Goal.dayKey(date))
+        event.linkedGoalID = id
+        event.isCompleted = completions[Goal.dayKey(date)] == true
+        return event
+    }
+
+    /// A UUID that's stable for a given (goal, day) pair for as long as
+    /// the app keeps running — not necessarily stable across separate
+    /// launches, which doesn't matter here since these blocks are
+    /// transient and never saved to disk; they're rebuilt fresh every
+    /// time a day is drawn regardless.
+    static func stableBlockID(goalID: UUID, dayKey: String) -> UUID {
+        var hasher = Hasher()
+        hasher.combine(goalID)
+        hasher.combine(dayKey)
+        let first = UInt64(bitPattern: Int64(hasher.finalize()))
+        hasher.combine("vectis-block-salt")
+        let second = UInt64(bitPattern: Int64(hasher.finalize()))
+        let bytes = withUnsafeBytes(of: first.bigEndian) { Array($0) }
+            + withUnsafeBytes(of: second.bigEndian) { Array($0) }
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
+    }
+
+    /// Formatted time range for showing in the goal editor.
+    var scheduledTimeText: String {
+        func label(_ minutes: Int) -> String {
+            let hour24 = (minutes / 60) % 24
+            let minute = minutes % 60
+            let period = hour24 < 12 ? "AM" : "PM"
+            var hour12 = hour24 % 12
+            if hour12 == 0 { hour12 = 12 }
+            return minute == 0 ? "\(hour12) \(period)" : String(format: "%d:%02d %@", hour12, minute, period)
+        }
+        return "\(label(scheduledStartMinutes)) – \(label(scheduledStartMinutes + scheduledDurationMinutes))"
+    }
+
+    /// Whether this goal is scheduled to happen on a given date.
+    ///
+    /// Only `.specificDays` actually cares which weekday it is — the
+    /// other two are available every day (subject to `endDate`), since
+    /// "3 times this week" or "4 times today" aren't tied to a
+    /// particular day at all.
     func isScheduled(on date: Date) -> Bool {
         let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: date)
-        guard repeatDays.contains(weekday) else { return false }
-        if let endDate = endDate {
+        if let endDate {
             let day = calendar.startOfDay(for: date)
             let end = calendar.startOfDay(for: endDate)
             if day > end { return false }
         }
-        return true
+        switch frequencyType {
+        case .specificDays:
+            let weekday = calendar.component(.weekday, from: date)
+            return repeatDays.contains(weekday)
+        case .timesPerWeek, .timesPerDay:
+            return true
+        }
     }
 
     var isScheduledToday: Bool {
         isScheduled(on: Date())
+    }
+
+    /// How many times a `.timesPerDay` goal has been done on a given day.
+    func completionCount(on date: Date) -> Int {
+        completionCounts[Goal.dayKey(date)] ?? 0
+    }
+
+    var todayCompletionCount: Int {
+        completionCount(on: Date())
+    }
+
+    /// How many days within the CURRENT week a `.timesPerWeek` goal has
+    /// been marked done. "Current week" follows the same week-start
+    /// convention as the device's calendar, so it lines up with what
+    /// the user would expect a "week" to mean.
+    func weeklyCompletionCount(asOf date: Date = Date()) -> Int {
+        let calendar = Calendar.current
+        guard let week = calendar.dateInterval(of: .weekOfYear, for: date) else { return 0 }
+        var count = 0
+        var cursor = week.start
+        while cursor < week.end {
+            if completions[Goal.dayKey(cursor)] == true { count += 1 }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return count
     }
 
     /// True only for a milestone-based long-term goal that has a target
@@ -38,9 +145,8 @@ extension Goal {
     }
 
     /// The last 7 days of history, oldest first, for drawing streak dots.
-    /// Each entry is `true` (done), `false` (missed), or `nil` — which
-    /// now covers both "no record yet" *and* "not scheduled that day",
-    /// since neither should count for or against the streak.
+    /// Only meaningful for `.specificDays` goals — the other two types
+    /// don't have a per-day pass/fail concept to show dots for.
     func last7DaysHistory() -> [Bool?] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -63,8 +169,15 @@ extension Goal {
         return Int((Double(doneCount) / Double(known.count) * 100).rounded())
     }
 
+    /// Whether today counts as "done", by whichever definition this
+    /// goal's frequency type uses.
     var isCompletedToday: Bool {
-        completions[Goal.dayKey(Date())] ?? false
+        switch frequencyType {
+        case .specificDays, .timesPerWeek:
+            return completions[Goal.dayKey(Date())] ?? false
+        case .timesPerDay:
+            return todayCompletionCount >= timesPerDayTarget
+        }
     }
 }
 

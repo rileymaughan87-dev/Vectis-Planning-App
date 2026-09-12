@@ -234,6 +234,20 @@ struct LongTermGoalEditorSheet: View {
                         .disabled(newHabitName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
+
+                // Only when editing — during creation, Cancel already
+                // discards everything, so a Delete button would be
+                // redundant and slightly confusing.
+                if !isNewCreation {
+                    Section {
+                        Button("Delete goal", role: .destructive) {
+                            store.deleteGoal(goal.id)
+                            dismiss()
+                        }
+                    } footer: {
+                        Text("Any daily habits linked to this goal will be deleted too.")
+                    }
+                }
             }
             .navigationTitle(isNewCreation ? "New goal" : "Edit goal")
             .toolbar {
@@ -304,7 +318,18 @@ struct LongTermGoalEditorSheet: View {
 struct ShortTermGoalEditorSheet: View {
     @State var goal: Goal
     @ObservedObject var store: GoalsStore
+    @ObservedObject var linkedAppsStore: LinkedAppsStore
+    @ObservedObject var peopleStore: PeopleStore
     @Environment(\.dismiss) private var dismiss
+    @State private var showingAppPicker = false
+    @State private var showingPersonPicker = false
+
+    private var linkedPersonName: String? {
+        guard let id = goal.linkedPersonID,
+              let person = peopleStore.people.first(where: { $0.id == id })
+        else { return nil }
+        return peopleStore.details(for: person)?.name ?? person.cachedName
+    }
 
     var body: some View {
         NavigationStack {
@@ -313,15 +338,148 @@ struct ShortTermGoalEditorSheet: View {
                     TextField("Name", text: $goal.title)
                 }
 
-                Section("Repeats on") {
-                    RepeatDaysPicker(repeatDays: $goal.repeatDays)
+                Section {
+                    Picker("Track by", selection: $goal.frequencyType) {
+                        Text("Specific days").tag(GoalFrequencyType.specificDays)
+                        Text("Times per week").tag(GoalFrequencyType.timesPerWeek)
+                        Text("Times per day").tag(GoalFrequencyType.timesPerDay)
+                    }
+
+                    switch goal.frequencyType {
+                    case .specificDays:
+                        RepeatDaysPicker(repeatDays: $goal.repeatDays)
+
+                    case .timesPerWeek:
+                        Stepper(
+                            "\(goal.timesPerWeekTarget) times a week",
+                            value: $goal.timesPerWeekTarget,
+                            in: 1...14
+                        )
+
+                    case .timesPerDay:
+                        Stepper(
+                            "\(goal.timesPerDayTarget) times a day",
+                            value: $goal.timesPerDayTarget,
+                            in: 1...20
+                        )
+                    }
+                } footer: {
+                    switch goal.frequencyType {
+                    case .specificDays:
+                        Text("Tracks a streak of specific weekdays, like Monday/Wednesday/Friday.")
+                    case .timesPerWeek:
+                        Text("Any days count, up to the weekly target — good for things like \"workout 3 times a week\" that don't need to land on set days.")
+                    case .timesPerDay:
+                        Text("Tracks multiple completions in one day, like drinking water 4 times.")
+                    }
                 }
 
                 Section("Duration") {
                     GoalDatePicker(date: $goal.endDate, toggleLabel: "Set a duration", dateLabel: "Ends on")
                 }
+
+                Section {
+                    Toggle("Add to calendar", isOn: $goal.scheduledOnCalendar)
+
+                    if goal.scheduledOnCalendar {
+                        DatePicker(
+                            "Start time",
+                            selection: Binding(
+                                get: {
+                                    Calendar.current.date(
+                                        bySettingHour: goal.scheduledStartMinutes / 60,
+                                        minute: goal.scheduledStartMinutes % 60,
+                                        second: 0,
+                                        of: Date()
+                                    ) ?? Date()
+                                },
+                                set: { newDate in
+                                    let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                                    goal.scheduledStartMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+                                }
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+
+                        Picker("Length", selection: $goal.scheduledDurationMinutes) {
+                            Text("15 min").tag(15)
+                            Text("30 min").tag(30)
+                            Text("45 min").tag(45)
+                            Text("1 hour").tag(60)
+                            Text("1½ hours").tag(90)
+                            Text("2 hours").tag(120)
+                        }
+
+                        Text("Shows at \(goal.scheduledTimeText) on your daily planner, on the days set above.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } footer: {
+                    Text("Blocks out time for this goal on the daily planner. Tap the block to tick the goal off for that day.")
+                }
+
+                Section {
+                    Button {
+                        showingAppPicker = true
+                    } label: {
+                        HStack {
+                            Text("Linked app")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text(goal.linkedAppName ?? "None")
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } footer: {
+                    Text("Opens straight from the goal. Vectis asks how it went when you come back, rather than assuming.")
+                }
+
+                Section {
+                    Button {
+                        showingPersonPicker = true
+                    } label: {
+                        HStack {
+                            Text("Linked person")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text(linkedPersonName ?? "None")
+                                .foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } footer: {
+                    Text("For goals like calling someone regularly. Their contact actions appear on the goal.")
+                }
+
+                Section {
+                    Button("Delete goal", role: .destructive) {
+                        store.deleteGoal(goal.id)
+                        dismiss()
+                    }
+                }
             }
             .navigationTitle("Edit goal")
+            .sheet(isPresented: $showingPersonPicker) {
+                PersonPickerSheet(peopleStore: peopleStore, selection: $goal.linkedPersonID)
+            }
+            .sheet(isPresented: $showingAppPicker) {
+                AppPickerSheet(linkedAppsStore: linkedAppsStore) { scheme, name, appID in
+                    if scheme.isEmpty {
+                        goal.linkedAppScheme = nil
+                        goal.linkedAppName = nil
+                        goal.linkedAppID = nil
+                    } else {
+                        goal.linkedAppScheme = scheme
+                        goal.linkedAppName = name
+                        goal.linkedAppID = appID
+                    }
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

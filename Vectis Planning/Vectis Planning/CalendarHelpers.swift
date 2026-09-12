@@ -13,11 +13,103 @@ enum DesignTokens {
     static let smallRadius: CGFloat = 4
 }
 
+/// A bordered box wrapping a whole section, with a coloured accent
+/// stripe beside its title.
+///
+/// Shared between the Goals and Home pages rather than each defining
+/// its own, so the two can't drift apart as either gets tweaked.
+struct SectionBox<Content: View>: View {
+    let title: String
+    let accent: Color
+    var subtitle: String? = nil
+    var contentSpacing: CGFloat = 14
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(accent)
+                    .frame(width: 4, height: 20)
+                Text(title)
+                    .font(.title3.weight(.bold))
+                Spacer()
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            VStack(spacing: contentSpacing) {
+                content()
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
+                .strokeBorder(accent.opacity(0.35), lineWidth: 1.5)
+        )
+    }
+}
+
+/// Squared-off, solid buttons matching the app's boxy style, rather than
+/// iOS's translucent tinted capsules.
+///
+/// Applied to the prominent action buttons — Add, Create, the check-in
+/// answers. Destructive rows inside a `Form` are deliberately left as
+/// stock red text: those render as plain rows rather than bubbles, and
+/// restyling them would look wrong against the grouped form around them.
+struct VectisButtonStyle: ButtonStyle {
+    enum Kind { case primary, secondary, destructive }
+
+    var kind: Kind = .secondary
+    var accent: Color = .vectisTeal
+
+    func makeBody(configuration: Configuration) -> some View {
+        let fill: Color
+        let fg: Color
+        switch kind {
+        case .primary:
+            fill = accent
+            fg = accent.contrastingTextColor
+        case .secondary:
+            fill = Color(.secondarySystemGroupedBackground)
+            fg = accent
+        case .destructive:
+            fill = Color(.secondarySystemGroupedBackground)
+            fg = .red
+        }
+
+        return configuration.label
+            .font(.subheadline.weight(.medium))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .foregroundStyle(fg)
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                    .fill(fill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                    .strokeBorder(
+                        kind == .primary ? Color.clear : accent.opacity(0.3),
+                        lineWidth: 1
+                    )
+            )
+            .opacity(configuration.isPressed ? 0.65 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
 extension Color {
     /// The app's signature color, used as the tint for buttons, the
     /// selected tab, toggles, and anywhere else the system would
     /// otherwise default to plain iOS blue.
-    static let vectisTeal = Color(hex: "1C8 C82")
+    static let vectisTeal = Color(hex: "1C8C82")
 
     /// A secondary accent, reusing the same terracotta originally
     /// designed for the Challenges category. Used specifically to tell
@@ -37,6 +129,34 @@ extension Color {
         let green = Double((rgb & 0x00FF00) >> 8) / 255
         let blue = Double(rgb & 0x0000FF) / 255
         self.init(red: red, green: green, blue: blue)
+    }
+
+    /// A darker version of this colour, for borders and edges.
+    ///
+    /// Multiplying the channels keeps the same hue rather than washing
+    /// toward grey, so a border reads as "the same colour, deeper"
+    /// instead of a separate outline sitting on top.
+    func darkened(by amount: Double = 0.25) -> Color {
+        let ui = UIColor(self)
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        ui.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        let factor = max(0, 1 - amount)
+        return Color(red: red * factor, green: green * factor, blue: blue * factor, opacity: alpha)
+    }
+
+    /// Black or white, whichever is readable on top of this colour.
+    ///
+    /// Now that event blocks are filled solid rather than tinted, a
+    /// fixed white label would vanish on light categories (a pale
+    /// yellow, say) and a fixed black one would vanish on dark ones.
+    /// This picks per-colour using perceived brightness, which weights
+    /// green most and blue least — matching how the eye actually works.
+    var contrastingTextColor: Color {
+        let ui = UIColor(self)
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        ui.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        let brightness = (red * 299 + green * 587 + blue * 114) / 1000
+        return brightness > 0.6 ? .black : .white
     }
 
     /// The reverse — turns a Color picked from Settings' ColorPicker
@@ -165,9 +285,17 @@ func longTermDayItems(
     let calendar = Calendar.current
     var result: [LongTermDayItem] = []
 
-    let events = calendarStore.events.filter {
-        calendar.isDate($0.startDate, inSameDayAs: date) && !$0.flowsToDaily
-    }
+    // Uses `occupies` rather than matching the start date, so a holiday
+    // spanning a week appears on all seven days rather than only its
+    // first — and repeating events show on each occurrence.
+    //
+    // Filters on `origin`, NOT `flowsToDaily`. Those answer different
+    // questions: flowsToDaily is "does this also get a slot on the
+    // Daily grid", origin is "which screen was this made on". Using
+    // flowsToDaily here meant a timed event created in Long-Term
+    // disappeared from Long-Term, because giving it a time set that
+    // flag and the filter read it as "hide".
+    let events = calendarStore.events.filter { $0.occupies(date) && $0.origin == .longTerm }
     for event in events {
         let hex = calendarStore.category(for: event.categoryID)?.colorHex ?? "#999999"
         result.append(LongTermDayItem(id: event.id, title: event.title, colorHex: hex, isMilestone: false))

@@ -48,13 +48,51 @@ class CalendarStore: ObservableObject {
                 PersistenceManager.save(CalendarHours(startHour: start, endHour: end), to: PersistenceManager.Filename.calendarHours)
             }
             .store(in: &cancellables)
+
+        repairOrphanedEvents()
+    }
+
+    /// Reassigns any event whose categoryID doesn't match a category
+    /// that actually exists.
+    ///
+    /// This fixes data broken by an earlier bug where default categories
+    /// were given fresh random IDs on each launch, orphaning every event
+    /// that pointed at them — which showed up as all events losing their
+    /// colour. The categories now have fixed IDs so it can't recur, but
+    /// this cleans up anything already saved in the broken state.
+    private func repairOrphanedEvents() {
+        let validIDs = Set(categories.map { $0.id })
+        guard let fallback = categories.first?.id else { return }
+
+        var repaired = 0
+        for index in events.indices where !validIDs.contains(events[index].categoryID) {
+            events[index].categoryID = fallback
+            repaired += 1
+        }
+        if repaired > 0 {
+            print("Vectis: reassigned \(repaired) event(s) with missing categories")
+        }
     }
 
     // MARK: - Reading
 
+    /// Every event covering a given day — including multi-day spans and
+    /// repeat occurrences, not just events that literally start that day.
     func events(on date: Date) -> [CalendarEvent] {
-        let calendar = Calendar.current
-        return events.filter { calendar.isDate($0.startDate, inSameDayAs: date) }
+        events.filter { $0.occupies(date) }
+    }
+
+    /// The same, but with each event's times shifted onto that specific
+    /// day. The Daily grid needs this so a weekly event draws at the
+    /// right hours on every week it appears, not just its first.
+    func timedEvents(on date: Date) -> [CalendarEvent] {
+        events(on: date).map { event in
+            var copy = event
+            let times = event.times(on: date)
+            copy.startDate = times.start
+            copy.endDate = times.end
+            return copy
+        }
     }
 
     func category(for id: UUID?) -> CalendarCategory? {
@@ -86,6 +124,14 @@ class CalendarStore: ObservableObject {
 
     func deleteEvent(_ id: UUID) {
         events.removeAll { $0.id == id }
+    }
+
+    /// Skips one occurrence of a repeating event without touching the
+    /// rest of the series — "not doing this today" rather than "never
+    /// doing this again."
+    func deleteOccurrence(eventID: UUID, date: Date) {
+        guard let index = events.firstIndex(where: { $0.id == eventID }) else { return }
+        events[index].excludedOccurrences.insert(Goal.dayKey(date))
     }
 
     // MARK: - Sample data

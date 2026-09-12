@@ -103,6 +103,183 @@ class GoalsStore: ObservableObject {
         goals.removeAll { $0.id == id || $0.linkedToGoalID == id }
     }
 
+    /// Turns a challenge template into a real long-term goal with one
+    /// linked daily habit per selected task.
+    ///
+    /// Nothing about the result is special-cased — it's an ordinary goal
+    /// with ordinary habits, which is why you can edit or delete any
+    /// part of it afterwards exactly like anything else you made.
+    @discardableResult
+    func startChallenge(
+        _ template: ChallengeTemplate,
+        selectedTasks: [ChallengeTask],
+        startDate: Date,
+        strictMode: Bool
+    ) -> Goal {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startDate)
+        let end = calendar.date(byAdding: .day, value: template.durationDays - 1, to: start) ?? start
+
+        var goal = Goal(title: template.name)
+        goal.kind = .longTerm
+        goal.targetDate = end
+        goal.challengeTemplateID = template.id
+        goal.challengeStartDate = start
+        goal.challengeStrictMode = strictMode
+        goal.milestones = [
+            Milestone(
+                title: "\(template.name) complete (day \(template.durationDays))",
+                done: false,
+                addToCalendar: true,
+                date: end
+            )
+        ]
+        goals.append(goal)
+
+        for task in selectedTasks {
+            var habit = Goal(title: task.title)
+            habit.kind = .shortTerm
+            habit.frequency = .daily
+            habit.linkedToGoalID = goal.id
+            habit.endDate = end
+            goals.append(habit)
+        }
+
+        return goal
+    }
+
+    /// Wipes the current attempt's completion history and restarts from
+    /// today, bumping the attempt count. Used when a strict-mode
+    /// challenge has a reported miss.
+    func restartChallenge(_ goalID: UUID) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }),
+              let templateID = goals[index].challengeTemplateID,
+              let template = ChallengeCatalog.load().first(where: { $0.id == templateID })
+        else { return }
+
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: Date())
+        let end = calendar.date(byAdding: .day, value: template.durationDays - 1, to: start) ?? start
+
+        goals[index].challengeStartDate = start
+        goals[index].targetDate = end
+        goals[index].challengeAttempt += 1
+        for milestoneIndex in goals[index].milestones.indices {
+            goals[index].milestones[milestoneIndex].done = false
+            goals[index].milestones[milestoneIndex].date = end
+        }
+
+        // Clear the linked habits' history too — a restart means day one.
+        for habitIndex in goals.indices where goals[habitIndex].linkedToGoalID == goalID {
+            goals[habitIndex].completions = [:]
+            goals[habitIndex].endDate = end
+        }
+    }
+
+    /// Long-term goals that came from a challenge template.
+    var activeChallenges: [Goal] {
+        goals.filter { $0.challengeTemplateID != nil }
+    }
+
+    /// Which day of the challenge today is, 1-based.
+    func challengeDay(for goal: Goal, on date: Date = Date()) -> Int? {
+        guard let start = goal.challengeStartDate else { return nil }
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: start), to: calendar.startOfDay(for: date)).day ?? 0
+        return days + 1
+    }
+
+    /// Past days within a challenge that have no record either way for
+    /// at least one of its habits — days you were away and never
+    /// confirmed. These drive the catch-up prompt rather than being
+    /// silently counted as failures.
+    func unresolvedDays(for goal: Goal, upTo date: Date = Date()) -> [Date] {
+        guard let start = goal.challengeStartDate else { return [] }
+        let calendar = Calendar.current
+        let habits = linkedGoals(for: goal.id)
+        guard !habits.isEmpty else { return [] }
+
+        var result: [Date] = []
+        var cursor = calendar.startOfDay(for: start)
+        let today = calendar.startOfDay(for: date)
+
+        while cursor < today {
+            let key = Goal.dayKey(cursor)
+            let anyUnrecorded = habits.contains { $0.completions[key] == nil }
+            if anyUnrecorded { result.append(cursor) }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return result
+    }
+
+    /// Marks every habit of a challenge done (or missed) for one day.
+    func resolveDay(_ goal: Goal, date: Date, completed: Bool) {
+        let key = Goal.dayKey(date)
+        for index in goals.indices where goals[index].linkedToGoalID == goal.id {
+            goals[index].completions[key] = completed
+        }
+    }
+
+    /// Deletes a goal. For a long-term goal this also removes any daily
+    /// habits linked to it — leaving them behind would orphan them,
+    /// since they'd point at a parent that no longer exists and would
+    /// stop appearing anywhere in the UI.
+    func deleteGoal(_ id: UUID) {
+        goals.removeAll { $0.id == id || $0.linkedToGoalID == id }
+    }
+
+    /// Increments today's count for a `.timesPerDay` goal, capped at its
+    /// target. Also mirrors the result into `completions` so anything
+    /// reading that dictionary (streak-style helpers, the catch-up flow)
+    /// still sees a sensible true/false for the day.
+    func incrementTodayCount(_ goalID: UUID) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        let key = Goal.dayKey(Date())
+        let target = goals[index].timesPerDayTarget
+        let current = goals[index].completionCounts[key] ?? 0
+        let updated = min(current + 1, target)
+        goals[index].completionCounts[key] = updated
+        goals[index].completions[key] = updated >= target
+    }
+
+    func decrementTodayCount(_ goalID: UUID) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        let key = Goal.dayKey(Date())
+        let target = goals[index].timesPerDayTarget
+        let current = goals[index].completionCounts[key] ?? 0
+        let updated = max(current - 1, 0)
+        goals[index].completionCounts[key] = updated
+        goals[index].completions[key] = updated >= target
+    }
+
+    /// Shifts a goal's scheduled calendar time by a number of minutes —
+    /// what dragging a goal-generated block on the Daily planner calls.
+    ///
+    /// A goal only has ONE scheduled time, not one per day, so moving
+    /// one occurrence moves the whole series — the same thing we do for
+    /// repeating calendar events, for the same reason: there's nothing
+    /// else it could sensibly mean.
+    /// Changes the goal's DEFAULT scheduled time — what editing the time
+    /// in the goal editor calls. This is the "change it going forward"
+    /// action: it affects every day that doesn't already have its own
+    /// override from `setScheduledTimeOverride`, which keeps whatever
+    /// day-specific adjustment it was given.
+    func shiftScheduledTime(_ goalID: UUID, byMinutes delta: Int) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        let newStart = goals[index].scheduledStartMinutes + delta
+        goals[index].scheduledStartMinutes = min(max(newStart, 0), 23 * 60 + 30)
+    }
+
+    /// Sets the scheduled time for ONE specific day only — what
+    /// dragging a single occurrence on the Daily planner calls. The
+    /// goal's overall schedule (and every other day) is untouched.
+    func setScheduledTimeOverride(_ goalID: UUID, date: Date, startMinutes: Int) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        let clamped = min(max(startMinutes, 0), 23 * 60 + 30)
+        goals[index].scheduledTimeOverrides[Goal.dayKey(date)] = clamped
+    }
+
     /// Ticks a milestone off directly from the goal card, without
     /// needing to open the editor.
     func toggleMilestone(goalID: UUID, milestoneID: UUID) {

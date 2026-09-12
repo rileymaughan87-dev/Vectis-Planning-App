@@ -56,6 +56,13 @@ enum PersistenceManager {
         }
     }
 
+    /// Removes a saved file. Used for transient state like a pending
+    /// launch, which should genuinely go away once resolved rather than
+    /// lingering as a stale file.
+    static func delete(_ filename: String) {
+        try? FileManager.default.removeItem(at: fileURL(filename))
+    }
+
     // Filenames kept in one place so a typo can't cause a store to
     // silently save to one file and load from another.
     enum Filename {
@@ -68,6 +75,10 @@ enum PersistenceManager {
         static let financeEvents = "finance_events.json"
         static let appearance = "appearance.json"
         static let tasks = "tasks.json"
+        static let customApps = "custom_apps.json"
+        static let pendingLaunch = "pending_launch.json"
+        static let people = "people.json"
+        static let birthdayPrefs = "birthday_prefs.json"
     }
 }
 

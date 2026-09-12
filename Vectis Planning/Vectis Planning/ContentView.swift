@@ -34,10 +34,14 @@ struct ContentView: View {
     @StateObject private var financeStore = FinanceStore()
     @StateObject private var tasksStore = TasksStore()
     @StateObject private var appearanceStore = AppearanceStore()
+    @StateObject private var linkedAppsStore = LinkedAppsStore()
+    @StateObject private var peopleStore = PeopleStore()
 
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: AppTab = .home
     @State private var sidebarOpen = false
     @State private var sidebarDestination: SidebarDestination?
+    @State private var showingCheckIn = false
 
     var body: some View {
         ZStack {
@@ -58,15 +62,15 @@ struct ContentView: View {
                     .opacity(selectedTab == .home ? 1 : 0)
                     .allowsHitTesting(selectedTab == .home)
 
-                    GoalsView(store: goalsStore, appearanceStore: appearanceStore)
+                    GoalsView(store: goalsStore, appearanceStore: appearanceStore, linkedAppsStore: linkedAppsStore, peopleStore: peopleStore)
                         .opacity(selectedTab == .goals ? 1 : 0)
                         .allowsHitTesting(selectedTab == .goals)
 
-                    DailyCalendarView(store: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore)
+                    DailyCalendarView(store: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore, peopleStore: peopleStore, linkedAppsStore: linkedAppsStore)
                         .opacity(selectedTab == .daily ? 1 : 0)
                         .allowsHitTesting(selectedTab == .daily)
 
-                    LongTermCalendarView(calendarStore: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore)
+                    LongTermCalendarView(calendarStore: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore, peopleStore: peopleStore)
                         .opacity(selectedTab == .longTerm ? 1 : 0)
                         .allowsHitTesting(selectedTab == .longTerm)
 
@@ -75,6 +79,11 @@ struct ContentView: View {
                         .allowsHitTesting(selectedTab == .notes)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // A single gap under the header, applied here rather
+                // than in each page, so every screen sits the same
+                // distance from the chrome instead of drifting apart.
+                .padding(.top, 10)
+                .background(Color(.systemBackground))
 
                 customTabBar
             }
@@ -88,6 +97,27 @@ struct ContentView: View {
         }
         .tint(appearanceStore.primaryColor)
         .preferredColorScheme(appearanceStore.preferredColorScheme)
+        .onChange(of: scenePhase) { _, newPhase in
+            // Coming back to the foreground with a pending launch means
+            // you just returned from a linked app — time to ask how it
+            // went. The 5-second floor filters out accidental taps that
+            // bounced straight back.
+            if newPhase == .active,
+               let launch = linkedAppsStore.pendingLaunch,
+               Date().timeIntervalSince(launch.startedAt) > 5 {
+                showingCheckIn = true
+            }
+        }
+        .sheet(isPresented: $showingCheckIn) {
+            if let launch = linkedAppsStore.pendingLaunch {
+                ReturnCheckInSheet(
+                    launch: launch,
+                    goalsStore: goalsStore,
+                    linkedAppsStore: linkedAppsStore,
+                    appearanceStore: appearanceStore
+                )
+            }
+        }
         .sheet(item: $sidebarDestination) { destination in
             sidebarSheet(for: destination)
         }
@@ -101,14 +131,12 @@ struct ContentView: View {
         case .settings:
             SettingsView(calendarStore: calendarStore, appearanceStore: appearanceStore)
         case .people:
-            ComingSoonView(
-                title: "People",
-                detail: "Contacts, birthdays and quick actions — designed, not yet built."
-            )
+            PeopleView(store: peopleStore, appearanceStore: appearanceStore)
         case .linkedApps:
-            ComingSoonView(
-                title: "Linked apps",
-                detail: "Open apps straight from a goal or event — designed, not yet built."
+            LinkedAppsView(
+                goalsStore: goalsStore,
+                linkedAppsStore: linkedAppsStore,
+                appearanceStore: appearanceStore
             )
         }
     }
@@ -133,7 +161,32 @@ struct ContentView: View {
         .padding(.horizontal)
         .padding(.top, 10)
         .padding(.bottom, 14)
-        .background(.bar)
+        .background(ChromeBackground())
+        .overlay(alignment: .bottom) {
+            ChromeDivider()
+        }
+    }
+
+    /// The header and tab bar share this: a plain elevated surface.
+    ///
+    /// White in light mode against the grey content area below, and in
+    /// dark mode a divider does the separating since both surfaces are
+    /// near-black. No colour cast — the accent shows up in the content
+    /// itself rather than washing the chrome.
+    private struct ChromeBackground: View {
+        var body: some View {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+        }
+    }
+
+    /// A hairline separating chrome from content.
+    private struct ChromeDivider: View {
+        var body: some View {
+            Rectangle()
+                .fill(Color(.separator))
+                .frame(height: 0.5)
+        }
     }
 
     private var customTabBar: some View {
@@ -154,7 +207,7 @@ struct ContentView: View {
                     .padding(.vertical, 6)
                     .background(
                         RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
-                            .fill(isSelected ? appearanceStore.primaryColor.opacity(0.14) : Color.clear)
+                            .fill(isSelected ? appearanceStore.primaryColor.opacity(0.16) : Color.clear)
                     )
                     .padding(.horizontal, 4)
                 }
@@ -163,8 +216,10 @@ struct ContentView: View {
         .padding(.horizontal, 6)
         .padding(.top, 8)
         .padding(.bottom, 6)
-        .background(Color(.secondarySystemBackground))
-        .overlay(alignment: .top) { Divider() }
+        .background(ChromeBackground())
+        .overlay(alignment: .top) {
+            ChromeDivider()
+        }
     }
 }
 

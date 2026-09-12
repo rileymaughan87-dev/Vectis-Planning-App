@@ -1,0 +1,83 @@
+{
+  "_comment": "URL schemes for apps that can be linked to goals and calendar events. Same idea as Challenges.json — plain data you can edit without touching Swift. Schemes are set by each app's developer and can change, so a link that stops working usually means the app changed its scheme rather than a bug in Vectis. Apple's own apps are the most stable; third-party ones vary.",
+  "_verified": "Apple app schemes are well documented. Third-party schemes are community-sourced and were accurate as of research, but are worth testing on a real device — they can't be verified from the simulator reliably.",
+  "_important": "Vectis only shows apps you actually have installed. iOS will only answer 'is this installed?' for schemes declared up front in Info.plist under LSApplicationQueriesSchemes. If you add an app here WITHOUT adding its scheme to that list, it will silently show as not-installed even when it is. Always update both.",
+
+  "categories": [
+    {
+      "id": "reading",
+      "name": "Reading",
+      "apps": [
+        { "id": "books", "name": "Apple Books", "scheme": "ibooks://", "sfSymbol": "book" },
+        { "id": "kindle", "name": "Kindle", "scheme": "kindle://", "sfSymbol": "book.closed" },
+        { "id": "audible", "name": "Audible", "scheme": "audible://", "sfSymbol": "headphones" },
+        { "id": "applenews", "name": "Apple News", "scheme": "applenews://", "sfSymbol": "newspaper" }
+      ]
+    },
+    {
+      "id": "fitness",
+      "name": "Fitness and health",
+      "apps": [
+        { "id": "fitness", "name": "Apple Fitness", "scheme": "fitnessapp://", "sfSymbol": "figure.run" },
+        { "id": "health", "name": "Apple Health", "scheme": "x-apple-health://", "sfSymbol": "heart" },
+        { "id": "strava", "name": "Strava", "scheme": "strava://", "sfSymbol": "figure.outdoor.cycle" },
+        { "id": "headspace", "name": "Headspace", "scheme": "headspace://", "sfSymbol": "brain.head.profile" },
+        { "id": "insight", "name": "Insight Timer", "scheme": "insight://", "sfSymbol": "moon.stars" }
+      ]
+    },
+    {
+      "id": "music",
+      "name": "Music and audio",
+      "apps": [
+        { "id": "applemusic", "name": "Apple Music", "scheme": "music://", "sfSymbol": "music.note" },
+        { "id": "spotify", "name": "Spotify", "scheme": "spotify://", "sfSymbol": "music.note.list" },
+        { "id": "podcasts", "name": "Apple Podcasts", "scheme": "podcasts://", "sfSymbol": "mic" }
+      ]
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity",
+      "apps": [
+        { "id": "notes", "name": "Apple Notes", "scheme": "mobilenotes://", "sfSymbol": "note.text" },
+        { "id": "reminders", "name": "Reminders", "scheme": "x-apple-reminder://", "sfSymbol": "checklist" },
+        { "id": "calendar", "name": "Apple Calendar", "scheme": "calshow://", "sfSymbol": "calendar" },
+        { "id": "googledrive", "name": "Google Drive", "scheme": "googledrive://", "sfSymbol": "folder" },
+        { "id": "googlekeep", "name": "Google Keep", "scheme": "comgooglekeep://", "sfSymbol": "square.and.pencil" }
+      ]
+    },
+    {
+      "id": "learning",
+      "name": "Learning",
+      "apps": [
+        { "id": "duolingo", "name": "Duolingo", "scheme": "duolingo://", "sfSymbol": "character.bubble" },
+        { "id": "translate", "name": "Google Translate", "scheme": "googletranslate://", "sfSymbol": "globe" }
+      ]
+    },
+    {
+      "id": "social",
+      "name": "Social",
+      "_comment": "Included deliberately — the point isn't to block these, it's to make opening them a planned, intentional act rather than a reflex.",
+      "apps": [
+        { "id": "instagram", "name": "Instagram", "scheme": "instagram://", "sfSymbol": "camera" },
+        { "id": "youtube", "name": "YouTube", "scheme": "youtube://", "sfSymbol": "play.rectangle" },
+        { "id": "whatsapp", "name": "WhatsApp", "scheme": "whatsapp://", "sfSymbol": "message" }
+      ]
+    },
+    {
+      "id": "faith",
+      "name": "Faith",
+      "apps": [
+        { "id": "gospellibrary", "name": "Gospel Library", "scheme": "gospellibrary://", "sfSymbol": "book.closed" },
+        { "id": "sacredmusic", "name": "Sacred Music", "scheme": "sacredmusic://", "sfSymbol": "music.quarternote.3" }
+      ]
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "apps": [
+        { "id": "wallet", "name": "Apple Wallet", "scheme": "shoebox://", "sfSymbol": "creditcard" },
+        { "id": "stocks", "name": "Stocks", "scheme": "stocks://", "sfSymbol": "chart.line.uptrend.xyaxis" }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,8 @@ struct GoalsView: View {
     // and write the exact same data, staying in sync automatically.
     @ObservedObject var store: GoalsStore
     @ObservedObject var appearanceStore: AppearanceStore
+    @ObservedObject var linkedAppsStore: LinkedAppsStore
+    @ObservedObject var peopleStore: PeopleStore
 
     @State private var showingAddShortTerm = false
 
@@ -18,15 +20,28 @@ struct GoalsView: View {
     @State private var editingGoal: Goal?
     @State private var editingGoalIsNew = false
     @State private var editingShortTermGoal: Goal?
+    @State private var showingChallenges = false
+    @State private var catchUpGoal: Goal?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    sectionBox(title: "Short-term goals", accent: appearanceStore.primaryColor) {
+                    SectionBox(title: "Short-term goals", accent: appearanceStore.primaryColor) {
                         ForEach(store.standaloneShortTermGoals) { goal in
-                            ShortTermGoalRow(goal: goal, store: store, accentColor: appearanceStore.primaryColor) {
-                                editingShortTermGoal = goal
+                            ShortTermGoalRow(
+                                goal: goal,
+                                store: store,
+                                accentColor: appearanceStore.primaryColor,
+                                onTapName: { editingShortTermGoal = goal },
+                                onOpenApp: launchApp,
+                                peopleStore: peopleStore
+                            )
+                            .contextMenu {
+                                Button("Edit") { editingShortTermGoal = goal }
+                                Button("Delete", role: .destructive) {
+                                    store.deleteGoal(goal.id)
+                                }
                             }
                         }
                         Button {
@@ -35,12 +50,10 @@ struct GoalsView: View {
                             Label("Add goal", systemImage: "plus")
                                 .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.roundedRectangle(radius: DesignTokens.smallRadius))
-                        .tint(appearanceStore.primaryColor)
+                        .buttonStyle(VectisButtonStyle(kind: .secondary, accent: appearanceStore.primaryColor))
                     }
 
-                    sectionBox(title: "Long-term goals", accent: appearanceStore.secondaryColor) {
+                    SectionBox(title: "Long-term goals", accent: appearanceStore.secondaryColor) {
                         ForEach(store.longTermGoals) { goal in
                             LongTermGoalCard(
                                 goal: goal,
@@ -51,24 +64,43 @@ struct GoalsView: View {
                                     editingGoalIsNew = false
                                     editingGoal = goal
                                 },
-                                onTapHabit: { habit in editingShortTermGoal = habit }
+                                onTapHabit: { habit in editingShortTermGoal = habit },
+                                onOpenApp: launchApp,
+                                peopleStore: peopleStore
                             )
+                            .contextMenu {
+                                Button("Edit") {
+                                    editingGoalIsNew = false
+                                    editingGoal = goal
+                                }
+                                Button("Delete", role: .destructive) {
+                                    store.deleteGoal(goal.id)
+                                }
+                            }
                         }
-                        Button {
-                            editingGoalIsNew = true
-                            editingGoal = Goal(title: "", kind: .longTerm)
-                        } label: {
-                            Label("Add goal", systemImage: "plus")
-                                .frame(maxWidth: .infinity)
+                        HStack(spacing: 10) {
+                            Button {
+                                editingGoalIsNew = true
+                                editingGoal = Goal(title: "", kind: .longTerm)
+                            } label: {
+                                Label("Add goal", systemImage: "plus")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(VectisButtonStyle(kind: .secondary, accent: appearanceStore.secondaryColor))
+
+                            Button {
+                                showingChallenges = true
+                            } label: {
+                                Label("Challenges", systemImage: "flag")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(VectisButtonStyle(kind: .secondary, accent: appearanceStore.secondaryColor))
                         }
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.roundedRectangle(radius: DesignTokens.smallRadius))
-                        .tint(appearanceStore.secondaryColor)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.bottom)
             }
-            .background(Color(.systemGroupedBackground))
             .sheet(isPresented: $showingAddShortTerm) {
                 AddShortTermGoalSheet(store: store)
             }
@@ -76,39 +108,36 @@ struct GoalsView: View {
                 LongTermGoalEditorSheet(goal: goal, store: store, isNewCreation: editingGoalIsNew, accentColor: appearanceStore.secondaryColor)
             }
             .sheet(item: $editingShortTermGoal) { goal in
-                ShortTermGoalEditorSheet(goal: goal, store: store)
+                ShortTermGoalEditorSheet(goal: goal, store: store, linkedAppsStore: linkedAppsStore, peopleStore: peopleStore)
+            }
+            .sheet(isPresented: $showingChallenges) {
+                ChallengeBrowserSheet(store: store, appearanceStore: appearanceStore)
+            }
+            .sheet(item: $catchUpGoal) { goal in
+                ChallengeCatchUpSheet(goal: goal, store: store, appearanceStore: appearanceStore)
+            }
+            .onAppear {
+                // Surface the catch-up prompt for the first challenge
+                // with unconfirmed days — the same honest "we don't know
+                // what happened while you were away" pattern.
+                catchUpGoal = store.activeChallenges.first { !store.unresolvedDays(for: $0).isEmpty }
             }
         }
     }
 
-    /// A bordered box wrapping a whole section — the header, its goals,
-    /// and its add button all sit inside one container with a colored
-    /// accent stripe, rather than floating loose on the page. The same
-    /// helper drives both sections; only the accent color differs.
-    @ViewBuilder
-    private func sectionBox<Content: View>(title: String, accent: Color, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Rectangle()
-                    .fill(accent)
-                    .frame(width: 4, height: 20)
-                Text(title)
-                    .font(.title3.weight(.bold))
-            }
-            VStack(spacing: 14) {
-                content()
-            }
+    /// Records that you're heading into an app, then opens it. The
+    /// recording is what makes the return check-in possible — without
+    /// it we'd have no idea you'd left, or for how long.
+    private func launchApp(_ goal: Goal, scheme: String, appName: String) {
+        linkedAppsStore.beginLaunch(goalID: goal.id, appName: appName)
+        if !AppLauncher.open(scheme) {
+            // Opening failed — don't leave a phantom pending launch
+            // that would trigger a check-in for something that never
+            // happened.
+            linkedAppsStore.clearPendingLaunch()
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .fill(Color(.systemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .strokeBorder(accent.opacity(0.35), lineWidth: 1.5)
-        )
     }
+
 }
 
 // MARK: - Short-term goal row
@@ -128,6 +157,14 @@ struct ShortTermGoalRow: View {
 
     var onTapName: () -> Void
 
+    /// Called when the linked-app button is tapped. Optional so the row
+    /// still works in places that don't handle app launching.
+    var onOpenApp: ((Goal, String, String) -> Void)? = nil
+
+    /// Optional so the row still renders in contexts without people
+    /// loaded — the contact actions just don't appear.
+    var peopleStore: PeopleStore? = nil
+
     // When this row is nested inside a LongTermGoalCard (a linked daily
     // habit), it gets a slightly smaller, lighter card so it visually
     // reads as "inside" the parent rather than a peer of it.
@@ -144,35 +181,107 @@ struct ShortTermGoalRow: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Button {
-                    store.setToday(goal.id, done: !goal.isCompletedToday)
-                } label: {
-                    HStack(spacing: 4) {
-                        CompletionMark(isOn: goal.isCompletedToday, size: 16, color: accentColor)
-                        Text("Today")
+                switch goal.frequencyType {
+                case .specificDays, .timesPerWeek:
+                    Button {
+                        store.setToday(goal.id, done: !goal.isCompletedToday)
+                    } label: {
+                        HStack(spacing: 4) {
+                            CompletionMark(isOn: goal.isCompletedToday, size: 16, color: accentColor)
+                            Text("Today")
+                        }
+                        .font(.caption)
                     }
-                    .font(.caption)
+                    .buttonStyle(.plain)
+                    .disabled(!goal.isScheduledToday)
+                    .opacity(goal.isScheduledToday ? 1 : 0.35)
+
+                case .timesPerDay:
+                    HStack(spacing: 10) {
+                        Button {
+                            store.decrementTodayCount(goal.id)
+                        } label: {
+                            Image(systemName: "minus.circle")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(goal.todayCompletionCount == 0)
+
+                        Text("\(goal.todayCompletionCount)/\(goal.timesPerDayTarget)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(goal.isCompletedToday ? accentColor : .secondary)
+                            .frame(minWidth: 28)
+
+                        Button {
+                            store.incrementTodayCount(goal.id)
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(accentColor)
+                        .disabled(goal.todayCompletionCount >= goal.timesPerDayTarget)
+                    }
                 }
-                .buttonStyle(.plain)
-                .disabled(!goal.isScheduledToday)
-                .opacity(goal.isScheduledToday ? 1 : 0.35)
             }
 
-            HStack {
-                HStack(spacing: 4) {
-                    ForEach(Array(goal.last7DaysHistory().enumerated()), id: \.offset) { _, done in
-                        streakDot(done)
+            switch goal.frequencyType {
+            case .specificDays:
+                HStack {
+                    HStack(spacing: 4) {
+                        ForEach(Array(goal.last7DaysHistory().enumerated()), id: \.offset) { _, done in
+                            streakDot(done)
+                        }
                     }
+                    Spacer()
+                    trailingLabels
                 }
-                Spacer()
-                if let endDate = goal.endDate {
-                    Text("until \(endDate.formatted(date: .abbreviated, time: .omitted))")
+
+            case .timesPerWeek:
+                HStack {
+                    Text("\(goal.weeklyCompletionCount()) of \(goal.timesPerWeekTarget) this week")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                    Spacer()
+                    trailingLabels
                 }
-                Text("\(goal.completionPercentage)%")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+
+            case .timesPerDay:
+                HStack {
+                    Text("Today")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    trailingLabels
+                }
+            }
+
+            if let personID = goal.linkedPersonID, let peopleStore {
+                ContactActionsRow(
+                    personID: personID,
+                    peopleStore: peopleStore,
+                    accentColor: accentColor
+                )
+                .padding(.top, 2)
+            }
+
+            if let scheme = goal.linkedAppScheme, let appName = goal.linkedAppName, let onOpenApp {
+                Button {
+                    onOpenApp(goal, scheme, appName)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.forward.app")
+                        Text("Open \(appName)")
+                        Spacer()
+                    }
+                    .font(.caption)
+                    .foregroundStyle(accentColor)
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                            .fill(accentColor.opacity(0.12))
+                    )
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(isNested ? 10 : 14)
@@ -191,6 +300,25 @@ struct ShortTermGoalRow: View {
                 }
             }
         )
+    }
+
+    @ViewBuilder
+    private var trailingLabels: some View {
+        if goal.scheduledOnCalendar {
+            Label(goal.scheduledTimeText, systemImage: "clock")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        if let endDate = goal.endDate {
+            Text("until \(endDate.formatted(date: .abbreviated, time: .omitted))")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        if goal.frequencyType == .specificDays {
+            Text("\(goal.completionPercentage)%")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 
     @ViewBuilder
@@ -221,6 +349,8 @@ struct LongTermGoalCard: View {
 
     var onTapName: () -> Void
     var onTapHabit: (Goal) -> Void
+    var onOpenApp: ((Goal, String, String) -> Void)? = nil
+    var peopleStore: PeopleStore? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -233,7 +363,11 @@ struct LongTermGoalCard: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                if goal.isTargetOverdue {
+                if let day = store.challengeDay(for: goal), goal.challengeTemplateID != nil {
+                    Text("Day \(day)\(goal.challengeAttempt > 1 ? " · attempt \(goal.challengeAttempt)" : "")")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(accentColor)
+                } else if goal.isTargetOverdue {
                     Text("Overdue")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.red)
@@ -257,9 +391,15 @@ struct LongTermGoalCard: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 ForEach(linked) { habit in
-                    ShortTermGoalRow(goal: habit, store: store, accentColor: habitAccentColor, onTapName: {
-                        onTapHabit(habit)
-                    }, isNested: true)
+                    ShortTermGoalRow(
+                        goal: habit,
+                        store: store,
+                        accentColor: habitAccentColor,
+                        onTapName: { onTapHabit(habit) },
+                        onOpenApp: onOpenApp,
+                        peopleStore: peopleStore,
+                        isNested: true
+                    )
                 }
             }
         }
@@ -323,6 +463,6 @@ struct LongTermGoalCard: View {
 }
 
 #Preview {
-    GoalsView(store: GoalsStore(), appearanceStore: AppearanceStore())
+    GoalsView(store: GoalsStore(), appearanceStore: AppearanceStore(), linkedAppsStore: LinkedAppsStore(), peopleStore: PeopleStore())
 }
 

@@ -8,6 +8,7 @@ struct LongTermCalendarView: View {
     @ObservedObject var calendarStore: CalendarStore
     @ObservedObject var goalsStore: GoalsStore
     @ObservedObject var appearanceStore: AppearanceStore
+    @ObservedObject var peopleStore: PeopleStore
 
     @State private var displayedMonth = Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()
     @State private var selectedDay: IdentifiableDate?
@@ -38,6 +39,7 @@ struct LongTermCalendarView: View {
                     date: wrapped.date,
                     calendarStore: calendarStore,
                     goalsStore: goalsStore,
+                    peopleStore: peopleStore,
                     milestoneColorHex: appearanceStore.secondaryHex
                 )
             }
@@ -92,6 +94,7 @@ struct DayDetailSheet: View {
     let date: Date
     @ObservedObject var calendarStore: CalendarStore
     @ObservedObject var goalsStore: GoalsStore
+    @ObservedObject var peopleStore: PeopleStore
     var milestoneColorHex: String = "#1C8C82"
 
     @Environment(\.dismiss) private var dismiss
@@ -186,14 +189,18 @@ struct DayDetailSheet: View {
             .sheet(isPresented: $showingAddEvent) {
                 EventEditorSheet(
                     store: calendarStore,
+                    peopleStore: peopleStore,
+                    goalsStore: goalsStore,
                     date: date,
                     startMinutes: 9 * 60,
                     endMinutes: 9 * 60 + 30,
-                    flowsToDaily: false
+                    flowsToDaily: false,
+                    defaultAllDay: true,
+                    origin: .longTerm
                 )
             }
             .sheet(item: $editingEvent) { event in
-                EventEditorSheet(store: calendarStore, editing: event)
+                EventEditorSheet(store: calendarStore, peopleStore: peopleStore, goalsStore: goalsStore, editing: event)
             }
         }
     }

@@ -38,6 +38,15 @@
 		521D42923049D42B0000F3F6 /* TasksStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42913049D42B0000F3F6 /* TasksStore.swift */; };
 		521D42933049D42B0000F3F6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D428F3049D42B0000F3F6 /* HomeView.swift */; };
 		521D42943049D42B0000F3F6 /* SidebarMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42903049D42B0000F3F6 /* SidebarMenu.swift */; };
+		521D429A304A135B0000F3F6 /* ChallengeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D4299304A135B0000F3F6 /* ChallengeModels.swift */; };
+		521D429C304A136A0000F3F6 /* ChallengeSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D429B304A136A0000F3F6 /* ChallengeSheets.swift */; };
+		521D42A6304A163C0000F3F6 /* LinkedAppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42A3304A163C0000F3F6 /* LinkedAppModels.swift */; };
+		521D42A7304A163C0000F3F6 /* LinkedAppsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42A4304A163C0000F3F6 /* LinkedAppsStore.swift */; };
+		521D42A8304A163C0000F3F6 /* LinkedAppsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42A5304A163C0000F3F6 /* LinkedAppsViews.swift */; };
+		521D42AC304A16FE0000F3F6 /* LinkedApps.json in Resources */ = {isa = PBXBuildFile; fileRef = 521D42AB304A16FE0000F3F6 /* LinkedApps.json */; };
+		521D42B7304A1BE60000F3F6 /* PeopleViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42B6304A1BE60000F3F6 /* PeopleViews.swift */; };
+		521D42B8304A1BE60000F3F6 /* PeopleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42B5304A1BE60000F3F6 /* PeopleStore.swift */; };
+		521D42BC304A1DC80000F3F6 /* PersonLinkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42BB304A1DC80000F3F6 /* PersonLinkViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +82,15 @@
 		521D428F3049D42B0000F3F6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HomeView.swift; path = "Vectis Planning/HomeView.swift"; sourceTree = "<group>"; };
 		521D42903049D42B0000F3F6 /* SidebarMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SidebarMenu.swift; path = "Vectis Planning/SidebarMenu.swift"; sourceTree = "<group>"; };
 		521D42913049D42B0000F3F6 /* TasksStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TasksStore.swift; path = "Vectis Planning/TasksStore.swift"; sourceTree = "<group>"; };
+		521D4299304A135B0000F3F6 /* ChallengeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ChallengeModels.swift; path = "Vectis Planning/ChallengeModels.swift"; sourceTree = "<group>"; };
+		521D429B304A136A0000F3F6 /* ChallengeSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ChallengeSheets.swift; path = "Vectis Planning/ChallengeSheets.swift"; sourceTree = "<group>"; };
+		521D42A3304A163C0000F3F6 /* LinkedAppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinkedAppModels.swift; path = "Vectis Planning/LinkedAppModels.swift"; sourceTree = "<group>"; };
+		521D42A4304A163C0000F3F6 /* LinkedAppsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinkedAppsStore.swift; path = "Vectis Planning/LinkedAppsStore.swift"; sourceTree = "<group>"; };
+		521D42A5304A163C0000F3F6 /* LinkedAppsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinkedAppsViews.swift; path = "Vectis Planning/LinkedAppsViews.swift"; sourceTree = "<group>"; };
+		521D42AB304A16FE0000F3F6 /* LinkedApps.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = LinkedApps.json; path = "Vectis Planning/LinkedApps.json"; sourceTree = "<group>"; };
+		521D42B5304A1BE60000F3F6 /* PeopleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PeopleStore.swift; path = "Vectis Planning/PeopleStore.swift"; sourceTree = "<group>"; };
+		521D42B6304A1BE60000F3F6 /* PeopleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PeopleViews.swift; path = "Vectis Planning/PeopleViews.swift"; sourceTree = "<group>"; };
+		521D42BB304A1DC80000F3F6 /* PersonLinkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PersonLinkViews.swift; path = "Vectis Planning/PersonLinkViews.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -105,10 +123,12 @@
 				521D42313045E5D30000F3F6 /* CalendarStore.swift */,
 				521D424B30462A8C0000F3F6 /* NoteModels.swift */,
 				521D425530462C1D0000F3F6 /* RichTextEditor.swift */,
+				521D42BB304A1DC80000F3F6 /* PersonLinkViews.swift */,
 				521D424C30462A8C0000F3F6 /* NoteSheets.swift */,
 				521D424D30462A8C0000F3F6 /* NotesStore.swift */,
 				521D424E30462A8C0000F3F6 /* NotesView.swift */,
 				521D425930462D8A0000F3F6 /* SettingsView.swift */,
+				521D429B304A136A0000F3F6 /* ChallengeSheets.swift */,
 				521D4263304633750000F3F6 /* FinanceModels.swift */,
 				521D4264304633750000F3F6 /* FinanceSheets.swift */,
 				521D4265304633750000F3F6 /* FinanceStore.swift */,
@@ -124,7 +144,14 @@
 				521D42833048E08A0000F3F6 /* NotebookViews.swift */,
 				521D428F3049D42B0000F3F6 /* HomeView.swift */,
 				521D42903049D42B0000F3F6 /* SidebarMenu.swift */,
+				521D4299304A135B0000F3F6 /* ChallengeModels.swift */,
+				521D42B5304A1BE60000F3F6 /* PeopleStore.swift */,
+				521D42B6304A1BE60000F3F6 /* PeopleViews.swift */,
 				521D42913049D42B0000F3F6 /* TasksStore.swift */,
+				521D42A3304A163C0000F3F6 /* LinkedAppModels.swift */,
+				521D42AB304A16FE0000F3F6 /* LinkedApps.json */,
+				521D42A4304A163C0000F3F6 /* LinkedAppsStore.swift */,
+				521D42A5304A163C0000F3F6 /* LinkedAppsViews.swift */,
 				521D42873049D2160000F3F6 /* PersistenceManager.swift */,
 				521D42133045893A0000F3F6 /* Challenges.json */,
 				521D42153045894A0000F3F6 /* VectisIcon.svg */,
@@ -208,6 +235,7 @@
 				521D426E3046913A0000F3F6 /* VectisIcon1024.png in Resources */,
 				521D42163045894A0000F3F6 /* VectisIcon.svg in Resources */,
 				521D42143045893A0000F3F6 /* Challenges.json in Resources */,
+				521D42AC304A16FE0000F3F6 /* LinkedApps.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -218,10 +246,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				521D42B7304A1BE60000F3F6 /* PeopleViews.swift in Sources */,
+				521D42B8304A1BE60000F3F6 /* PeopleStore.swift in Sources */,
+				521D42BC304A1DC80000F3F6 /* PersonLinkViews.swift in Sources */,
 				521D4272304695240000F3F6 /* CompletionMark.swift in Sources */,
 				521D42123045892B0000F3F6 /* CalendarModels.swift in Sources */,
 				521D423A3045EB580000F3F6 /* LongTermCalendarView.swift in Sources */,
 				521D422630458CF30000F3F6 /* GoalsView.swift in Sources */,
+				521D429A304A135B0000F3F6 /* ChallengeModels.swift in Sources */,
 				521D42333045E5D30000F3F6 /* CalendarStore.swift in Sources */,
 				521D42343045E5D30000F3F6 /* CalendarSheets.swift in Sources */,
 				521D42353045E5D30000F3F6 /* CalendarHelpers.swift in Sources */,
@@ -235,6 +267,7 @@
 				521D4268304633750000F3F6 /* FinanceStore.swift in Sources */,
 				521D4269304633750000F3F6 /* FinanceView.swift in Sources */,
 				521D426A304633750000F3F6 /* FinanceSheets.swift in Sources */,
+				521D429C304A136A0000F3F6 /* ChallengeSheets.swift in Sources */,
 				521D422430458CE70000F3F6 /* GoalsStore.swift in Sources */,
 				521D424F30462A8C0000F3F6 /* NoteModels.swift in Sources */,
 				521D42843048E08A0000F3F6 /* NotebookViews.swift in Sources */,
@@ -244,6 +277,9 @@
 				521D425130462A8C0000F3F6 /* NotesView.swift in Sources */,
 				521D425230462A8C0000F3F6 /* NotesStore.swift in Sources */,
 				521D425630462C1D0000F3F6 /* RichTextEditor.swift in Sources */,
+				521D42A6304A163C0000F3F6 /* LinkedAppModels.swift in Sources */,
+				521D42A7304A163C0000F3F6 /* LinkedAppsStore.swift in Sources */,
+				521D42A8304A163C0000F3F6 /* LinkedAppsViews.swift in Sources */,
 				521D422030458CCF0000F3F6 /* GoalHelpers.swift in Sources */,
 				521D42413045F20E0000F3F6 /* MonthGridView.swift in Sources */,
 			);
@@ -383,6 +419,8 @@
 				DEVELOPMENT_TEAM = 7X33UZCZWU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Vectis-Planning-Info.plist";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Vectis uses your contacts so you can link people to events and reach them quickly.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -415,6 +453,8 @@
 				DEVELOPMENT_TEAM = 7X33UZCZWU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Vectis-Planning-Info.plist";
+				INFOPLIST_KEY_NSContactsUsageDescription = "Vectis uses your contacts so you can link people to events and reach them quickly.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

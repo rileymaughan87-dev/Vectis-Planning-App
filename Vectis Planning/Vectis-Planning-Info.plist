@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>applenews</string>
+		<string>audible</string>
+		<string>calshow</string>
+		<string>duolingo</string>
+		<string>fitnessapp</string>
+		<string>googledrive</string>
+		<string>gospellibrary</string>
+		<string>headspace</string>
+		<string>ibooks</string>
+		<string>insight</string>
+		<string>instagram</string>
+		<string>kindle</string>
+		<string>music</string>
+		<string>podcasts</string>
+		<string>sacredmusic</string>
+		<string>spotify</string>
+		<string>stocks</string>
+		<string>strava</string>
+		<string>whatsapp</string>
+		<string>youtube</string>
+	</array>
+</dict>
+</plist>
