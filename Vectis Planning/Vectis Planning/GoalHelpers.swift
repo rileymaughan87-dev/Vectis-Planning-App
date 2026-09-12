@@ -7,6 +7,20 @@ import Foundation
 // the "how do I turn this data into something displayable" logic for
 // Goals lives in one place.
 
+/// What a single day in the history strip represents.
+///
+/// Replaces an earlier `Bool?`, which collapsed two different things
+/// into `nil`: a day the goal wasn't scheduled, and a scheduled day with
+/// no record. Both rendered near-invisible, so a goal with gaps looked
+/// like it had almost no history — while `consecutiveMisses` was
+/// counting those same days as misses. The two now agree.
+enum GoalDayState {
+    case done
+    case missed
+    case notScheduled
+    case pending      // today or later, nothing to judge yet
+}
+
 extension Goal {
     /// A calendar block for this goal on a given day, or nil if it isn't
     /// scheduled to the calendar or isn't due that day.
@@ -144,19 +158,93 @@ extension Goal {
         return !allDone && targetDate < Calendar.current.startOfDay(for: Date())
     }
 
-    /// The last 7 days of history, oldest first, for drawing streak dots.
-    /// Only meaningful for `.specificDays` goals — the other two types
-    /// don't have a per-day pass/fail concept to show dots for.
-    func last7DaysHistory() -> [Bool?] {
+    /// Recent history, oldest first, for drawing the dot strip.
+    /// Each entry is `true` (done), `false` (missed), or `nil` for a day
+    /// the goal wasn't scheduled.
+    ///
+    /// Fourteen days rather than seven: a week is too short to show a
+    /// pattern, so one miss in seven reads as dramatic when it isn't.
+    /// Only meaningful for `.specificDays` goals — the other frequency
+    /// types have no per-day pass/fail to show.
+    /// The actual dates behind `recentHistory`, same order, so a tap on
+    /// a dot can be mapped back to the day it represents.
+    func recentDates(days: Int = 14) -> [Date] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        return (0..<7).reversed().map { offset in
-            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else {
-                return nil
-            }
-            guard isScheduled(on: day) else { return nil }
-            return completions[Goal.dayKey(day)]
+        return (0..<days).reversed().compactMap {
+            calendar.date(byAdding: .day, value: -$0, to: today)
         }
+    }
+
+    func recentHistory(days: Int = 14) -> [GoalDayState] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return (0..<days).reversed().map { offset in
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else {
+                return .notScheduled
+            }
+            guard isScheduled(on: day) else { return .notScheduled }
+            if completions[Goal.dayKey(day)] == true { return .done }
+            // Today isn't a miss yet — there's still time.
+            return offset == 0 ? .pending : .missed
+        }
+    }
+
+    /// How many of the last `days` scheduled days were completed, and
+    /// how many were scheduled at all. Drives the "12 of 14" figure.
+    func recentRate(days: Int = 14) -> (done: Int, scheduled: Int) {
+        let states = recentHistory(days: days)
+        let scheduled = states.filter { $0 != .notScheduled && $0 != .pending }.count
+        let done = states.filter { $0 == .done }.count
+        return (done, scheduled)
+    }
+
+    /// Every time this goal has ever been completed.
+    ///
+    /// The number that matters and the one a streak destroys: it only
+    /// ever goes up. A bad week knocks a streak to zero but leaves this
+    /// untouched, which is a truer picture of the reps accumulated.
+    var totalCompletions: Int {
+        switch frequencyType {
+        case .timesPerDay:
+            return completionCounts.values.reduce(0, +)
+        case .specificDays, .timesPerWeek:
+            return completions.values.filter { $0 }.count
+        }
+    }
+
+    /// How many scheduled days in a row, counting back from yesterday,
+    /// have been missed.
+    ///
+    /// Starts at yesterday rather than today because today isn't over —
+    /// an untouched goal at 9am isn't a miss yet. Days the goal wasn't
+    /// scheduled are skipped rather than breaking the run.
+    var consecutiveMisses: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var count = 0
+        for offset in 1...60 {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { break }
+            guard isScheduled(on: day) else { continue }
+            if completions[Goal.dayKey(day)] == true { break }
+            // No record at all also counts — an unmarked scheduled day
+            // in the past didn't happen.
+            count += 1
+        }
+        return count
+    }
+
+    /// Something worth saying, or nothing.
+    ///
+    /// Deliberately silent at one miss: a single missed day doesn't
+    /// measurably affect habit formation, so flagging it would be
+    /// telling the user off for noise. Two in a row is the point where
+    /// the research says it starts to matter.
+    var missNudge: String? {
+        guard frequencyType == .specificDays else { return nil }
+        let misses = consecutiveMisses
+        guard misses >= 2 else { return nil }
+        return "Missed \(misses) in a row — worth picking back up today."
     }
 
     /// Percent of *known* days completed. Days with no record at all are

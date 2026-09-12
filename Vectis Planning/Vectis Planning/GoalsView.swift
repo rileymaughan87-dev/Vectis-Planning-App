@@ -146,6 +146,90 @@ struct GoalsView: View {
 /// Used both in the flat Short-term list and nested inside a long-term
 /// goal's card for its linked habits — same row, same underlying data,
 /// so ticking it off in either place stays in sync automatically.
+/// The full 14-dot history row for a `.specificDays` goal.
+///
+/// Also its own view for the same reason as `HistoryDotButton` below —
+/// even with the button already extracted, building this `HStack` and
+/// its `ForEach` inline inside the surrounding three-way `switch` was
+/// still enough nested inference for the type checker to time out.
+/// Giving it a name gives the compiler an explicit boundary to stop at.
+private struct HistoryStrip: View {
+    let goal: Goal
+    @ObservedObject var store: GoalsStore
+    let accentColor: Color
+
+    var body: some View {
+        let states = goal.recentHistory()
+        let dates = goal.recentDates()
+        HStack(spacing: 3) {
+            ForEach(Array(states.enumerated()), id: \.offset) { index, state in
+                HistoryDotButton(state: state, accentColor: accentColor) {
+                    toggle(at: index, state: state, dates: dates)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, -8)
+    }
+
+    /// The actual write, as a plain named method rather than inline in
+    /// the closure above. The combination of a guard, a subscript, and
+    /// a multi-argument store call was enough for the type checker to
+    /// misattribute the error to an unrelated `@ObservedObject` problem
+    /// when it was really just too much to infer in one closure.
+    private func toggle(at index: Int, state: GoalDayState, dates: [Date]) {
+        guard state != .notScheduled, index < dates.count else { return }
+        let date = dates[index]
+        let done = state != .done
+        store.setCompletion(goal.id, on: date, done: done)
+    }
+}
+
+/// One tappable dot in a goal's history strip.
+///
+/// Pulled out as its own view rather than built inline in
+/// `ShortTermGoalRow`'s body — a `ForEach` constructing a `Button` with
+/// a `guard`, a store call, and chained modifiers all in one expression
+/// was too much for the type checker to solve in reasonable time.
+/// Breaking it into a named view fixes that; each piece now type-checks
+/// on its own.
+private struct HistoryDotButton: View {
+    let state: GoalDayState
+    let accentColor: Color
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            dot
+                // The dot itself stays 9pt, but the tap target is much
+                // bigger — a 9pt touch area would be unusable. This is
+                // what makes fixing a day you forgot to log possible
+                // without leaving the Goals page.
+                .frame(width: 16, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(state == .notScheduled)
+    }
+
+    @ViewBuilder
+    private var dot: some View {
+        switch state {
+        case .done:
+            Circle().fill(accentColor).frame(width: 9, height: 9)
+        case .missed:
+            // Solid grey rather than a hollow ring. An empty circle
+            // reads as a hole punched in the record; grey reads as a
+            // day that simply didn't happen, which is what it is.
+            Circle().fill(Color.secondary.opacity(0.45)).frame(width: 9, height: 9)
+        case .pending:
+            Circle().strokeBorder(accentColor.opacity(0.5), lineWidth: 1.5).frame(width: 9, height: 9)
+        case .notScheduled:
+            Circle().fill(Color.secondary.opacity(0.12)).frame(width: 5, height: 5)
+        }
+    }
+}
+
 struct ShortTermGoalRow: View {
     let goal: Goal
     @ObservedObject var store: GoalsStore
@@ -171,7 +255,7 @@ struct ShortTermGoalRow: View {
     var isNested: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Button(action: onTapName) {
                     Text(goal.title)
@@ -223,35 +307,53 @@ struct ShortTermGoalRow: View {
                 }
             }
 
+            // Progress gets a row to itself rather than sharing one
+            // with the metadata — three labels crowded beside fourteen
+            // dots was the main source of clutter.
             switch goal.frequencyType {
             case .specificDays:
-                HStack {
-                    HStack(spacing: 4) {
-                        ForEach(Array(goal.last7DaysHistory().enumerated()), id: \.offset) { _, done in
-                            streakDot(done)
-                        }
-                    }
-                    Spacer()
-                    trailingLabels
-                }
+                HistoryStrip(goal: goal, store: store, accentColor: accentColor)
 
             case .timesPerWeek:
-                HStack {
-                    Text("\(goal.weeklyCompletionCount()) of \(goal.timesPerWeekTarget) this week")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    trailingLabels
-                }
+                Text("\(goal.weeklyCompletionCount()) of \(goal.timesPerWeekTarget) this week")
+                    .font(.caption)
+                    .foregroundStyle(goal.weeklyCompletionCount() >= goal.timesPerWeekTarget ? accentColor : .secondary)
 
             case .timesPerDay:
-                HStack {
-                    Text("Today")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    trailingLabels
+                EmptyView()
+            }
+
+            // Two figures side by side rather than a run of small
+            // labels: recent rate answers "how is this going lately",
+            // lifetime count answers "how much have I built up" — and
+            // the second never goes down, which is the point.
+            if goal.frequencyType == .specificDays {
+                HStack(alignment: .firstTextBaseline, spacing: 22) {
+                    let rate = goal.recentRate()
+                    if rate.scheduled > 0 {
+                        statBlock("\(rate.done)/\(rate.scheduled)", "last fortnight")
+                    }
+                    if goal.totalCompletions > 0 {
+                        statBlock("\(goal.totalCompletions)", "times done")
+                    }
+                    Spacer(minLength: 0)
                 }
+            }
+
+            // One quiet line rather than several competing labels.
+            if let metadata = metadataText {
+                Text(metadata)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            // Silent at one miss on purpose — a single missed day
+            // doesn't measurably affect habit formation, so saying
+            // something would be flagging noise. Appears at two.
+            if let nudge = goal.missNudge {
+                Text(nudge)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
 
             if let personID = goal.linkedPersonID, let peopleStore {
@@ -284,7 +386,7 @@ struct ShortTermGoalRow: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(isNested ? 10 : 14)
+        .padding(isNested ? 11 : 16)
         .background(
             RoundedRectangle(cornerRadius: isNested ? DesignTokens.smallRadius : DesignTokens.cardRadius, style: .continuous)
                 .fill(Color(isNested ? .tertiarySystemGroupedBackground : .secondarySystemGroupedBackground))
@@ -302,34 +404,51 @@ struct ShortTermGoalRow: View {
         )
     }
 
-    @ViewBuilder
-    private var trailingLabels: some View {
+    /// Scheduled time, end date and lifetime count as one middot-joined
+    /// line, rather than three separate labels fighting for the right
+    /// edge. Returns nil when there is nothing to say, so the row
+    /// collapses instead of leaving an empty gap.
+    private var metadataText: String? {
+        var parts: [String] = []
         if goal.scheduledOnCalendar {
-            Label(goal.scheduledTimeText, systemImage: "clock")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            parts.append(goal.scheduledTimeText)
         }
         if let endDate = goal.endDate {
-            Text("until \(endDate.formatted(date: .abbreviated, time: .omitted))")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            parts.append("until \(endDate.formatted(date: .abbreviated, time: .omitted))")
         }
-        if goal.frequencyType == .specificDays {
-            Text("\(goal.completionPercentage)%")
+        if goal.frequencyType != .specificDays, goal.totalCompletions > 0 {
+            // Only here for the frequency types that have no stats row
+            // of their own — otherwise it would appear twice.
+            parts.append("\(goal.totalCompletions)× done")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: "  ·  ")
+    }
+
+    private func statBlock(_ value: String, _ caption: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value)
+                .font(.title3.weight(.semibold))
+            Text(caption)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
     }
 
     @ViewBuilder
-    private func streakDot(_ done: Bool?) -> some View {
-        switch done {
-        case true:
-            Circle().fill(accentColor).frame(width: 10, height: 10)
-        case false:
-            Circle().strokeBorder(.secondary, lineWidth: 1.5).frame(width: 10, height: 10)
-        case nil:
-            Circle().fill(Color.secondary.opacity(0.15)).frame(width: 10, height: 10)
+    private func streakDot(_ state: GoalDayState) -> some View {
+        switch state {
+        case .done:
+            Circle().fill(accentColor).frame(width: 9, height: 9)
+        case .missed:
+            // Solid grey rather than a hollow ring. An empty circle
+            // reads as a hole punched in the record; grey reads as a
+            // day that simply didn't happen, which is what it is.
+            Circle().fill(Color.secondary.opacity(0.45)).frame(width: 9, height: 9)
+        case .pending:
+            Circle().strokeBorder(accentColor.opacity(0.5), lineWidth: 1.5).frame(width: 9, height: 9)
+        case .notScheduled:
+            Circle().fill(Color.secondary.opacity(0.12)).frame(width: 5, height: 5)
+                .frame(width: 9, height: 9)
         }
     }
 }

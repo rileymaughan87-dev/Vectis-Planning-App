@@ -62,9 +62,36 @@ class GoalsStore: ObservableObject {
     // MARK: - Mutating actions
 
     /// Marks a short-term goal done or not-done for today specifically.
-    func setToday(_ goalID: UUID, done: Bool) {
+    /// Marks a goal done (or not) on a specific day.
+    ///
+    /// The general form — `setToday` just calls this with today's date.
+    /// Needed because the Daily calendar can be showing any day, and
+    /// because you sometimes remember at breakfast that you did in fact
+    /// do the thing yesterday.
+    func setCompletion(_ goalID: UUID, on date: Date, done: Bool) {
         guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
-        goals[index].completions[Goal.dayKey(Date())] = done
+        let key = Goal.dayKey(date)
+        goals[index].completions[key] = done
+
+        // Keep the count in step for times-per-day goals, so the two
+        // representations never disagree.
+        if goals[index].frequencyType == .timesPerDay {
+            goals[index].completionCounts[key] = done ? goals[index].timesPerDayTarget : 0
+        }
+    }
+
+    /// Sets a specific count for a times-per-day goal on a given day.
+    func setCount(_ goalID: UUID, on date: Date, count: Int) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        let key = Goal.dayKey(date)
+        let target = goals[index].timesPerDayTarget
+        let clamped = min(max(count, 0), target)
+        goals[index].completionCounts[key] = clamped
+        goals[index].completions[key] = clamped >= target
+    }
+
+    func setToday(_ goalID: UUID, done: Bool) {
+        setCompletion(goalID, on: Date(), done: done)
     }
 
     func addShortTermGoal(title: String, linkedTo: UUID? = nil, repeatDays: Set<Int> = Goal.allDays, endDate: Date? = nil) {
