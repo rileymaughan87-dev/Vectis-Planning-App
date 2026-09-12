@@ -324,6 +324,24 @@ struct ShortTermGoalEditorSheet: View {
     @State private var showingAppPicker = false
     @State private var showingPersonPicker = false
 
+    // Captured once, when the sheet opens — before any editing happens.
+    // Needed because by Save time `goal`'s own fields already hold the
+    // edited values, so comparing goal against itself could never
+    // detect a change. These three hold what was true before.
+    @State private var originalRepeatDays: Set<Int>
+    @State private var originalScheduledStartMinutes: Int
+    @State private var originalScheduledDurationMinutes: Int
+
+    init(goal: Goal, store: GoalsStore, linkedAppsStore: LinkedAppsStore, peopleStore: PeopleStore) {
+        _goal = State(initialValue: goal)
+        self.store = store
+        self.linkedAppsStore = linkedAppsStore
+        self.peopleStore = peopleStore
+        _originalRepeatDays = State(initialValue: goal.repeatDays)
+        _originalScheduledStartMinutes = State(initialValue: goal.scheduledStartMinutes)
+        _originalScheduledDurationMinutes = State(initialValue: goal.scheduledDurationMinutes)
+    }
+
     private var linkedPersonName: String? {
         guard let id = goal.linkedPersonID,
               let person = peopleStore.people.first(where: { $0.id == id })
@@ -486,7 +504,29 @@ struct ShortTermGoalEditorSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        store.updateGoal(goal)
+                        var finalGoal = goal
+                        let scheduleChanged = originalRepeatDays != finalGoal.repeatDays
+                            || originalScheduledStartMinutes != finalGoal.scheduledStartMinutes
+                            || originalScheduledDurationMinutes != finalGoal.scheduledDurationMinutes
+
+                        if scheduleChanged {
+                            // The version records what was true BEFORE
+                            // this edit — the originals captured when
+                            // the sheet opened — stamped with when that
+                            // old schedule had been in effect since.
+                            // `goal`'s own fields already hold the new
+                            // values, which is exactly what should be
+                            // live from today onward.
+                            finalGoal.scheduleVersions.append(ScheduleVersion(
+                                effectiveFrom: finalGoal.currentScheduleEffectiveFrom,
+                                repeatDays: originalRepeatDays,
+                                startMinutes: originalScheduledStartMinutes,
+                                durationMinutes: originalScheduledDurationMinutes
+                            ))
+                            finalGoal.currentScheduleEffectiveFrom = Calendar.current.startOfDay(for: Date())
+                        }
+
+                        store.updateGoal(finalGoal)
                         dismiss()
                     }
                     .disabled(goal.repeatDays.isEmpty)

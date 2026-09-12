@@ -117,6 +117,17 @@ struct CalendarEvent: Identifiable, Codable {
     /// `recurrence != .none`.
     var excludedOccurrences: Set<String> = []
 
+    /// Per-day start-time exceptions, as minutes from midnight, keyed by
+    /// day. What dragging a single occurrence of a repeating event
+    /// writes to.
+    ///
+    /// Same mechanism goals use for their scheduled blocks: moving one
+    /// day moves that day only and never the series. Repeating events
+    /// previously could not be dragged at all, because without this
+    /// there was nowhere to record "just this Tuesday" and moving one
+    /// occurrence would have shifted the whole series' anchor date.
+    var timeOverrides: [String: Int] = [:]
+
     /// Which screen this event was created from.
     ///
     /// Kept separate from `flowsToDaily` on purpose. That flag answers
@@ -148,7 +159,7 @@ struct CalendarEvent: Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, title, notes, startDate, endDate, categoryID, flowsToDaily
         case isAllDay, recurrence, recurrenceEndDate
-        case linkedGoalID, isCompleted, linkedPersonID, excludedOccurrences, origin, repeatDays
+        case linkedGoalID, isCompleted, linkedPersonID, excludedOccurrences, origin, repeatDays, timeOverrides
     }
 
     init(from decoder: Decoder) throws {
@@ -169,6 +180,7 @@ struct CalendarEvent: Identifiable, Codable {
         excludedOccurrences = try c.decodeIfPresent(Set<String>.self, forKey: .excludedOccurrences) ?? []
         origin = try c.decodeIfPresent(EventOrigin.self, forKey: .origin) ?? .daily
         repeatDays = try c.decodeIfPresent(Set<Int>.self, forKey: .repeatDays) ?? Set(1...7)
+        timeOverrides = try c.decodeIfPresent([String: Int].self, forKey: .timeOverrides) ?? [:]
     }
 
     func encode(to encoder: Encoder) throws {
@@ -189,6 +201,7 @@ struct CalendarEvent: Identifiable, Codable {
         try c.encode(excludedOccurrences, forKey: .excludedOccurrences)
         try c.encode(origin, forKey: .origin)
         try c.encode(repeatDays, forKey: .repeatDays)
+        try c.encode(timeOverrides, forKey: .timeOverrides)
     }
 
     /// The plain memberwise initializer, restated because writing a
@@ -209,7 +222,8 @@ struct CalendarEvent: Identifiable, Codable {
         linkedPersonID: UUID? = nil,
         excludedOccurrences: Set<String> = [],
         origin: EventOrigin = .daily,
-        repeatDays: Set<Int> = Set(1...7)
+        repeatDays: Set<Int> = Set(1...7),
+        timeOverrides: [String: Int] = [:]
     ) {
         self.id = id
         self.title = title
@@ -227,6 +241,7 @@ struct CalendarEvent: Identifiable, Codable {
         self.excludedOccurrences = excludedOccurrences
         self.origin = origin
         self.repeatDays = repeatDays
+        self.timeOverrides = timeOverrides
     }
 }
 
@@ -283,11 +298,21 @@ extension CalendarEvent {
     /// original times shifted onto that day; otherwise just its own.
     func times(on date: Date) -> (start: Date, end: Date) {
         let calendar = Calendar.current
+        let duration = endDate.timeIntervalSince(startDate)
+
+        // A day that was individually dragged wins over everything else,
+        // including the series' own time — that is the whole point of
+        // moving one occurrence.
+        if let overrideMinutes = timeOverrides[Goal.dayKey(date)] {
+            let start = calendar.startOfDay(for: date)
+                .addingTimeInterval(TimeInterval(overrideMinutes * 60))
+            return (start, start.addingTimeInterval(duration))
+        }
+
         guard recurrence != .none,
               !calendar.isDate(startDate, inSameDayAs: date) else {
             return (startDate, endDate)
         }
-        let duration = endDate.timeIntervalSince(startDate)
         let comps = calendar.dateComponents([.hour, .minute], from: startDate)
         let shifted = calendar.date(
             bySettingHour: comps.hour ?? 0,
@@ -499,6 +524,21 @@ struct Goal: Identifiable, Codable {
     /// repeating calendar events.
     var scheduledTimeOverrides: [String: Int] = [:]
 
+    /// Superseded schedules only — the live fields above (`repeatDays`,
+    /// `scheduledStartMinutes`, `scheduledDurationMinutes`) always hold
+    /// what's current. Whenever those change, the OLD combination gets
+    /// pushed here first, stamped with when it had been in effect
+    /// since. Resolving a past date means checking this list; resolving
+    /// today or later means just reading the live fields.
+    var scheduleVersions: [ScheduleVersion] = []
+
+    /// When the CURRENT live schedule took effect. Any date on or after
+    /// this can trust the live fields directly; anything earlier needs
+    /// to be resolved against `scheduleVersions`. Defaults to far in the
+    /// past so a goal that has never had its schedule changed resolves
+    /// correctly for its entire history.
+    var currentScheduleEffectiveFrom: Date = .distantPast
+
     // MARK: - Codable
     //
     // Written by hand rather than left to Swift's automatic synthesis.
@@ -521,6 +561,7 @@ struct Goal: Identifiable, Codable {
         case challengeTemplateID, challengeStartDate, challengeStrictMode, challengeAttempt
         case linkedAppScheme, linkedAppName, linkedAppID, linkedPersonID
         case frequencyType, timesPerWeekTarget, timesPerDayTarget, completionCounts, scheduledTimeOverrides
+        case scheduleVersions, currentScheduleEffectiveFrom
     }
 
     init(from decoder: Decoder) throws {
@@ -555,6 +596,8 @@ struct Goal: Identifiable, Codable {
         timesPerDayTarget = try c.decodeIfPresent(Int.self, forKey: .timesPerDayTarget) ?? 2
         completionCounts = try c.decodeIfPresent([String: Int].self, forKey: .completionCounts) ?? [:]
         scheduledTimeOverrides = try c.decodeIfPresent([String: Int].self, forKey: .scheduledTimeOverrides) ?? [:]
+        scheduleVersions = try c.decodeIfPresent([ScheduleVersion].self, forKey: .scheduleVersions) ?? []
+        currentScheduleEffectiveFrom = try c.decodeIfPresent(Date.self, forKey: .currentScheduleEffectiveFrom) ?? .distantPast
     }
 
     func encode(to encoder: Encoder) throws {
@@ -589,6 +632,8 @@ struct Goal: Identifiable, Codable {
         try c.encode(timesPerDayTarget, forKey: .timesPerDayTarget)
         try c.encode(completionCounts, forKey: .completionCounts)
         try c.encode(scheduledTimeOverrides, forKey: .scheduledTimeOverrides)
+        try c.encode(scheduleVersions, forKey: .scheduleVersions)
+        try c.encode(currentScheduleEffectiveFrom, forKey: .currentScheduleEffectiveFrom)
     }
 
     /// The plain memberwise initializer Swift would otherwise generate
@@ -626,7 +671,9 @@ struct Goal: Identifiable, Codable {
         timesPerWeekTarget: Int = 3,
         timesPerDayTarget: Int = 2,
         completionCounts: [String: Int] = [:],
-        scheduledTimeOverrides: [String: Int] = [:]
+        scheduledTimeOverrides: [String: Int] = [:],
+        scheduleVersions: [ScheduleVersion] = [],
+        currentScheduleEffectiveFrom: Date = .distantPast
     ) {
         self.id = id
         self.title = title
@@ -658,6 +705,8 @@ struct Goal: Identifiable, Codable {
         self.timesPerDayTarget = timesPerDayTarget
         self.completionCounts = completionCounts
         self.scheduledTimeOverrides = scheduledTimeOverrides
+        self.scheduleVersions = scheduleVersions
+        self.currentScheduleEffectiveFrom = currentScheduleEffectiveFrom
     }
 }
 

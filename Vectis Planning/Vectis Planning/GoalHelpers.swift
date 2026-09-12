@@ -21,7 +21,95 @@ enum GoalDayState {
     case pending      // today or later, nothing to judge yet
 }
 
+/// One snapshot of a goal's schedule — repeat days, calendar start
+/// time, and duration — bundled together rather than versioned
+/// separately. A single edit always produces one consistent snapshot
+/// this way; three independent histories could drift, leaving no good
+/// answer for "what time was this on the day the days changed but the
+/// time hadn't yet."
+struct ScheduleVersion: Codable, Identifiable {
+    var id: UUID = UUID()
+    var effectiveFrom: Date
+    var repeatDays: Set<Int>
+    var startMinutes: Int
+    var durationMinutes: Int
+}
+
 extension Goal {
+    /// The repeat days, start time, and duration that were actually in
+    /// effect on a given date.
+    ///
+    /// This is what makes the calendar a record rather than a
+    /// projection: scroll back to before a schedule change and you see
+    /// what you actually planned then, not today's settings applied
+    /// backwards.
+    struct ResolvedSchedule {
+        var repeatDays: Set<Int>
+        var startMinutes: Int
+        var durationMinutes: Int
+    }
+
+    func schedule(on date: Date) -> ResolvedSchedule {
+        let calendar = Calendar.current
+        let day = calendar.startOfDay(for: date)
+        let live = ResolvedSchedule(
+            repeatDays: repeatDays,
+            startMinutes: scheduledStartMinutes,
+            durationMinutes: scheduledDurationMinutes
+        )
+
+        // The live fields are correct for any date on or after when
+        // they took effect — which covers every date for a goal whose
+        // schedule has never changed, since that defaults to distantPast.
+        if day >= calendar.startOfDay(for: currentScheduleEffectiveFrom) {
+            return live
+        }
+
+        // Otherwise find the most recent superseded version whose
+        // window had already started by this date.
+        let match = scheduleVersions
+            .filter { calendar.startOfDay(for: $0.effectiveFrom) <= day }
+            .max { $0.effectiveFrom < $1.effectiveFrom }
+
+        guard let match else {
+            // No history reaches this far back — nothing to do but use
+            // the live schedule rather than guess at something earlier.
+            return live
+        }
+        return ResolvedSchedule(
+            repeatDays: match.repeatDays,
+            startMinutes: match.startMinutes,
+            durationMinutes: match.durationMinutes
+        )
+    }
+
+    /// Applies an edited schedule, recording the OLD one as history
+    /// first if anything actually changed. Called once, at save time in
+    /// the goal editor — not on every keystroke — so a version is only
+    /// created for a change the person actually committed to.
+    mutating func applyScheduleChange(
+        repeatDays newRepeatDays: Set<Int>,
+        startMinutes newStartMinutes: Int,
+        durationMinutes newDurationMinutes: Int,
+        effectiveFrom: Date = Date()
+    ) {
+        let changed = repeatDays != newRepeatDays
+            || scheduledStartMinutes != newStartMinutes
+            || scheduledDurationMinutes != newDurationMinutes
+        guard changed else { return }
+
+        scheduleVersions.append(ScheduleVersion(
+            effectiveFrom: currentScheduleEffectiveFrom,
+            repeatDays: repeatDays,
+            startMinutes: scheduledStartMinutes,
+            durationMinutes: scheduledDurationMinutes
+        ))
+
+        repeatDays = newRepeatDays
+        scheduledStartMinutes = newStartMinutes
+        scheduledDurationMinutes = newDurationMinutes
+        currentScheduleEffectiveFrom = Calendar.current.startOfDay(for: effectiveFrom)
+    }
     /// A calendar block for this goal on a given day, or nil if it isn't
     /// scheduled to the calendar or isn't due that day.
     ///
@@ -34,12 +122,14 @@ extension Goal {
 
         let calendar = Calendar.current
         let dayStart = calendar.startOfDay(for: date)
-        // A day that's been individually dragged uses its own time
-        // instead of the goal's normal schedule — this is what makes
-        // moving one occurrence NOT move every day.
-        let effectiveStartMinutes = scheduledTimeOverrides[Goal.dayKey(date)] ?? scheduledStartMinutes
+        // The resolved schedule for THIS date is the base — correct for
+        // a past day even if the goal's time or duration has since
+        // changed. A per-day drag override still wins over that, same
+        // as before: that's a deliberate exception, not history.
+        let resolved = schedule(on: date)
+        let effectiveStartMinutes = scheduledTimeOverrides[Goal.dayKey(date)] ?? resolved.startMinutes
         let start = dayStart.addingTimeInterval(TimeInterval(effectiveStartMinutes * 60))
-        let end = start.addingTimeInterval(TimeInterval(max(scheduledDurationMinutes, 5) * 60))
+        let end = start.addingTimeInterval(TimeInterval(max(resolved.durationMinutes, 5) * 60))
 
         var event = CalendarEvent(
             title: title,
@@ -113,7 +203,10 @@ extension Goal {
         switch frequencyType {
         case .specificDays:
             let weekday = calendar.component(.weekday, from: date)
-            return repeatDays.contains(weekday)
+            // Resolved rather than the live repeatDays directly, so a
+            // day before a schedule change is judged by the days that
+            // actually applied then.
+            return schedule(on: date).repeatDays.contains(weekday)
         case .timesPerWeek, .timesPerDay:
             return true
         }

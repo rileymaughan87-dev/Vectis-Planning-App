@@ -122,6 +122,14 @@ class CalendarStore: ObservableObject {
         events[index].endDate = newStart.addingTimeInterval(duration)
     }
 
+    /// Moves ONE occurrence of a repeating event, leaving the series
+    /// alone. The counterpart to `deleteOccurrence`.
+    func setOccurrenceTime(eventID: UUID, date: Date, startMinutes: Int) {
+        guard let index = events.firstIndex(where: { $0.id == eventID }) else { return }
+        let clamped = min(max(startMinutes, 0), 23 * 60 + 55)
+        events[index].timeOverrides[Goal.dayKey(date)] = clamped
+    }
+
     func deleteEvent(_ id: UUID) {
         events.removeAll { $0.id == id }
     }

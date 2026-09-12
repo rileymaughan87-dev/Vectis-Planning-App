@@ -145,7 +145,11 @@ struct DailyCalendarView: View {
     private func goalChip(_ goal: Goal, dayKey: String) -> some View {
         let done = goal.completions[dayKey] == true
         return Button {
-            goalsStore.setToday(goal.id, done: !done)
+            // Writes to the day currently on screen, not to today.
+            // These two used to disagree: the chip read the viewed day
+            // but wrote to today, so ticking something off while
+            // looking at yesterday silently marked today instead.
+            goalsStore.setCompletion(goal.id, on: currentDate, done: !done)
         } label: {
             HStack(spacing: 6) {
                 CompletionMark(isOn: done, size: 15, color: appearanceStore.primaryColor)
@@ -336,12 +340,10 @@ struct DailyCalendarView: View {
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.3, maximumDistance: 20)
                 .onEnded { _ in
-                    // Repeating events still can't be dragged: moving one
-                    // occurrence would shift the whole series' anchor,
-                    // which isn't what anyone means by "move this". Goal
-                    // blocks CAN be dragged — there's only one schedule
-                    // per goal, so moving it just updates that.
-                    guard item.event.recurrence == .none else { return }
+                    // Everything is draggable now, including repeating
+                    // events. Moving one occurrence writes a per-day
+                    // override rather than shifting the series, which is
+                    // what used to make this unsafe.
                     armedEventID = item.event.id
                 }
         )
@@ -356,15 +358,19 @@ struct DailyCalendarView: View {
                     defer { armedEventID = nil }
                     guard armedEventID == item.event.id else { return }
                     let delta = minutesDelta(fromTranslation: value.translation.height)
+                    let newStartMinutes = minutesFromMidnight(item.event.startDate) + delta
                     if let goalID {
-                        // Sets an override for THIS day only — the
-                        // goal's schedule for every other day is
-                        // untouched. Changing the time in the goal
-                        // editor is the only way to move the whole
-                        // series at once.
-                        let newStartMinutes = minutesFromMidnight(item.event.startDate) + delta
+                        // This day only — the goal's schedule for every
+                        // other day is untouched. Changing the time in
+                        // the goal editor is what moves the series.
                         goalsStore.setScheduledTimeOverride(goalID, date: currentDate, startMinutes: newStartMinutes)
+                    } else if item.event.recurrence != .none {
+                        // Same rule for a repeating event: this
+                        // occurrence moves, the series does not.
+                        store.setOccurrenceTime(eventID: item.event.id, date: currentDate, startMinutes: newStartMinutes)
                     } else {
+                        // A one-off event has no series to protect, so
+                        // it just moves.
                         store.moveEvent(item.event.id, newStart: item.event.startDate.addingTimeInterval(TimeInterval(delta * 60)))
                     }
                     draggingEventID = nil
