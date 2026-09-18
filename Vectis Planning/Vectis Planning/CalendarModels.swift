@@ -63,6 +63,20 @@ enum EventOrigin: String, Codable {
     case longTerm
 }
 
+/// One piece of a segmented event — "read textbook", "write paper",
+/// inside a larger "study" block.
+///
+/// `actualMinutes` stays nil until logged. That's deliberate: whether a
+/// part ever gets an actual is entirely up to whether the person cares
+/// to record it, per the resize-is-the-logging-mechanism approach —
+/// no timer, no prompt, and no adjustment means no data.
+struct EventPart: Codable, Identifiable {
+    var id: UUID = UUID()
+    var title: String
+    var estimatedMinutes: Int
+    var actualMinutes: Int? = nil
+}
+
 /// A single event living inside one of the category calendars.
 ///
 /// This is a `struct`, not a `class`. In Swift, structs are the default
@@ -128,6 +142,29 @@ struct CalendarEvent: Identifiable, Codable {
     /// occurrence would have shifted the whole series' anchor date.
     var timeOverrides: [String: Int] = [:]
 
+    /// A big block broken into named pieces with their own durations —
+    /// "study" split into "read textbook", "write paper", "research".
+    ///
+    /// Empty means an ordinary, unsegmented event. When non-empty, the
+    /// parts sum is allowed to run longer than the event's own
+    /// start-to-end span — that's the expected result of breaking a
+    /// task down (people systematically underestimate a task until they
+    /// unpack it), not an error to silently hide. The editor is where
+    /// that gap gets resolved, by extending the event or trimming scope
+    /// — the calendar rendering itself never grows a block on its own.
+    var parts: [EventPart] = []
+
+    /// The plan's duration, frozen the first time an actual gets logged.
+    /// `nil` until then, since before that `endDate - startDate` IS the
+    /// estimate and there's nothing else to remember.
+    var estimatedMinutes: Int? = nil
+
+    /// The logged actual duration, set by resizing the block's bottom
+    /// edge at or after its start time — see the estimate-lock rule.
+    /// `nil` means nothing has been logged, which is a real answer
+    /// (someone chose not to adjust), not a gap to fill in.
+    var actualMinutes: Int? = nil
+
     /// Which screen this event was created from.
     ///
     /// Kept separate from `flowsToDaily` on purpose. That flag answers
@@ -159,7 +196,8 @@ struct CalendarEvent: Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
         case id, title, notes, startDate, endDate, categoryID, flowsToDaily
         case isAllDay, recurrence, recurrenceEndDate
-        case linkedGoalID, isCompleted, linkedPersonID, excludedOccurrences, origin, repeatDays, timeOverrides
+        case linkedGoalID, isCompleted, linkedPersonID, excludedOccurrences, origin, repeatDays, timeOverrides, parts
+        case estimatedMinutes, actualMinutes
     }
 
     init(from decoder: Decoder) throws {
@@ -181,6 +219,9 @@ struct CalendarEvent: Identifiable, Codable {
         origin = try c.decodeIfPresent(EventOrigin.self, forKey: .origin) ?? .daily
         repeatDays = try c.decodeIfPresent(Set<Int>.self, forKey: .repeatDays) ?? Set(1...7)
         timeOverrides = try c.decodeIfPresent([String: Int].self, forKey: .timeOverrides) ?? [:]
+        parts = try c.decodeIfPresent([EventPart].self, forKey: .parts) ?? []
+        estimatedMinutes = try c.decodeIfPresent(Int.self, forKey: .estimatedMinutes)
+        actualMinutes = try c.decodeIfPresent(Int.self, forKey: .actualMinutes)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -202,6 +243,9 @@ struct CalendarEvent: Identifiable, Codable {
         try c.encode(origin, forKey: .origin)
         try c.encode(repeatDays, forKey: .repeatDays)
         try c.encode(timeOverrides, forKey: .timeOverrides)
+        try c.encode(parts, forKey: .parts)
+        try c.encodeIfPresent(estimatedMinutes, forKey: .estimatedMinutes)
+        try c.encodeIfPresent(actualMinutes, forKey: .actualMinutes)
     }
 
     /// The plain memberwise initializer, restated because writing a
@@ -223,7 +267,10 @@ struct CalendarEvent: Identifiable, Codable {
         excludedOccurrences: Set<String> = [],
         origin: EventOrigin = .daily,
         repeatDays: Set<Int> = Set(1...7),
-        timeOverrides: [String: Int] = [:]
+        timeOverrides: [String: Int] = [:],
+        parts: [EventPart] = [],
+        estimatedMinutes: Int? = nil,
+        actualMinutes: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -242,6 +289,9 @@ struct CalendarEvent: Identifiable, Codable {
         self.origin = origin
         self.repeatDays = repeatDays
         self.timeOverrides = timeOverrides
+        self.parts = parts
+        self.estimatedMinutes = estimatedMinutes
+        self.actualMinutes = actualMinutes
     }
 }
 

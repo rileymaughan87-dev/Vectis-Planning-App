@@ -122,6 +122,55 @@ class CalendarStore: ObservableObject {
         events[index].endDate = newStart.addingTimeInterval(duration)
     }
 
+    /// Changes an event's end time — the estimate-lock rule from the
+    /// spec, applied here regardless of how the new end time was
+    /// decided. Called from the event editor when only the end time
+    /// changed (start left alone); an earlier version of this used a
+    /// drag handle on the calendar directly, which kept getting
+    /// confused with moving the whole event on a small touch calendar
+    /// and was dropped in favour of the editor's own Start/End fields.
+    ///
+    /// The endDate always moves to match, since the block needs to
+    /// visually show where it currently ends (including overlapping the
+    /// next block, which is deliberate — the overlap itself is the
+    /// signal, no dialog needed to explain it). Whether this ALSO
+    /// counts as a logged actual depends on timing:
+    ///
+    /// - Before the event's start time: pure re-planning. The estimate
+    ///   moves with it; nothing gets logged.
+    /// - At or after the start time: this is what actually happened.
+    ///   The original estimate gets frozen (once, the first time this
+    ///   happens) and the new duration becomes the actual.
+    func resizeEvent(_ id: UUID, newEnd: Date) {
+        guard let index = events.firstIndex(where: { $0.id == id }) else { return }
+        let event = events[index]
+        let isLoggingAnActual = Date() >= event.startDate
+
+        if isLoggingAnActual {
+            if event.estimatedMinutes == nil {
+                let originalMinutes = Int(event.endDate.timeIntervalSince(event.startDate) / 60)
+                events[index].estimatedMinutes = originalMinutes
+            }
+            let actualMinutes = max(Int(newEnd.timeIntervalSince(event.startDate) / 60), 1)
+            events[index].actualMinutes = actualMinutes
+
+            // A segmented event's parts share in the actual too,
+            // proportionally to their original estimates — this is
+            // what lets "read textbook" and "write paper" each end up
+            // with their own actual from one resize of the whole block,
+            // rather than needing a separate drag per part.
+            if !event.parts.isEmpty {
+                let estimatedTotal = max(event.parts.reduce(0) { $0 + $1.estimatedMinutes }, 1)
+                for partIndex in events[index].parts.indices {
+                    let share = Double(events[index].parts[partIndex].estimatedMinutes) / Double(estimatedTotal)
+                    events[index].parts[partIndex].actualMinutes = max(Int((Double(actualMinutes) * share).rounded()), 0)
+                }
+            }
+        }
+
+        events[index].endDate = newEnd
+    }
+
     /// Moves ONE occurrence of a repeating event, leaving the series
     /// alone. The counterpart to `deleteOccurrence`.
     func setOccurrenceTime(eventID: UUID, date: Date, startMinutes: Int) {

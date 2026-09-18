@@ -1,5 +1,74 @@
 import SwiftUI
 
+/// A small drag target at the bottom edge of an event block, for
+/// changing its end time without moving the whole thing.
+///
+/// Deliberately its own gesture rather than reusing the long-press-then-
+/// drag pattern used to move a block: the handle itself is a small,
+/// precise target, so it doesn't need that same protection against
+/// being mistaken for a scroll — a touch has to start right on this
+/// strip to begin with.
+/// Renders a segmented event's parts stacked inside its block, each
+/// sized proportionally to its share of the parts' total estimate.
+///
+/// Proportional to each other rather than to real clock minutes — if
+/// the parts haven't been reconciled with the block's actual duration
+/// (see the editor's "extend to match" choice), the block's own real
+/// height stays authoritative and parts simply divide whatever space
+/// that actually is.
+///
+/// Its own named view for the same reason as `HistoryStrip` elsewhere
+/// in this app: building a `ForEach` with this much conditional layout
+/// inline, inside the already-complex `eventBlock` function, is exactly
+/// the shape of expression that has previously timed out the compiler.
+private struct PartsStack: View {
+    let parts: [EventPart]
+    let height: CGFloat
+    let textColor: Color
+
+    private var total: Int {
+        max(parts.reduce(0) { $0 + $1.estimatedMinutes }, 1)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(parts.enumerated()), id: \.element.id) { index, part in
+                row(for: part, isFirst: index == 0)
+            }
+        }
+        .frame(height: height, alignment: .top)
+        .clipped()
+    }
+
+    private func row(for part: EventPart, isFirst: Bool) -> some View {
+        let share = CGFloat(part.estimatedMinutes) / CGFloat(total)
+        let rowHeight = max(height * share, 3)
+
+        return HStack(spacing: 3) {
+            if rowHeight > 10 {
+                Text(part.title.isEmpty ? "Untitled" : part.title)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(textColor)
+                    .lineLimit(1)
+                if rowHeight > 22 {
+                    Spacer(minLength: 2)
+                    Text("\(part.estimatedMinutes)m")
+                        .font(.system(size: 8))
+                        .foregroundStyle(textColor.opacity(0.75))
+                }
+            }
+        }
+        .padding(.horizontal, 5)
+        .frame(height: rowHeight, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .top) {
+            if !isFirst {
+                Rectangle().fill(textColor.opacity(0.25)).frame(height: 0.5)
+            }
+        }
+    }
+}
+
 /// The Daily calendar: a scrollable 30-minute time grid for one day.
 ///
 /// Tap an empty slot to add an event, tap an existing one to edit it,
@@ -45,6 +114,11 @@ struct DailyCalendarView: View {
     @State private var dragOffsetMinutes = 0
     @State private var armedEventID: UUID?
 
+    // Resizing a block's end time by its bottom edge — separate from
+    // the move-drag above, and its own gesture rather than reusing the
+    // long-press-then-drag pattern: the handle is a small, deliberate
+    // target, so it doesn't need the same protection against being
+    // mistaken for a scroll that moving the whole block does.
     private var currentDate: Date {
         Calendar.current.date(byAdding: .day, value: dayOffset, to: Calendar.current.startOfDay(for: Date())) ?? Date()
     }
@@ -286,27 +360,33 @@ struct DailyCalendarView: View {
         let color = isDone ? baseColor.opacity(0.45) : baseColor
         let textColor = baseColor.contrastingTextColor
 
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 3) {
-                if isGoalBlock {
-                    Image(systemName: isDone ? "checkmark.circle.fill" : "target")
-                        .font(.system(size: 9))
-                        .foregroundStyle(textColor.opacity(0.9))
+        return Group {
+            if !isGoalBlock, !item.event.parts.isEmpty {
+                PartsStack(parts: item.event.parts, height: height, textColor: textColor)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 3) {
+                        if isGoalBlock {
+                            Image(systemName: isDone ? "checkmark.circle.fill" : "target")
+                                .font(.system(size: 9))
+                                .foregroundStyle(textColor.opacity(0.9))
+                        }
+                        Text(item.event.title)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(textColor)
+                            .strikethrough(isDone)
+                            .lineLimit(height > 30 ? 2 : 1)
+                    }
+                    if height > 34 {
+                        Text("\(timeLabel(startMin)) – \(timeLabel(endMin))")
+                            .font(.system(size: 9))
+                            .foregroundStyle(textColor.opacity(0.75))
+                    }
                 }
-                Text(item.event.title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(textColor)
-                    .strikethrough(isDone)
-                    .lineLimit(height > 30 ? 2 : 1)
-            }
-            if height > 34 {
-                Text("\(timeLabel(startMin)) – \(timeLabel(endMin))")
-                    .font(.system(size: 9))
-                    .foregroundStyle(textColor.opacity(0.75))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 3)
             }
         }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 3)
         .frame(width: max(colWidth - 3, 20), height: height, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
@@ -319,6 +399,7 @@ struct DailyCalendarView: View {
             RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
                 .strokeBorder(baseColor.darkened(by: 0.3).opacity(isDone ? 0.4 : 1), lineWidth: 1)
         )
+
         .scaleEffect(isArmed ? 1.04 : 1)
         .shadow(color: .black.opacity(isArmed ? 0.25 : 0), radius: isArmed ? 6 : 0, y: isArmed ? 3 : 0)
         .animation(.easeOut(duration: 0.15), value: isArmed)
