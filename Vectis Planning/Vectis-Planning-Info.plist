@@ -25,5 +25,10 @@
 		<string>whatsapp</string>
 		<string>youtube</string>
 	</array>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIImageName</key>
+		<string>LaunchWordmark</string>
+	</dict>
 </dict>
 </plist>

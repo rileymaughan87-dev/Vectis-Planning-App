@@ -15,3 +15,4 @@ struct Vectis_PlanningApp: App {
         }
     }
 }
+
