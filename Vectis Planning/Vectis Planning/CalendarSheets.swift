@@ -173,6 +173,7 @@ struct EventEditorSheet: View {
     @State private var start: Date
     @State private var end: Date
     @State private var isAllDay: Bool
+    @State private var isFlexible: Bool
     @State private var flowsToDaily: Bool
     @State private var recurrence: EventRecurrence
     @State private var recurrenceEndDate: Date?
@@ -237,6 +238,7 @@ struct EventEditorSheet: View {
         _start = State(initialValue: dayStart.addingTimeInterval(TimeInterval(startMinutes * 60)))
         _end = State(initialValue: dayStart.addingTimeInterval(TimeInterval(endMinutes * 60)))
         _isAllDay = State(initialValue: defaultAllDay)
+        _isFlexible = State(initialValue: false)
         _flowsToDaily = State(initialValue: defaultAllDay ? false : flowsToDaily)
         _recurrence = State(initialValue: .none)
         _recurrenceEndDate = State(initialValue: nil)
@@ -258,6 +260,7 @@ struct EventEditorSheet: View {
         _start = State(initialValue: event.startDate)
         _end = State(initialValue: event.endDate)
         _isAllDay = State(initialValue: event.isAllDay)
+        _isFlexible = State(initialValue: event.isFlexible)
         _flowsToDaily = State(initialValue: event.flowsToDaily)
         _recurrence = State(initialValue: event.recurrence)
         _recurrenceEndDate = State(initialValue: event.recurrenceEndDate)
@@ -529,6 +532,12 @@ struct EventEditorSheet: View {
                         .onChange(of: flowsToDaily) { _, _ in
                             userSetDailyManually = true
                         }
+
+                    Toggle("Flexible", isOn: $isFlexible)
+                        .font(.subheadline)
+                    Text("Off means this is a real commitment — Plan and Review will build the day around it rather than moving it.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -672,6 +681,7 @@ struct EventEditorSheet: View {
                 series.linkedPersonID = linkedPersonID
                 series.linkedGoalID = linkedGoalID
                 series.origin = origin
+                series.isFlexible = isFlexible
                 // startDate and endDate deliberately NOT touched here —
                 // the series keeps its real anchor.
                 store.updateEvent(series)
@@ -718,6 +728,7 @@ struct EventEditorSheet: View {
                 updated.linkedPersonID = linkedPersonID
                 updated.linkedGoalID = linkedGoalID
                 updated.origin = origin
+            updated.isFlexible = isFlexible
                 store.updateEvent(updated)
             }
         } else {
@@ -736,6 +747,7 @@ struct EventEditorSheet: View {
             event.linkedPersonID = linkedPersonID
             event.linkedGoalID = linkedGoalID
             event.origin = origin
+            event.isFlexible = isFlexible
             store.addEvent(event)
         }
 

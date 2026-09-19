@@ -15,6 +15,56 @@ struct VectisTask: Identifiable, Codable {
     var text: String
     var done: Bool = false
     var createdDate: Date = Date()
+
+    /// Optional — a task with no duration stays a plain checklist item.
+    /// One with a duration can be placed on the Daily grid during
+    /// morning planning. This doesn't make a task a due date or a
+    /// recurring thing; it stays undated and one-off either way.
+    var durationMinutes: Int? = nil
+
+    // MARK: - Codable
+    //
+    // Hand-written rather than left to Swift's automatic synthesis —
+    // same reasoning as Goal and CalendarEvent. Swift's synthesized
+    // decoder doesn't fall back to a default value for a key missing
+    // from old saved JSON; it fails the whole object, which would have
+    // silently wiped every saved task the moment durationMinutes was
+    // added if this struct had been left on automatic Codable.
+    enum CodingKeys: String, CodingKey {
+        case id, text, done, createdDate, durationMinutes
+    }
+
+    init(
+        id: UUID = UUID(),
+        text: String,
+        done: Bool = false,
+        createdDate: Date = Date(),
+        durationMinutes: Int? = nil
+    ) {
+        self.id = id
+        self.text = text
+        self.done = done
+        self.createdDate = createdDate
+        self.durationMinutes = durationMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        text = try c.decode(String.self, forKey: .text)
+        done = try c.decodeIfPresent(Bool.self, forKey: .done) ?? false
+        createdDate = try c.decodeIfPresent(Date.self, forKey: .createdDate) ?? Date()
+        durationMinutes = try c.decodeIfPresent(Int.self, forKey: .durationMinutes)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(text, forKey: .text)
+        try c.encode(done, forKey: .done)
+        try c.encode(createdDate, forKey: .createdDate)
+        try c.encodeIfPresent(durationMinutes, forKey: .durationMinutes)
+    }
 }
 
 class TasksStore: ObservableObject {
@@ -63,6 +113,13 @@ class TasksStore: ObservableObject {
         tasks[index].text = text
     }
 
+    /// Sets or clears a task's duration. `nil` puts it back to being a
+    /// plain checklist item with nothing to place on the calendar.
+    func setDuration(_ id: UUID, minutes: Int?) {
+        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[index].durationMinutes = minutes
+    }
+
     func delete(_ id: UUID) {
         tasks.removeAll { $0.id == id }
     }
@@ -73,3 +130,4 @@ class TasksStore: ObservableObject {
         tasks.removeAll { $0.done }
     }
 }
+

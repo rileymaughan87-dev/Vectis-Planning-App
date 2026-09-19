@@ -8,10 +8,44 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var calendarStore: CalendarStore
     @ObservedObject var appearanceStore: AppearanceStore
+    @ObservedObject var planReviewStore: PlanReviewStore
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Toggle("Plan and review", isOn: $planReviewStore.isEnabled)
+
+                    if planReviewStore.isEnabled {
+                        DatePicker(
+                            "Evening review",
+                            selection: Binding(
+                                get: {
+                                    Calendar.current.startOfDay(for: Date())
+                                        .addingTimeInterval(TimeInterval(planReviewStore.eveningReviewMinutes * 60))
+                                },
+                                set: { newValue in
+                                    let calendar = Calendar.current
+                                    let comps = calendar.dateComponents([.hour, .minute], from: newValue)
+                                    planReviewStore.eveningReviewMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+                                }
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+
+                        Toggle("Review time estimates", isOn: $planReviewStore.reviewTimeEstimates)
+                        Toggle("Rehearse your plans", isOn: $planReviewStore.rehearsePlans)
+                        Toggle("Flag repeated misses", isOn: $planReviewStore.flagRepeatedMisses)
+                        Toggle("Fresh start prompts", isOn: $planReviewStore.freshStartPrompts)
+                    }
+                } header: {
+                    Text("Plan and review")
+                } footer: {
+                    Text(planReviewStore.isEnabled
+                        ? "A quiet evening review shows up on Home once the time above passes, until you've answered it for the day."
+                        : "Off by default. Turning it on adds a short evening review to Home — what got done, and an optional line of reflection.")
+                }
+
                 Section {
                     Picker("Display mode", selection: $appearanceStore.mode) {
                         ForEach(ColorSchemeMode.allCases) { mode in

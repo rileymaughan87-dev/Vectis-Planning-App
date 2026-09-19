@@ -21,6 +21,37 @@ import SwiftUI
 /// in this app: building a `ForEach` with this much conditional layout
 /// inline, inside the already-complex `eventBlock` function, is exactly
 /// the shape of expression that has previously timed out the compiler.
+/// The small popup shown when tapping the review block on the
+/// calendar — a deliberate extra step before the full review opens,
+/// rather than jumping straight in from a single tap.
+private struct ReviewPromptSheet: View {
+    let accentColor: Color
+    let onStart: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "text.book.closed.fill")
+                .font(.title)
+                .foregroundStyle(accentColor)
+            Text("Evening review")
+                .font(.headline)
+            Text("A quick look back, and a line or two if you want.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Start review") { onStart() }
+                .buttonStyle(VectisButtonStyle(kind: .primary, accent: accentColor))
+
+            Button("Not now") { dismiss() }
+                .buttonStyle(VectisButtonStyle(kind: .secondary, accent: accentColor))
+        }
+        .padding(24)
+    }
+}
+
 private struct PartsStack: View {
     let parts: [EventPart]
     let height: CGFloat
@@ -80,6 +111,8 @@ struct DailyCalendarView: View {
     @ObservedObject var appearanceStore: AppearanceStore
     @ObservedObject var peopleStore: PeopleStore
     @ObservedObject var linkedAppsStore: LinkedAppsStore
+    @ObservedObject var planReviewStore: PlanReviewStore
+    @ObservedObject var journalStore: JournalStore
 
     @State private var dayOffset = 0
 
@@ -106,6 +139,9 @@ struct DailyCalendarView: View {
     @State private var pendingRange: MinuteRange?
     @State private var editingEvent: CalendarEvent?
     @State private var editingGoal: Goal?
+    @State private var showingReviewPrompt = false
+    @State private var showingFullReview = false
+    @State private var showingDailyPlanning = false
 
     // Dragging an event to a new time. An event has to be "armed" by a
     // long press first, so a quick scroll swipe that happens to start
@@ -130,6 +166,9 @@ struct DailyCalendarView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 dayHeader
+                if planReviewStore.isEnabled {
+                    planReviewButtonsRow
+                }
                 todaysGoalsStrip
                 ScrollView {
                     gridArea
@@ -168,6 +207,29 @@ struct DailyCalendarView: View {
                     peopleStore: peopleStore
                 )
             }
+            .sheet(isPresented: $showingReviewPrompt) {
+                ReviewPromptSheet(accentColor: appearanceStore.secondaryColor) {
+                    showingReviewPrompt = false
+                    showingFullReview = true
+                }
+                .presentationDetents([.height(320)])
+            }
+            .sheet(isPresented: $showingFullReview) {
+                EveningReviewView(
+                    goalsStore: goalsStore,
+                    journalStore: journalStore,
+                    planReviewStore: planReviewStore,
+                    appearanceStore: appearanceStore
+                )
+            }
+            .sheet(isPresented: $showingDailyPlanning) {
+                DailyPlanRehearsalView(
+                    store: store,
+                    goalsStore: goalsStore,
+                    appearanceStore: appearanceStore,
+                    date: currentDate
+                )
+            }
         }
     }
 
@@ -192,6 +254,39 @@ struct DailyCalendarView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
+    }
+
+    /// Buttons rather than calendar blocks — a block anchored to a
+    /// time slot got in the way and couldn't be moved once placed,
+    /// since there's no per-day override mechanism for it the way
+    /// goals and events have. A button just sits above the grid and
+    /// opens when tapped, whenever that actually is.
+    private var planReviewButtonsRow: some View {
+        HStack(spacing: 10) {
+            Button {
+                showingDailyPlanning = true
+            } label: {
+                Text("Daily planning")
+                    .font(.caption.weight(.medium))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(VectisButtonStyle(kind: .secondary, accent: appearanceStore.secondaryColor))
+
+            Button {
+                showingReviewPrompt = true
+            } label: {
+                Text("Review")
+                    .font(.caption.weight(.medium))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(VectisButtonStyle(kind: .secondary, accent: appearanceStore.secondaryColor))
+        }
+        .padding(.horizontal)
+        // Explicit and equal on both sides, rather than leaning on
+        // dayHeader's own bottom inset above and a separate value below
+        // — those didn't actually match, which read as lopsided.
+        .padding(.top, 10)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Goals strip

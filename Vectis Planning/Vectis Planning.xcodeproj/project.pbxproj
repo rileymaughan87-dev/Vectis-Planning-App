@@ -22,7 +22,6 @@
 		521D42413045F20E0000F3F6 /* MonthGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42403045F20E0000F3F6 /* MonthGridView.swift */; };
 		521D424F30462A8C0000F3F6 /* NoteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424B30462A8C0000F3F6 /* NoteModels.swift */; };
 		521D425030462A8C0000F3F6 /* NoteSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424C30462A8C0000F3F6 /* NoteSheets.swift */; };
-		521D425130462A8C0000F3F6 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424E30462A8C0000F3F6 /* NotesView.swift */; };
 		521D425230462A8C0000F3F6 /* NotesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D424D30462A8C0000F3F6 /* NotesStore.swift */; };
 		521D425630462C1D0000F3F6 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D425530462C1D0000F3F6 /* RichTextEditor.swift */; };
 		521D425A30462D8A0000F3F6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D425930462D8A0000F3F6 /* SettingsView.swift */; };
@@ -48,6 +47,12 @@
 		521D42B8304A1BE60000F3F6 /* PeopleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42B5304A1BE60000F3F6 /* PeopleStore.swift */; };
 		521D42BC304A1DC80000F3F6 /* PersonLinkViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521D42BB304A1DC80000F3F6 /* PersonLinkViews.swift */; };
 		52AC6CA1305DBD2C00BFB827 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CA0305DBD2C00BFB827 /* SplashView.swift */; };
+		52AC6CA8305E60EC00BFB827 /* JournalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CA7305E60EC00BFB827 /* JournalViews.swift */; };
+		52AC6CA9305E60EC00BFB827 /* JournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CA6305E60EC00BFB827 /* JournalStore.swift */; };
+		52AC6CAD305E618800BFB827 /* RecordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CAC305E618800BFB827 /* RecordView.swift */; };
+		52AC6CB3305E653400BFB827 /* PlanReviewStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CB2305E653400BFB827 /* PlanReviewStore.swift */; };
+		52AC6CB5305E654600BFB827 /* EveningReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CB4305E654600BFB827 /* EveningReviewView.swift */; };
+		52AC6CB9305E695900BFB827 /* DailyPlanRehearsalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52AC6CB8305E695900BFB827 /* DailyPlanRehearsalView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,7 +73,6 @@
 		521D424B30462A8C0000F3F6 /* NoteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NoteModels.swift; path = "Vectis Planning/NoteModels.swift"; sourceTree = "<group>"; };
 		521D424C30462A8C0000F3F6 /* NoteSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NoteSheets.swift; path = "Vectis Planning/NoteSheets.swift"; sourceTree = "<group>"; };
 		521D424D30462A8C0000F3F6 /* NotesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotesStore.swift; path = "Vectis Planning/NotesStore.swift"; sourceTree = "<group>"; };
-		521D424E30462A8C0000F3F6 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotesView.swift; path = "Vectis Planning/NotesView.swift"; sourceTree = "<group>"; };
 		521D425530462C1D0000F3F6 /* RichTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RichTextEditor.swift; path = "Vectis Planning/RichTextEditor.swift"; sourceTree = "<group>"; };
 		521D425930462D8A0000F3F6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsView.swift; path = "Vectis Planning/SettingsView.swift"; sourceTree = "<group>"; };
 		521D4263304633750000F3F6 /* FinanceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = FinanceModels.swift; path = "Vectis Planning/FinanceModels.swift"; sourceTree = "<group>"; };
@@ -93,6 +97,12 @@
 		521D42B6304A1BE60000F3F6 /* PeopleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PeopleViews.swift; path = "Vectis Planning/PeopleViews.swift"; sourceTree = "<group>"; };
 		521D42BB304A1DC80000F3F6 /* PersonLinkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PersonLinkViews.swift; path = "Vectis Planning/PersonLinkViews.swift"; sourceTree = "<group>"; };
 		52AC6CA0305DBD2C00BFB827 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplashView.swift; path = "Vectis Planning/SplashView.swift"; sourceTree = "<group>"; };
+		52AC6CA6305E60EC00BFB827 /* JournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = JournalStore.swift; path = "Vectis Planning/JournalStore.swift"; sourceTree = "<group>"; };
+		52AC6CA7305E60EC00BFB827 /* JournalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = JournalViews.swift; path = "Vectis Planning/JournalViews.swift"; sourceTree = "<group>"; };
+		52AC6CAC305E618800BFB827 /* RecordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecordView.swift; path = "Vectis Planning/RecordView.swift"; sourceTree = "<group>"; };
+		52AC6CB2305E653400BFB827 /* PlanReviewStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlanReviewStore.swift; path = "Vectis Planning/PlanReviewStore.swift"; sourceTree = "<group>"; };
+		52AC6CB4305E654600BFB827 /* EveningReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EveningReviewView.swift; path = "Vectis Planning/EveningReviewView.swift"; sourceTree = "<group>"; };
+		52AC6CB8305E695900BFB827 /* DailyPlanRehearsalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DailyPlanRehearsalView.swift; path = "Vectis Planning/DailyPlanRehearsalView.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -125,10 +135,11 @@
 				521D42313045E5D30000F3F6 /* CalendarStore.swift */,
 				521D424B30462A8C0000F3F6 /* NoteModels.swift */,
 				521D425530462C1D0000F3F6 /* RichTextEditor.swift */,
+				52AC6CA6305E60EC00BFB827 /* JournalStore.swift */,
+				52AC6CA7305E60EC00BFB827 /* JournalViews.swift */,
 				521D42BB304A1DC80000F3F6 /* PersonLinkViews.swift */,
 				521D424C30462A8C0000F3F6 /* NoteSheets.swift */,
 				521D424D30462A8C0000F3F6 /* NotesStore.swift */,
-				521D424E30462A8C0000F3F6 /* NotesView.swift */,
 				521D425930462D8A0000F3F6 /* SettingsView.swift */,
 				521D429B304A136A0000F3F6 /* ChallengeSheets.swift */,
 				521D4263304633750000F3F6 /* FinanceModels.swift */,
@@ -142,10 +153,12 @@
 				521D426D3046913A0000F3F6 /* VectisIcon1024.png */,
 				521D422330458CE70000F3F6 /* GoalsStore.swift */,
 				521D4271304695240000F3F6 /* CompletionMark.swift */,
+				52AC6CB8305E695900BFB827 /* DailyPlanRehearsalView.swift */,
 				521D422530458CF30000F3F6 /* GoalsView.swift */,
 				521D42833048E08A0000F3F6 /* NotebookViews.swift */,
 				521D428F3049D42B0000F3F6 /* HomeView.swift */,
 				521D42903049D42B0000F3F6 /* SidebarMenu.swift */,
+				52AC6CB2305E653400BFB827 /* PlanReviewStore.swift */,
 				521D4299304A135B0000F3F6 /* ChallengeModels.swift */,
 				521D42B5304A1BE60000F3F6 /* PeopleStore.swift */,
 				521D42B6304A1BE60000F3F6 /* PeopleViews.swift */,
@@ -154,6 +167,8 @@
 				52AC6CA0305DBD2C00BFB827 /* SplashView.swift */,
 				521D42AB304A16FE0000F3F6 /* LinkedApps.json */,
 				521D42A4304A163C0000F3F6 /* LinkedAppsStore.swift */,
+				52AC6CB4305E654600BFB827 /* EveningReviewView.swift */,
+				52AC6CAC305E618800BFB827 /* RecordView.swift */,
 				521D42A5304A163C0000F3F6 /* LinkedAppsViews.swift */,
 				521D42873049D2160000F3F6 /* PersistenceManager.swift */,
 				521D42133045893A0000F3F6 /* Challenges.json */,
@@ -268,8 +283,14 @@
 				521D42803048DD1E0000F3F6 /* AppearanceStore.swift in Sources */,
 				521D422230458CDD0000F3F6 /* GoalSheets.swift in Sources */,
 				521D4267304633750000F3F6 /* FinanceModels.swift in Sources */,
+				52AC6CB3305E653400BFB827 /* PlanReviewStore.swift in Sources */,
+				52AC6CB9305E695900BFB827 /* DailyPlanRehearsalView.swift in Sources */,
+				52AC6CA8305E60EC00BFB827 /* JournalViews.swift in Sources */,
+				52AC6CAD305E618800BFB827 /* RecordView.swift in Sources */,
+				52AC6CA9305E60EC00BFB827 /* JournalStore.swift in Sources */,
 				521D4268304633750000F3F6 /* FinanceStore.swift in Sources */,
 				521D4269304633750000F3F6 /* FinanceView.swift in Sources */,
+				52AC6CB5305E654600BFB827 /* EveningReviewView.swift in Sources */,
 				521D426A304633750000F3F6 /* FinanceSheets.swift in Sources */,
 				521D429C304A136A0000F3F6 /* ChallengeSheets.swift in Sources */,
 				521D422430458CE70000F3F6 /* GoalsStore.swift in Sources */,
@@ -278,7 +299,6 @@
 				521D425030462A8C0000F3F6 /* NoteSheets.swift in Sources */,
 				521D42883049D2160000F3F6 /* PersistenceManager.swift in Sources */,
 				521D425A30462D8A0000F3F6 /* SettingsView.swift in Sources */,
-				521D425130462A8C0000F3F6 /* NotesView.swift in Sources */,
 				521D425230462A8C0000F3F6 /* NotesStore.swift in Sources */,
 				521D425630462C1D0000F3F6 /* RichTextEditor.swift in Sources */,
 				521D42A6304A163C0000F3F6 /* LinkedAppModels.swift in Sources */,

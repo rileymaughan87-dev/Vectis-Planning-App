@@ -175,6 +175,18 @@ struct CalendarEvent: Identifiable, Codable {
     /// Long-Term filter then read as "hide this".
     var origin: EventOrigin = .daily
 
+    /// Whether Plan and Review is allowed to nudge this around when
+    /// laying out a day, versus treating it as a real commitment that
+    /// stays put.
+    ///
+    /// Defaults to fixed — an ordinary calendar event is, by default,
+    /// a real appointment. "Fixed" only means the app never moves it
+    /// automatically; dragging it yourself always still works exactly
+    /// as before. Nothing reads this yet — it's the flag the morning
+    /// planning popup will sort by once it exists.
+    var isFlexible: Bool = false
+
+
     /// Which weekdays a `.daily` repeat actually lands on, using the
     /// same 1=Sunday convention as `Goal.repeatDays`.
     ///
@@ -197,7 +209,7 @@ struct CalendarEvent: Identifiable, Codable {
         case id, title, notes, startDate, endDate, categoryID, flowsToDaily
         case isAllDay, recurrence, recurrenceEndDate
         case linkedGoalID, isCompleted, linkedPersonID, excludedOccurrences, origin, repeatDays, timeOverrides, parts
-        case estimatedMinutes, actualMinutes
+        case estimatedMinutes, actualMinutes, isFlexible
     }
 
     init(from decoder: Decoder) throws {
@@ -217,6 +229,7 @@ struct CalendarEvent: Identifiable, Codable {
         linkedPersonID = try c.decodeIfPresent(UUID.self, forKey: .linkedPersonID)
         excludedOccurrences = try c.decodeIfPresent(Set<String>.self, forKey: .excludedOccurrences) ?? []
         origin = try c.decodeIfPresent(EventOrigin.self, forKey: .origin) ?? .daily
+        isFlexible = try c.decodeIfPresent(Bool.self, forKey: .isFlexible) ?? false
         repeatDays = try c.decodeIfPresent(Set<Int>.self, forKey: .repeatDays) ?? Set(1...7)
         timeOverrides = try c.decodeIfPresent([String: Int].self, forKey: .timeOverrides) ?? [:]
         parts = try c.decodeIfPresent([EventPart].self, forKey: .parts) ?? []
@@ -241,6 +254,7 @@ struct CalendarEvent: Identifiable, Codable {
         try c.encodeIfPresent(linkedPersonID, forKey: .linkedPersonID)
         try c.encode(excludedOccurrences, forKey: .excludedOccurrences)
         try c.encode(origin, forKey: .origin)
+        try c.encode(isFlexible, forKey: .isFlexible)
         try c.encode(repeatDays, forKey: .repeatDays)
         try c.encode(timeOverrides, forKey: .timeOverrides)
         try c.encode(parts, forKey: .parts)
@@ -266,6 +280,7 @@ struct CalendarEvent: Identifiable, Codable {
         linkedPersonID: UUID? = nil,
         excludedOccurrences: Set<String> = [],
         origin: EventOrigin = .daily,
+        isFlexible: Bool = false,
         repeatDays: Set<Int> = Set(1...7),
         timeOverrides: [String: Int] = [:],
         parts: [EventPart] = [],
@@ -287,6 +302,7 @@ struct CalendarEvent: Identifiable, Codable {
         self.linkedPersonID = linkedPersonID
         self.excludedOccurrences = excludedOccurrences
         self.origin = origin
+        self.isFlexible = isFlexible
         self.repeatDays = repeatDays
         self.timeOverrides = timeOverrides
         self.parts = parts
@@ -508,6 +524,12 @@ struct Goal: Identifiable, Codable {
 
     var scheduledDurationMinutes: Int = 30
 
+    /// Same flag as `CalendarEvent.isFlexible`, defaulting the OTHER
+    /// way — a goal block defaults flexible, since "read for 30 min"
+    /// is inherently a sometime-today thing, not a fixed appointment.
+    /// Only meaningful when `scheduledOnCalendar` is true.
+    var isFlexible: Bool = true
+
     // Optional, on a short-term goal: the last day it's active, e.g.
     // "read 30 min/day for 2 months". `nil` means it repeats indefinitely.
     var endDate: Date? = nil
@@ -611,7 +633,7 @@ struct Goal: Identifiable, Codable {
         case challengeTemplateID, challengeStartDate, challengeStrictMode, challengeAttempt
         case linkedAppScheme, linkedAppName, linkedAppID, linkedPersonID
         case frequencyType, timesPerWeekTarget, timesPerDayTarget, completionCounts, scheduledTimeOverrides
-        case scheduleVersions, currentScheduleEffectiveFrom
+        case scheduleVersions, currentScheduleEffectiveFrom, isFlexible
     }
 
     init(from decoder: Decoder) throws {
@@ -648,6 +670,7 @@ struct Goal: Identifiable, Codable {
         scheduledTimeOverrides = try c.decodeIfPresent([String: Int].self, forKey: .scheduledTimeOverrides) ?? [:]
         scheduleVersions = try c.decodeIfPresent([ScheduleVersion].self, forKey: .scheduleVersions) ?? []
         currentScheduleEffectiveFrom = try c.decodeIfPresent(Date.self, forKey: .currentScheduleEffectiveFrom) ?? .distantPast
+        isFlexible = try c.decodeIfPresent(Bool.self, forKey: .isFlexible) ?? true
     }
 
     func encode(to encoder: Encoder) throws {
@@ -684,6 +707,7 @@ struct Goal: Identifiable, Codable {
         try c.encode(scheduledTimeOverrides, forKey: .scheduledTimeOverrides)
         try c.encode(scheduleVersions, forKey: .scheduleVersions)
         try c.encode(currentScheduleEffectiveFrom, forKey: .currentScheduleEffectiveFrom)
+        try c.encode(isFlexible, forKey: .isFlexible)
     }
 
     /// The plain memberwise initializer Swift would otherwise generate
@@ -723,7 +747,8 @@ struct Goal: Identifiable, Codable {
         completionCounts: [String: Int] = [:],
         scheduledTimeOverrides: [String: Int] = [:],
         scheduleVersions: [ScheduleVersion] = [],
-        currentScheduleEffectiveFrom: Date = .distantPast
+        currentScheduleEffectiveFrom: Date = .distantPast,
+        isFlexible: Bool = true
     ) {
         self.id = id
         self.title = title
@@ -757,6 +782,7 @@ struct Goal: Identifiable, Codable {
         self.scheduledTimeOverrides = scheduledTimeOverrides
         self.scheduleVersions = scheduleVersions
         self.currentScheduleEffectiveFrom = currentScheduleEffectiveFrom
+        self.isFlexible = isFlexible
     }
 }
 

@@ -12,7 +12,7 @@ enum AppTab: CaseIterable {
         case .goals: return "Goals"
         case .daily: return "Daily"
         case .longTerm: return "Long-Term"
-        case .notes: return "Notes"
+        case .notes: return "Record"
         }
     }
 
@@ -31,6 +31,8 @@ struct ContentView: View {
     @StateObject private var goalsStore = GoalsStore()
     @StateObject private var calendarStore = CalendarStore()
     @StateObject private var notesStore = NotesStore()
+    @StateObject private var journalStore = JournalStore()
+    @StateObject private var planReviewStore = PlanReviewStore()
     @StateObject private var financeStore = FinanceStore()
     @StateObject private var tasksStore = TasksStore()
     @StateObject private var appearanceStore = AppearanceStore()
@@ -57,7 +59,9 @@ struct ContentView: View {
                         calendarStore: calendarStore,
                         goalsStore: goalsStore,
                         tasksStore: tasksStore,
-                        appearanceStore: appearanceStore
+                        appearanceStore: appearanceStore,
+                        journalStore: journalStore,
+                        planReviewStore: planReviewStore
                     )
                     .opacity(selectedTab == .home ? 1 : 0)
                     .allowsHitTesting(selectedTab == .home)
@@ -66,7 +70,7 @@ struct ContentView: View {
                         .opacity(selectedTab == .goals ? 1 : 0)
                         .allowsHitTesting(selectedTab == .goals)
 
-                    DailyCalendarView(store: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore, peopleStore: peopleStore, linkedAppsStore: linkedAppsStore)
+                    DailyCalendarView(store: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore, peopleStore: peopleStore, linkedAppsStore: linkedAppsStore, planReviewStore: planReviewStore, journalStore: journalStore)
                         .opacity(selectedTab == .daily ? 1 : 0)
                         .allowsHitTesting(selectedTab == .daily)
 
@@ -74,7 +78,7 @@ struct ContentView: View {
                         .opacity(selectedTab == .longTerm ? 1 : 0)
                         .allowsHitTesting(selectedTab == .longTerm)
 
-                    NotesView(store: notesStore, goalsStore: goalsStore, appearanceStore: appearanceStore)
+                    RecordView(store: notesStore, journalStore: journalStore, goalsStore: goalsStore, appearanceStore: appearanceStore)
                         .opacity(selectedTab == .notes ? 1 : 0)
                         .allowsHitTesting(selectedTab == .notes)
                 }
@@ -129,7 +133,7 @@ struct ContentView: View {
         case .finance:
             FinanceView(store: financeStore)
         case .settings:
-            SettingsView(calendarStore: calendarStore, appearanceStore: appearanceStore)
+            SettingsView(calendarStore: calendarStore, appearanceStore: appearanceStore, planReviewStore: planReviewStore)
         case .people:
             PeopleView(store: peopleStore, appearanceStore: appearanceStore)
         case .linkedApps:

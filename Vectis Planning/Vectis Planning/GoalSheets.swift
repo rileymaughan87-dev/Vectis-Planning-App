@@ -431,6 +431,11 @@ struct ShortTermGoalEditorSheet: View {
                         Text("Shows at \(goal.scheduledTimeText) on your daily planner, on the days set above.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+
+                        Toggle("Flexible", isOn: $goal.isFlexible)
+                        Text("On means Plan and Review can nudge this around the day. Off treats it like a fixed appointment.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 } footer: {
                     Text("Blocks out time for this goal on the daily planner. Tap the block to tick the goal off for that day.")

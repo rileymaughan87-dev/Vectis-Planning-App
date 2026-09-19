@@ -14,6 +14,10 @@ struct HomeView: View {
     @ObservedObject var goalsStore: GoalsStore
     @ObservedObject var tasksStore: TasksStore
     @ObservedObject var appearanceStore: AppearanceStore
+    @ObservedObject var journalStore: JournalStore
+    @ObservedObject var planReviewStore: PlanReviewStore
+
+    @State private var showingEveningReview = false
 
     @State private var newTaskText = ""
 
@@ -27,10 +31,53 @@ struct HomeView: View {
             rightNowBox
             goalsBox
             tasksBox
+            if showsReviewCard {
+                reviewBox
+            }
         }
         .padding(.horizontal)
         .padding(.bottom, 10)
         .onReceive(timer) { now = $0 }
+        .sheet(isPresented: $showingEveningReview) {
+            EveningReviewView(
+                goalsStore: goalsStore,
+                journalStore: journalStore,
+                planReviewStore: planReviewStore,
+                appearanceStore: appearanceStore
+            )
+        }
+    }
+
+    /// Quiet until it's actually relevant, and gone once done — same
+    /// principle as everything else in Plan and Review. No card at all
+    /// if the mode is off, before the configured time, or after
+    /// today's review is already answered.
+    private var showsReviewCard: Bool {
+        guard planReviewStore.isEnabled else { return false }
+        let calendar = Calendar.current
+        let comps = calendar.dateComponents([.hour, .minute], from: now)
+        let nowMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+        guard nowMinutes >= planReviewStore.eveningReviewMinutes else { return false }
+        return !planReviewStore.hasReviewedToday(journalStore: journalStore)
+    }
+
+    private var reviewBox: some View {
+        Button {
+            showingEveningReview = true
+        } label: {
+            SectionBox(title: "Evening review", accent: appearanceStore.primaryColor) {
+                HStack {
+                    Text("A quick look back, and a line or two if you want.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Event lookups
@@ -234,6 +281,14 @@ struct HomeView: View {
         .frame(maxHeight: .infinity)
     }
 
+    private func durationLabel(_ minutes: Int) -> String {
+        let h = minutes / 60
+        let m = minutes % 60
+        if h == 0 { return "\(m)m" }
+        if m == 0 { return "\(h)h" }
+        return "\(h)h \(m)m"
+    }
+
     private func taskRow(_ task: VectisTask) -> some View {
         HStack(spacing: 9) {
             Button {
@@ -249,6 +304,33 @@ struct HomeView: View {
                 .foregroundStyle(task.done ? .secondary : .primary)
 
             Spacer()
+
+            // A menu rather than a full editor — tasks stay
+            // deliberately simple, so this is the one optional
+            // property they carry, set in one tap rather than opening
+            // a whole sheet for it.
+            Menu {
+                ForEach([15, 30, 45, 60, 90, 120], id: \.self) { minutes in
+                    Button(durationLabel(minutes)) {
+                        tasksStore.setDuration(task.id, minutes: minutes)
+                    }
+                }
+                if task.durationMinutes != nil {
+                    Button("No duration", role: .destructive) {
+                        tasksStore.setDuration(task.id, minutes: nil)
+                    }
+                }
+            } label: {
+                if let minutes = task.durationMinutes {
+                    Text(durationLabel(minutes))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Image(systemName: "clock")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary.opacity(0.5))
+                }
+            }
 
             Button {
                 tasksStore.delete(task.id)

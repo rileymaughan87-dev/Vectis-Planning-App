@@ -79,6 +79,8 @@ enum PersistenceManager {
         static let pendingLaunch = "pending_launch.json"
         static let people = "people.json"
         static let birthdayPrefs = "birthday_prefs.json"
+        static let journalEntries = "journal_entries.json"
+        static let planReviewSettings = "plan_review_settings.json"
     }
 }
 
