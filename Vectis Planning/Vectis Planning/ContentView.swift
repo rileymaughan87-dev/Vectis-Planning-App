@@ -70,7 +70,7 @@ struct ContentView: View {
                         .opacity(selectedTab == .goals ? 1 : 0)
                         .allowsHitTesting(selectedTab == .goals)
 
-                    DailyCalendarView(store: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore, peopleStore: peopleStore, linkedAppsStore: linkedAppsStore, planReviewStore: planReviewStore, journalStore: journalStore)
+                    DailyCalendarView(store: calendarStore, goalsStore: goalsStore, appearanceStore: appearanceStore, peopleStore: peopleStore, linkedAppsStore: linkedAppsStore, planReviewStore: planReviewStore, journalStore: journalStore, tasksStore: tasksStore)
                         .opacity(selectedTab == .daily ? 1 : 0)
                         .allowsHitTesting(selectedTab == .daily)
 

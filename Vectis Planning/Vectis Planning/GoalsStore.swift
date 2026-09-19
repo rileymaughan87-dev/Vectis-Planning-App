@@ -90,6 +90,21 @@ class GoalsStore: ObservableObject {
         goals[index].completions[key] = clamped >= target
     }
 
+    /// Puts a goal on the calendar for the first time, or moves it if
+    /// it's already there — used by the morning planning popup's "give
+    /// it a time" action. Goes through `applyScheduleChange` so the
+    /// change is versioned correctly, same as an edit made through the
+    /// goal editor, rather than mutating the live fields directly.
+    func scheduleOnCalendar(_ goalID: UUID, startMinutes: Int, durationMinutes: Int) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        goals[index].applyScheduleChange(
+            repeatDays: goals[index].repeatDays,
+            startMinutes: startMinutes,
+            durationMinutes: durationMinutes
+        )
+        goals[index].scheduledOnCalendar = true
+    }
+
     func setToday(_ goalID: UUID, done: Bool) {
         setCompletion(goalID, on: Date(), done: done)
     }

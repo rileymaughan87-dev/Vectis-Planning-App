@@ -113,6 +113,7 @@ struct DailyCalendarView: View {
     @ObservedObject var linkedAppsStore: LinkedAppsStore
     @ObservedObject var planReviewStore: PlanReviewStore
     @ObservedObject var journalStore: JournalStore
+    @ObservedObject var tasksStore: TasksStore
 
     @State private var dayOffset = 0
 
@@ -223,9 +224,10 @@ struct DailyCalendarView: View {
                 )
             }
             .sheet(isPresented: $showingDailyPlanning) {
-                DailyPlanRehearsalView(
-                    store: store,
+                DailyPlanningCaptureView(
                     goalsStore: goalsStore,
+                    tasksStore: tasksStore,
+                    calendarStore: store,
                     appearanceStore: appearanceStore,
                     date: currentDate
                 )
