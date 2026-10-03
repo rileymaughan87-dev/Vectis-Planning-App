@@ -67,7 +67,7 @@ struct VectisButtonStyle: ButtonStyle {
     enum Kind { case primary, secondary, destructive }
 
     var kind: Kind = .secondary
-    var accent: Color = .vectisTeal
+    var accent: Color = .vectisBlue
 
     func makeBody(configuration: Configuration) -> some View {
         let fill: Color
@@ -109,7 +109,7 @@ extension Color {
     /// The app's signature color, used as the tint for buttons, the
     /// selected tab, toggles, and anywhere else the system would
     /// otherwise default to plain iOS blue.
-    static let vectisTeal = Color(hex: "1C8C82")
+    static let vectisBlue = Color(hex: "0068B5")
 
     /// A secondary accent, reusing the same terracotta originally
     /// designed for the Challenges category. Used specifically to tell
@@ -184,6 +184,60 @@ struct LaidOutEvent: Identifiable {
     let column: Int
     let columnCount: Int
     var id: UUID { event.id }
+}
+
+/// Everything that takes up time on a given day: timed events, goals
+/// scheduled to the calendar, and placed tasks.
+///
+/// One definition shared by the Daily grid, Home's "Right now", and the
+/// planning commitment bar. Each used to build its own list, and they
+/// drifted: Home left out placed tasks, so it said "Nothing scheduled"
+/// in the middle of one.
+enum DayBlocks {
+    static func blocks(
+        on date: Date,
+        calendarStore: CalendarStore,
+        goalsStore: GoalsStore,
+        tasksStore: TasksStore
+    ) -> [CalendarEvent] {
+        // All-day events are deliberately excluded — there's no time
+        // slot to draw them in. They show on the Long-Term calendar.
+        let realEvents = calendarStore.timedEvents(on: date)
+            .filter { $0.flowsToDaily && !$0.isAllDay }
+
+        // Goals scheduled to the calendar are synthesised rather than
+        // stored, so they always match the goal's current settings.
+        let fallbackCategory = calendarStore.categories.first?.id ?? UUID()
+        let goalBlocks = goalsStore.goals.compactMap { goal in
+            goal.scheduledBlock(on: date, categoryID: goal.categoryID ?? fallbackCategory)
+        }
+
+        // A placed task becomes a transient block too, so it gets the
+        // same overlap/column handling as everything else on the grid.
+        let calendar = Calendar.current
+        let taskBlocks: [CalendarEvent] = tasksStore.tasks.compactMap { task in
+            guard let scheduled = task.scheduledDate,
+                  calendar.isDate(scheduled, inSameDayAs: date),
+                  let duration = task.durationMinutes
+            else { return nil }
+            var event = CalendarEvent(
+                title: task.text,
+                startDate: scheduled,
+                endDate: scheduled.addingTimeInterval(TimeInterval(duration * 60)),
+                categoryID: fallbackCategory
+            )
+            // A stable id, not a fresh random one each redraw — otherwise
+            // the id changes out from under a drag in progress. A task
+            // has only one placement at a time, so its own id will do.
+            event.id = task.id
+            event.flowsToDaily = true
+            event.linkedTaskID = task.id
+            event.isCompleted = task.done
+            return event
+        }
+
+        return realEvents + goalBlocks + taskBlocks
+    }
 }
 
 /// Packs a day's events into side-by-side columns wherever they overlap
@@ -280,7 +334,7 @@ func longTermDayItems(
     on date: Date,
     calendarStore: CalendarStore,
     goalsStore: GoalsStore,
-    milestoneColorHex: String = "#1C8C82"
+    milestoneColorHex: String = "#0068B5"
 ) -> [LongTermDayItem] {
     let calendar = Calendar.current
     var result: [LongTermDayItem] = []
@@ -311,5 +365,261 @@ func longTermDayItems(
         }
     }
     return result
+}
+
+// MARK: - Shared editor pieces
+
+/// A bordered box with an accent stripe beside its title — the same
+/// shape `SectionBox` gives the Goals and Home screens, so the editors
+/// stop looking like stock iOS Settings and start looking like the rest
+/// of this app.
+struct EditorBox<Content: View>: View {
+    let title: String
+    let accent: Color
+    var trailing: String? = nil
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Rectangle()
+                    .fill(accent)
+                    .frame(width: 4, height: 16)
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+                if let trailing {
+                    Text(trailing)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            content()
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+    }
+}
+
+/// A collapsed row standing in for a whole section, showing a summary of
+/// what's inside so nothing becomes invisible just because it's folded
+/// away — you can see that something repeats, and how, without opening it.
+struct EditorSummaryRow: View {
+    let title: String
+    let summary: String
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                Text(summary)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+    }
+}
+
+/// Category as tappable colour chips rather than a text menu. The colour
+/// is real information the old picker hid — worth surfacing, though it
+/// would need rethinking past roughly five or six categories, since
+/// chips wrap rather than scroll.
+struct CategoryChips: View {
+    let categories: [CalendarCategory]
+    @Binding var selection: UUID?
+
+    var body: some View {
+        FlowRow(spacing: 6) {
+            ForEach(categories) { category in
+                chip(for: category)
+            }
+        }
+    }
+
+    private func chip(for category: CalendarCategory) -> some View {
+        let color = Color(hex: category.colorHex)
+        let isSelected = selection == category.id
+        return Button {
+            selection = category.id
+        } label: {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                Text(category.name)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                    .fill(isSelected ? color.opacity(0.15) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                    .strokeBorder(isSelected ? color : Color(.separator), lineWidth: isSelected ? 1.5 : 0.5)
+            )
+            .foregroundStyle(isSelected ? .primary : .secondary)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Wraps its children onto new lines when they run out of width, which
+/// a plain HStack won't do. Needed for the category chips, since how
+/// many fit per row depends on the names.
+struct FlowRow: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        // Falls back to the screen width rather than infinity — an
+        // unconstrained proposal should be rare here since this always
+        // sits inside a screen-width ScrollView, but reporting infinity
+        // if it ever happened would make the whole row refuse to wrap.
+        let maxWidth = proposal.width ?? (UIScreen.main.bounds.width - 60)
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
+/// The editor's first box: a big title field with an accent stripe down
+/// its left edge, so the item's colour shows the moment it opens.
+struct EditorTitleBox: View {
+    var label: String = "Title"
+    let placeholder: String
+    @Binding var text: String
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            TextField(placeholder, text: $text)
+                .font(.title3)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            Rectangle().fill(Color(.secondarySystemGroupedBackground))
+        )
+        .overlay(alignment: .leading) {
+            Rectangle().fill(accent).frame(width: 4)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous))
+    }
+}
+
+/// A labelled time-of-day field in a small inset box — half-width, so
+/// two fit side by side ("Starts" / "Ends").
+struct EditorTimeField: View {
+    let label: String
+    @Binding var selection: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            // Time-only, not date-and-time — a compact picker showing
+            // both ("9/18/26, 10:00 AM") is too wide for two of these
+            // side by side. scaleEffect doesn't help here: it shrinks
+            // how a view LOOKS, not the space SwiftUI reserves for it.
+            DatePicker("", selection: $selection, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                .fill(Color(.tertiarySystemGroupedBackground))
+        )
+    }
+}
+
+/// Text options with a 2pt underline on the selected one — the design
+/// system's switcher for a fixed set of choices (the Record tab's
+/// sections, a goal's "Track by"). Filled chips are kept for lists the
+/// person edits, like categories.
+struct UnderlineSelector<Option: Hashable>: View {
+    let options: [(value: Option, label: String)]
+    @Binding var selection: Option
+    let accent: Color
+    var verticalPadding: CGFloat = 12
+    var horizontalPadding: CGFloat = 0
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options, id: \.value) { option in
+                let isSelected = selection == option.value
+                Button {
+                    selection = option.value
+                } label: {
+                    Text(option.label)
+                        .font(.caption.weight(isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? accent : .secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, verticalPadding)
+                        .overlay(alignment: .bottom) {
+                            Rectangle()
+                                .fill(isSelected ? accent : Color.clear)
+                                .frame(height: 2)
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .padding(.horizontal, horizontalPadding)
+        .background(
+            Rectangle()
+                .fill(Color(.separator).opacity(0.5))
+                .frame(height: 0.5),
+            alignment: .bottom
+        )
+    }
 }
 

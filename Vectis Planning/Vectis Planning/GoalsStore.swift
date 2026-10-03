@@ -194,8 +194,8 @@ class GoalsStore: ObservableObject {
         return goal
     }
 
-    /// Wipes the current attempt's completion history and restarts from
-    /// today, bumping the attempt count. Used when a strict-mode
+    /// Restarts from today and bumps the attempt count. Past ticks stay
+    /// in the record — the habits' statistics just count from today. Used when a strict-mode
     /// challenge has a reported miss.
     func restartChallenge(_ goalID: UUID) {
         guard let index = goals.firstIndex(where: { $0.id == goalID }),
@@ -215,9 +215,10 @@ class GoalsStore: ObservableObject {
             goals[index].milestones[milestoneIndex].date = end
         }
 
-        // Clear the linked habits' history too — a restart means day one.
+        // A restart means day one for the statistics, but the record of
+        // the earlier attempt is kept: the ticks stay where they were.
         for habitIndex in goals.indices where goals[habitIndex].linkedToGoalID == goalID {
-            goals[habitIndex].completions = [:]
+            goals[habitIndex].statsStartDate = start
             goals[habitIndex].endDate = end
         }
     }
@@ -271,6 +272,13 @@ class GoalsStore: ObservableObject {
     /// habits linked to it — leaving them behind would orphan them,
     /// since they'd point at a parent that no longer exists and would
     /// stop appearing anywhere in the UI.
+    /// Takes one day's block off the Daily planner, leaving the goal
+    /// and every other day exactly as they were.
+    func removeBlock(_ goalID: UUID, on date: Date) {
+        guard let index = goals.firstIndex(where: { $0.id == goalID }) else { return }
+        goals[index].hiddenBlockDays.insert(Goal.dayKey(date))
+    }
+
     func deleteGoal(_ id: UUID) {
         goals.removeAll { $0.id == id || $0.linkedToGoalID == id }
     }

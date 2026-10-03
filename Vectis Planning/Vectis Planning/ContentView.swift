@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// The app's name as shown in the top-left wordmark and the sidebar.
+/// One constant so renaming the app later is a one-line change.
+enum AppBrand {
+    static let wordmark = "Planner"
+}
+
 /// The five main sections in the bottom tab bar. Occasional destinations
 /// live in the sidebar instead — keeping the bar to five keeps it readable.
 enum AppTab: CaseIterable {
@@ -144,7 +150,7 @@ struct ContentView: View {
     private var topBar: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text("Vectis")
+                Text(AppBrand.wordmark)
                     .font(.system(size: 14, design: .serif).italic().weight(.medium))
                     .foregroundStyle(appearanceStore.primaryColor)
                 Spacer()
@@ -154,6 +160,7 @@ struct ContentView: View {
                     Image(systemName: "line.3.horizontal")
                         .font(.title3)
                 }
+                .accessibilityLabel("Menu")
             }
             Text(selectedTab.title)
                 .font(.largeTitle.weight(.bold))

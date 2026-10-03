@@ -3,6 +3,7 @@ import SwiftUI
 /// Shown before creating a new note — pick Jot, List, or Note, and the
 /// editor that opens next is tailored to that choice.
 struct NoteTypePickerSheet: View {
+    var accentColor: Color = .vectisBlue
     let onSelect: (NoteType) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -14,33 +15,55 @@ struct NoteTypePickerSheet: View {
 
     var body: some View {
         NavigationStack {
-            List(options, id: \.type) { option in
-                Button {
-                    onSelect(option.type)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: option.icon)
-                            .foregroundStyle(Color.accentColor)
-                            .font(.title3)
-                            .frame(width: 28)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(option.label)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                            Text(option.description)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(spacing: 10) {
+                    ForEach(options, id: \.type) { option in
+                        Button {
+                            onSelect(option.type)
+                        } label: {
+                            optionRow(option)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
+                .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("New note")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
             }
         }
+    }
+
+    private func optionRow(_ option: (type: NoteType, icon: String, label: String, description: String)) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: option.icon)
+                .foregroundStyle(accentColor)
+                .font(.title3)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(option.label)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Text(option.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+        .contentShape(Rectangle())
     }
 }
 
@@ -58,6 +81,7 @@ struct NoteEditorSheet: View {
 
     let originalNote: Note?
     let type: NoteType
+    let accentColor: Color
 
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
@@ -71,11 +95,12 @@ struct NoteEditorSheet: View {
     /// For creating a brand-new note of a given type. `inNotebook` files
     /// it into that notebook immediately, which is what happens when you
     /// create a note from inside a notebook rather than from the main list.
-    init(store: NotesStore, goalsStore: GoalsStore, type: NoteType, inNotebook notebookID: UUID? = nil) {
+    init(store: NotesStore, goalsStore: GoalsStore, type: NoteType, inNotebook notebookID: UUID? = nil, accentColor: Color = .vectisBlue) {
         self.store = store
         self.goalsStore = goalsStore
         self.originalNote = nil
         self.type = type
+        self.accentColor = accentColor
         _title = State(initialValue: "")
         _jotText = State(initialValue: "")
         _richText = State(initialValue: NSAttributedString(string: ""))
@@ -85,11 +110,12 @@ struct NoteEditorSheet: View {
     }
 
     /// For editing a note that already exists.
-    init(store: NotesStore, goalsStore: GoalsStore, editing note: Note) {
+    init(store: NotesStore, goalsStore: GoalsStore, editing note: Note, accentColor: Color = .vectisBlue) {
         self.store = store
         self.goalsStore = goalsStore
         self.originalNote = note
         self.type = note.type
+        self.accentColor = accentColor
         _title = State(initialValue: note.title)
         _jotText = State(initialValue: note.jotText)
         _richText = State(initialValue: NSAttributedString.fromRTFData(note.richTextData))
@@ -102,26 +128,32 @@ struct NoteEditorSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                switch type {
-                case .jot: jotSection
-                case .list: listSection
-                case .classic: classicSection
-                }
+            ScrollView {
+                VStack(spacing: 10) {
+                    switch type {
+                    case .jot: jotBox
+                    case .list: listBoxes
+                    case .classic: classicBoxes
+                    }
 
-                if type != .jot {
-                    goalLinkSection
-                    notebookSection
-                }
+                    if type != .jot {
+                        linksBox
+                    }
 
-                if let original = originalNote {
-                    Button("Delete note", role: .destructive) {
-                        store.deleteNote(original.id)
-                        dismiss()
+                    if let original = originalNote {
+                        Button("Delete \(typeName)") {
+                            store.deleteNote(original.id)
+                            dismiss()
+                        }
+                        .buttonStyle(VectisButtonStyle(kind: .destructive))
+                        .padding(.top, 4)
                     }
                 }
+                .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle(navTitle)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -133,110 +165,130 @@ struct NoteEditorSheet: View {
         }
     }
 
-    private var navTitle: String {
+    private var typeName: String {
         switch type {
-        case .jot: return isEditing ? "Edit jot" : "New jot"
-        case .list: return isEditing ? "Edit list" : "New list"
-        case .classic: return isEditing ? "Edit note" : "New note"
+        case .jot: return "jot"
+        case .list: return "list"
+        case .classic: return "note"
         }
+    }
+
+    private var navTitle: String {
+        isEditing ? "Edit \(typeName)" : "New \(typeName)"
+    }
+
+    /// A text area in the same inset style as the editor's other fields.
+    private func insetField<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(6)
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                    .fill(Color(.tertiarySystemGroupedBackground))
+            )
     }
 
     // MARK: - Jot
 
-    private var jotSection: some View {
-        Section {
-            TextEditor(text: $jotText)
-                .frame(minHeight: 120)
+    private var jotBox: some View {
+        EditorBox(title: "Jot", accent: accentColor) {
+            insetField {
+                TextEditor(text: $jotText)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 160)
+            }
         }
     }
 
     // MARK: - List
 
-    private var listSection: some View {
-        Group {
-            Section("Title") {
-                TextField("Title", text: $title)
-            }
-            Section("Items") {
-                ForEach($checklistItems) { $item in
-                    HStack {
-                        Button {
-                            item.done.toggle()
-                        } label: {
-                            CompletionMark(isOn: item.done, size: 20)
+    private var listBoxes: some View {
+        VStack(spacing: 10) {
+            EditorTitleBox(placeholder: "Title", text: $title, accent: accentColor)
+            EditorBox(title: "Items", accent: accentColor, trailing: itemsSummary) {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach($checklistItems) { $item in
+                        ChecklistRow(item: $item, accent: accentColor) {
+                            let id = item.id
+                            checklistItems.removeAll { $0.id == id }
                         }
-                        .buttonStyle(.plain)
-                        TextField("Item", text: $item.text)
-                            .strikethrough(item.done)
                     }
-                }
-                .onDelete { offsets in
-                    checklistItems.remove(atOffsets: offsets)
-                }
-                Button {
-                    checklistItems.append(ChecklistItem())
-                } label: {
-                    Label("Add item", systemImage: "plus")
+                    Button {
+                        checklistItems.append(ChecklistItem())
+                    } label: {
+                        Label("Add item", systemImage: "plus")
+                    }
+                    .buttonStyle(VectisButtonStyle(kind: .secondary, accent: accentColor))
                 }
             }
         }
+    }
+
+    private var itemsSummary: String? {
+        let filled = checklistItems.filter { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }
+        guard !filled.isEmpty else { return nil }
+        return "\(filled.filter { $0.done }.count) of \(filled.count) done"
     }
 
     // MARK: - Classic
 
-    private var classicSection: some View {
-        Group {
-            Section("Title") {
-                TextField("Title", text: $title)
-            }
-            Section("Content") {
-                HStack(spacing: 20) {
-                    Button {
-                        richTextController.toggleBold()
-                    } label: {
-                        Text("B").font(.body.bold())
+    private var classicBoxes: some View {
+        VStack(spacing: 10) {
+            EditorTitleBox(placeholder: "Title", text: $title, accent: accentColor)
+            EditorBox(title: "Content", accent: accentColor) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 20) {
+                        Button {
+                            richTextController.toggleBold()
+                        } label: {
+                            Text("B").font(.body.bold())
+                        }
+                        .accessibilityLabel("Bold")
+                        Button {
+                            richTextController.toggleItalic()
+                        } label: {
+                            Text("I").italic()
+                        }
+                        .accessibilityLabel("Italic")
+                        Button {
+                            richTextController.applyHeading()
+                        } label: {
+                            Image(systemName: "textformat.size")
+                        }
+                        .accessibilityLabel("Heading")
+                        Spacer()
                     }
-                    Button {
-                        richTextController.toggleItalic()
-                    } label: {
-                        Text("I").italic()
+                    .buttonStyle(.plain)
+                    .foregroundStyle(accentColor)
+
+                    Text("Select some text first, then tap a style to apply it.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    insetField {
+                        RichTextEditor(attributedText: $richText, controller: richTextController)
+                            .frame(minHeight: 240)
                     }
-                    Button {
-                        richTextController.applyHeading()
-                    } label: {
-                        Image(systemName: "textformat.size")
-                    }
-                    Spacer()
                 }
-                .buttonStyle(.plain)
-                .padding(.vertical, 4)
-
-                Text("Select some text first, then tap a style to apply it.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-
-                RichTextEditor(attributedText: $richText, controller: richTextController)
-                    .frame(minHeight: 180)
             }
         }
     }
 
-    // MARK: - Goal link
+    // MARK: - Links
 
-    private var goalLinkSection: some View {
-        Section("Link to a goal (optional)") {
-            GoalLinkPicker(goalsStore: goalsStore, selection: $linkedGoalID)
-        }
-    }
-
-    private var notebookSection: some View {
-        Section("Notebook (optional)") {
-            Picker("Notebook", selection: $notebookID) {
-                Text("None").tag(UUID?.none)
-                ForEach(store.sortedNotebooks) { notebook in
-                    Text(notebook.title).tag(Optional(notebook.id))
+    private var linksBox: some View {
+        EditorBox(title: "Links (optional)", accent: accentColor) {
+            VStack(spacing: 8) {
+                GoalLinkPicker(goalsStore: goalsStore, selection: $linkedGoalID)
+                Divider()
+                Picker("Notebook", selection: $notebookID) {
+                    Text("None").tag(UUID?.none)
+                    ForEach(store.sortedNotebooks) { notebook in
+                        Text(notebook.title).tag(Optional(notebook.id))
+                    }
                 }
             }
+            .font(.subheadline)
+            .tint(accentColor)
         }
     }
 
@@ -260,3 +312,32 @@ struct NoteEditorSheet: View {
     }
 }
 
+/// One checklist line: tick, text, and a remove button (the editor is a
+/// scroll view now, so swipe-to-delete from the old Form is gone).
+private struct ChecklistRow: View {
+    @Binding var item: ChecklistItem
+    let accent: Color
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button {
+                item.done.toggle()
+            } label: {
+                CompletionMark(isOn: item.done, size: 20, color: accent)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(item.done ? "Mark not done" : "Mark done")
+            TextField("Item", text: $item.text)
+                .font(.subheadline)
+                .strikethrough(item.done)
+            Button(action: onDelete) {
+                Image(systemName: "xmark")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete item")
+        }
+    }
+}

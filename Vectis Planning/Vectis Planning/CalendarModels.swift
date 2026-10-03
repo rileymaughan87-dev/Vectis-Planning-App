@@ -143,6 +143,22 @@ struct CalendarEvent: Identifiable, Codable {
     /// occurrence would have shifted the whole series' anchor date.
     var timeOverrides: [String: Int] = [:]
 
+    /// Per-day length exceptions, in minutes, keyed by day. What changing
+    /// the end time of one occurrence of a repeating event writes to:
+    /// that day gets longer or shorter, the series doesn't.
+    var durationOverrides: [String: Int] = [:]
+
+    /// Logged actual durations for single occurrences of a repeating
+    /// event, in minutes, keyed by day — the repeating counterpart of
+    /// `actualMinutes`. Weekly classes and the like are some of the best
+    /// data estimate calibration will have.
+    var occurrenceActuals: [String: Int] = [:]
+
+    /// The planned length of an occurrence, frozen the first time an
+    /// actual is logged for that day — the counterpart of
+    /// `estimatedMinutes`.
+    var occurrenceEstimates: [String: Int] = [:]
+
     /// A big block broken into named pieces with their own durations —
     /// "study" split into "read textbook", "write paper", "research".
     ///
@@ -183,8 +199,8 @@ struct CalendarEvent: Identifiable, Codable {
     /// Defaults to fixed — an ordinary calendar event is, by default,
     /// a real appointment. "Fixed" only means the app never moves it
     /// automatically; dragging it yourself always still works exactly
-    /// as before. Nothing reads this yet — it's the flag the morning
-    /// planning popup will sort by once it exists.
+    /// as before. The morning planning popup lists fixed events as the
+    /// day's context.
     var isFlexible: Bool = false
 
 
@@ -210,7 +226,8 @@ struct CalendarEvent: Identifiable, Codable {
         case id, title, notes, startDate, endDate, categoryID, flowsToDaily
         case isAllDay, recurrence, recurrenceEndDate
         case linkedGoalID, linkedTaskID, isCompleted, linkedPersonID, excludedOccurrences, origin, repeatDays, timeOverrides, parts
-        case estimatedMinutes, actualMinutes, isFlexible
+        case estimatedMinutes, actualMinutes, isFlexible, durationOverrides
+        case occurrenceActuals, occurrenceEstimates
     }
 
     init(from decoder: Decoder) throws {
@@ -234,6 +251,9 @@ struct CalendarEvent: Identifiable, Codable {
         isFlexible = try c.decodeIfPresent(Bool.self, forKey: .isFlexible) ?? false
         repeatDays = try c.decodeIfPresent(Set<Int>.self, forKey: .repeatDays) ?? Set(1...7)
         timeOverrides = try c.decodeIfPresent([String: Int].self, forKey: .timeOverrides) ?? [:]
+        durationOverrides = try c.decodeIfPresent([String: Int].self, forKey: .durationOverrides) ?? [:]
+        occurrenceActuals = try c.decodeIfPresent([String: Int].self, forKey: .occurrenceActuals) ?? [:]
+        occurrenceEstimates = try c.decodeIfPresent([String: Int].self, forKey: .occurrenceEstimates) ?? [:]
         parts = try c.decodeIfPresent([EventPart].self, forKey: .parts) ?? []
         estimatedMinutes = try c.decodeIfPresent(Int.self, forKey: .estimatedMinutes)
         actualMinutes = try c.decodeIfPresent(Int.self, forKey: .actualMinutes)
@@ -260,6 +280,9 @@ struct CalendarEvent: Identifiable, Codable {
         try c.encode(isFlexible, forKey: .isFlexible)
         try c.encode(repeatDays, forKey: .repeatDays)
         try c.encode(timeOverrides, forKey: .timeOverrides)
+        try c.encode(durationOverrides, forKey: .durationOverrides)
+        try c.encode(occurrenceActuals, forKey: .occurrenceActuals)
+        try c.encode(occurrenceEstimates, forKey: .occurrenceEstimates)
         try c.encode(parts, forKey: .parts)
         try c.encodeIfPresent(estimatedMinutes, forKey: .estimatedMinutes)
         try c.encodeIfPresent(actualMinutes, forKey: .actualMinutes)
@@ -287,6 +310,9 @@ struct CalendarEvent: Identifiable, Codable {
         isFlexible: Bool = false,
         repeatDays: Set<Int> = Set(1...7),
         timeOverrides: [String: Int] = [:],
+        durationOverrides: [String: Int] = [:],
+        occurrenceActuals: [String: Int] = [:],
+        occurrenceEstimates: [String: Int] = [:],
         parts: [EventPart] = [],
         estimatedMinutes: Int? = nil,
         actualMinutes: Int? = nil
@@ -310,6 +336,9 @@ struct CalendarEvent: Identifiable, Codable {
         self.isFlexible = isFlexible
         self.repeatDays = repeatDays
         self.timeOverrides = timeOverrides
+        self.durationOverrides = durationOverrides
+        self.occurrenceActuals = occurrenceActuals
+        self.occurrenceEstimates = occurrenceEstimates
         self.parts = parts
         self.estimatedMinutes = estimatedMinutes
         self.actualMinutes = actualMinutes
@@ -369,20 +398,23 @@ extension CalendarEvent {
     /// original times shifted onto that day; otherwise just its own.
     func times(on date: Date) -> (start: Date, end: Date) {
         let calendar = Calendar.current
-        let duration = endDate.timeIntervalSince(startDate)
+        let key = Goal.dayKey(date)
+        // A one-day length change wins over the series' usual length.
+        let duration = durationOverrides[key].map { TimeInterval($0 * 60) }
+            ?? endDate.timeIntervalSince(startDate)
 
         // A day that was individually dragged wins over everything else,
         // including the series' own time — that is the whole point of
         // moving one occurrence.
-        if let overrideMinutes = timeOverrides[Goal.dayKey(date)] {
+        if let overrideMinutes = timeOverrides[key] {
             let start = calendar.startOfDay(for: date)
                 .addingTimeInterval(TimeInterval(overrideMinutes * 60))
             return (start, start.addingTimeInterval(duration))
         }
 
-        guard recurrence != .none,
-              !calendar.isDate(startDate, inSameDayAs: date) else {
-            return (startDate, endDate)
+        guard recurrence != .none else { return (startDate, endDate) }
+        if calendar.isDate(startDate, inSameDayAs: date) {
+            return (startDate, startDate.addingTimeInterval(duration))
         }
         let comps = calendar.dateComponents([.hour, .minute], from: startDate)
         let shifted = calendar.date(
@@ -617,6 +649,18 @@ struct Goal: Identifiable, Codable {
     /// correctly for its entire history.
     var currentScheduleEffectiveFrom: Date = .distantPast
 
+    /// When this goal's statistics count from. Set when a challenge
+    /// restarts: earlier ticks stay in the record, but the dots, rates
+    /// and "times done" begin again from this day. `nil` means count
+    /// from the goal's first day.
+    var statsStartDate: Date? = nil
+
+    /// Days whose block was removed from the Daily planner ("yyyy-MM-dd").
+    /// Only the calendar block goes — the goal, its other days and its
+    /// tracking are untouched, so this is "not on my calendar that day",
+    /// not "skipped". Deleting the goal itself happens on the Goals page.
+    var hiddenBlockDays: Set<String> = []
+
     // MARK: - Codable
     //
     // Written by hand rather than left to Swift's automatic synthesis.
@@ -639,7 +683,8 @@ struct Goal: Identifiable, Codable {
         case challengeTemplateID, challengeStartDate, challengeStrictMode, challengeAttempt
         case linkedAppScheme, linkedAppName, linkedAppID, linkedPersonID
         case frequencyType, timesPerWeekTarget, timesPerDayTarget, completionCounts, scheduledTimeOverrides
-        case scheduleVersions, currentScheduleEffectiveFrom, isFlexible
+        case scheduleVersions, currentScheduleEffectiveFrom, isFlexible, statsStartDate
+        case hiddenBlockDays
     }
 
     init(from decoder: Decoder) throws {
@@ -677,6 +722,8 @@ struct Goal: Identifiable, Codable {
         scheduleVersions = try c.decodeIfPresent([ScheduleVersion].self, forKey: .scheduleVersions) ?? []
         currentScheduleEffectiveFrom = try c.decodeIfPresent(Date.self, forKey: .currentScheduleEffectiveFrom) ?? .distantPast
         isFlexible = try c.decodeIfPresent(Bool.self, forKey: .isFlexible) ?? true
+        statsStartDate = try c.decodeIfPresent(Date.self, forKey: .statsStartDate)
+        hiddenBlockDays = try c.decodeIfPresent(Set<String>.self, forKey: .hiddenBlockDays) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
@@ -714,6 +761,8 @@ struct Goal: Identifiable, Codable {
         try c.encode(scheduleVersions, forKey: .scheduleVersions)
         try c.encode(currentScheduleEffectiveFrom, forKey: .currentScheduleEffectiveFrom)
         try c.encode(isFlexible, forKey: .isFlexible)
+        try c.encodeIfPresent(statsStartDate, forKey: .statsStartDate)
+        try c.encode(hiddenBlockDays, forKey: .hiddenBlockDays)
     }
 
     /// The plain memberwise initializer Swift would otherwise generate
@@ -754,7 +803,9 @@ struct Goal: Identifiable, Codable {
         scheduledTimeOverrides: [String: Int] = [:],
         scheduleVersions: [ScheduleVersion] = [],
         currentScheduleEffectiveFrom: Date = .distantPast,
-        isFlexible: Bool = true
+        isFlexible: Bool = true,
+        statsStartDate: Date? = nil,
+        hiddenBlockDays: Set<String> = []
     ) {
         self.id = id
         self.title = title
@@ -789,6 +840,8 @@ struct Goal: Identifiable, Codable {
         self.scheduleVersions = scheduleVersions
         self.currentScheduleEffectiveFrom = currentScheduleEffectiveFrom
         self.isFlexible = isFlexible
+        self.statsStartDate = statsStartDate
+        self.hiddenBlockDays = hiddenBlockDays
     }
 }
 

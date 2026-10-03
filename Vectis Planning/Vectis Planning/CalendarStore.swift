@@ -26,8 +26,12 @@ class CalendarStore: ObservableObject {
             events = CalendarStore.sampleEvents(categories: categories)
         }
         if let savedHours = PersistenceManager.load(CalendarHours.self, from: PersistenceManager.Filename.calendarHours) {
-            dailyCalendarStartHour = savedHours.startHour
-            dailyCalendarEndHour = savedHours.endHour
+            // Clamped, because an end at or before the start gives the
+            // Daily grid a negative number of rows and crashes it.
+            // Settings no longer allows that, but older saves might.
+            let start = min(max(savedHours.startHour, 0), 23)
+            dailyCalendarStartHour = start
+            dailyCalendarEndHour = min(max(savedHours.endHour, start + 1), 24)
         }
 
         $events
@@ -177,6 +181,80 @@ class CalendarStore: ObservableObject {
         guard let index = events.firstIndex(where: { $0.id == eventID }) else { return }
         let clamped = min(max(startMinutes, 0), 23 * 60 + 55)
         events[index].timeOverrides[Goal.dayKey(date)] = clamped
+    }
+
+    /// Changes the length of ONE occurrence of a repeating event,
+    /// leaving the series alone. The counterpart to `setOccurrenceTime`.
+    func setOccurrenceDuration(eventID: UUID, date: Date, minutes: Int) {
+        guard let index = events.firstIndex(where: { $0.id == eventID }) else { return }
+        events[index].durationOverrides[Goal.dayKey(date)] = max(minutes, 5)
+    }
+
+    /// Logs how long ONE occurrence of a repeating event actually took.
+    /// Same estimate-lock rule as `resizeEvent`: the planned length is
+    /// frozen the first time, and the block then shows the real length
+    /// for that day only.
+    func logOccurrenceActual(eventID: UUID, date: Date, minutes: Int) {
+        guard let index = events.firstIndex(where: { $0.id == eventID }) else { return }
+        let key = Goal.dayKey(date)
+        let times = events[index].times(on: date)
+        if events[index].occurrenceEstimates[key] == nil {
+            events[index].occurrenceEstimates[key] = Int(times.end.timeIntervalSince(times.start) / 60)
+        }
+        let actual = max(minutes, 1)
+        events[index].occurrenceActuals[key] = actual
+        events[index].durationOverrides[key] = actual
+    }
+
+    /// Gives a repeating event new times from one occurrence onward.
+    ///
+    /// Earlier occurrences keep the times they actually had: the series
+    /// is ended the day before, and a new series with the new times
+    /// starts on this day. Overrides and deleted days are split between
+    /// the two by date. From the series' very first day there's nothing
+    /// earlier to protect, so the series itself just changes.
+    func changeTimesFromOccurrence(eventID: UUID, date: Date, startMinutes: Int, durationMinutes: Int) {
+        guard let index = events.firstIndex(where: { $0.id == eventID }) else { return }
+        let calendar = Calendar.current
+        let splitDay = calendar.startOfDay(for: date)
+        let splitKey = Goal.dayKey(splitDay)
+        let newStart = splitDay.addingTimeInterval(TimeInterval(startMinutes * 60))
+        let newEnd = newStart.addingTimeInterval(TimeInterval(max(durationMinutes, 5) * 60))
+
+        var updated = events
+        let original = updated[index]
+
+        if splitDay <= calendar.startOfDay(for: original.startDate) {
+            updated[index].startDate = newStart
+            updated[index].endDate = newEnd
+            updated[index].timeOverrides[splitKey] = nil
+            updated[index].durationOverrides[splitKey] = nil
+            events = updated
+            return
+        }
+
+        var future = original
+        future.id = UUID()
+        future.startDate = newStart
+        future.endDate = newEnd
+        future.excludedOccurrences = original.excludedOccurrences.filter { $0 >= splitKey }
+        // The new times ARE this day's times now, so its own overrides go.
+        future.timeOverrides = original.timeOverrides.filter { $0.key > splitKey }
+        future.durationOverrides = original.durationOverrides.filter { $0.key > splitKey }
+        future.occurrenceActuals = original.occurrenceActuals.filter { $0.key >= splitKey }
+        future.occurrenceEstimates = original.occurrenceEstimates.filter { $0.key >= splitKey }
+        future.estimatedMinutes = nil
+        future.actualMinutes = nil
+        future.isCompleted = false
+
+        updated[index].recurrenceEndDate = calendar.date(byAdding: .day, value: -1, to: splitDay)
+        updated[index].excludedOccurrences = original.excludedOccurrences.filter { $0 < splitKey }
+        updated[index].timeOverrides = original.timeOverrides.filter { $0.key < splitKey }
+        updated[index].durationOverrides = original.durationOverrides.filter { $0.key < splitKey }
+        updated[index].occurrenceActuals = original.occurrenceActuals.filter { $0.key < splitKey }
+        updated[index].occurrenceEstimates = original.occurrenceEstimates.filter { $0.key < splitKey }
+        updated.insert(future, at: index + 1)
+        events = updated
     }
 
     func deleteEvent(_ id: UUID) {

@@ -26,12 +26,15 @@ struct PalettePreset: Identifiable {
     let secondaryHex: String
     let tertiaryHex: String
 
+    // The ids are what gets saved, so they keep their original names
+    // ("tealCoral", "monoTeal") even though the colours are now blue —
+    // renaming them would reset everyone's saved choice.
     static let all: [PalettePreset] = [
-        PalettePreset(id: "tealCoral", name: "Teal and coral", theory: "Complementary — blue-green paired with its warm opposite", primaryHex: "1C8C82", secondaryHex: "D2574A", tertiaryHex: "C9922E"),
+        PalettePreset(id: "tealCoral", name: "Blue and coral", theory: "Complementary — blue paired with its warm opposite", primaryHex: "0068B5", secondaryHex: "D2574A", tertiaryHex: "C9922E"),
         PalettePreset(id: "indigoAmber", name: "Indigo and amber", theory: "Classic professional pairing, cool and warm balance", primaryHex: "3F51B5", secondaryHex: "F2A93B", tertiaryHex: "6B7FD7"),
         PalettePreset(id: "forestClay", name: "Forest and clay", theory: "Analogous earth tones, calm and grounded", primaryHex: "3F6B4E", secondaryHex: "C97B4A", tertiaryHex: "8FA679"),
         PalettePreset(id: "plumSage", name: "Plum and sage", theory: "Muted complementary, sophisticated and quiet", primaryHex: "6B4C7A", secondaryHex: "7C9473", tertiaryHex: "C99A6B"),
-        PalettePreset(id: "monoTeal", name: "Monochrome teal", theory: "Single hue at three depths — minimal, can't clash", primaryHex: "1C8C82", secondaryHex: "5FADA5", tertiaryHex: "0F5F58")
+        PalettePreset(id: "monoTeal", name: "Monochrome blue", theory: "Single hue at three depths — minimal, can't clash", primaryHex: "0068B5", secondaryHex: "66A4D3", tertiaryHex: "004679")
     ]
 }
 
@@ -50,7 +53,7 @@ class AppearanceStore: ObservableObject {
     @Published var selectedPresetID: String = "tealCoral"
     @Published var isCustom: Bool = false
 
-    @Published var customPrimaryHex: String = "1C8C82"
+    @Published var customPrimaryHex: String = "0068B5"
     @Published var customSecondaryHex: String = "D2574A"
     @Published var customTertiaryHex: String = "C9922E"
 
@@ -118,7 +121,7 @@ class AppearanceStore: ObservableObject {
     // Hex versions, for the places that pass colors around as strings
     // (like LongTermDayItem, which stores a hex to stay Codable-friendly).
     var primaryHex: String {
-        isCustom ? customPrimaryHex : (activePreset?.primaryHex ?? "1C8C82")
+        isCustom ? customPrimaryHex : (activePreset?.primaryHex ?? "0068B5")
     }
     var secondaryHex: String {
         isCustom ? customSecondaryHex : (activePreset?.secondaryHex ?? "D2574A")

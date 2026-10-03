@@ -24,6 +24,7 @@ struct MonthGridView: View {
             } label: {
                 Image(systemName: "chevron.left")
             }
+            .accessibilityLabel("Previous month")
             Spacer()
             Text(displayedMonth.formatted(.dateTime.month(.wide).year()))
                 .font(.title3.weight(.bold))
@@ -33,6 +34,7 @@ struct MonthGridView: View {
             } label: {
                 Image(systemName: "chevron.right")
             }
+            .accessibilityLabel("Next month")
         }
     }
 

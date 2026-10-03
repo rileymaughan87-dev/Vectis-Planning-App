@@ -54,7 +54,40 @@ Done:
   unreadable save files are set aside instead of overwritten, and every
   persisted type now has hand-written Codable. Batch B (goal fairness) done:
   goals no longer count misses before they began, the nudge clears once
-  ticked today, and `dayKey` is faster. Next: Batch C (Daily grid).
+  ticked today, and `dayKey` is faster. Batch C (Daily grid) built: shared
+  `DayBlocks`, midnight-crossing blocks, Home shows placed tasks, 12/24-hour
+  labels. Not yet checked on screen. Items 5 and 8 also done (Riley's
+  calls: changing a repeating event's time asks "this day only" or "this and
+  all future days" (future splits the series, past untouched); a challenge
+  restart keeps history but statistics start fresh). Items 10, 12, 13
+  also done (VoiceOver labels, stale comment, time logging for repeating
+  events), plus two bugs found on the way (see the audit). Audit complete;
+  back to the priority list.
+- **Editor restyle built** (checked on the iPhone 17 simulator, not yet on
+  device). Goal editors (new/edit short-term, long-term), Settings, note
+  editor, note type picker and notebook editor are now ScrollViews of
+  `EditorBox`es. Shared pieces moved to CalendarHelpers.swift so every
+  editor uses one copy: `EditorBox`, `EditorSummaryRow`, `CategoryChips`,
+  `FlowRow`, plus new `EditorTitleBox`, `EditorTimeField` and
+  `UnderlineSelector` (the Record tab now uses it too). Swipe-to-delete
+  became small × buttons with VoiceOver labels; deleting a category asks
+  first, and the last category can't be deleted. `RepeatDaysPicker` and
+  `GoalDatePicker` take an explicit `accent` (Color.accentColor flipped to
+  system blue on screen). Settings gained a Done button.
+- Fixed on the way: Settings let "To" be earlier than "From", which crashes
+  the Daily grid (negative row count). The picker now only offers later
+  hours, and saved hours are clamped on load.
+
+Follow-ups noticed (not done):
+- The challenge "Catching up" sheet reappears every time Goals appears,
+  even after Done — conflicts with "nothing reappears after dismissal".
+- Every tab shows a big page title ("Home", "Daily") under the wordmark;
+  the design system says no page-level title under the chrome.
+- `MonthGridView` still uses `Color.accentColor` for today's date.
+- `ChallengeSheets` and the linked-app picker (`LinkedAppsViews`) still use
+  `Form`.
+- Note: the iPhone 17 simulator's `calendar_events.json` and `tasks.json`
+  were overwritten with test data during this session.
 
 Still to verify on device (carried over plus new):
 - Sidebar shows only People, Linked apps, Settings; launch screen appears;
@@ -75,7 +108,7 @@ Still to verify on device (carried over plus new):
 | Squared-off `VectisButtonStyle` across the app | Built |
 | Fixed vs flexible flag on events (default fixed) and goals (default flexible) | Built (used by planning) |
 | Event parts / segmentation in the event editor, stacked on the grid | Built |
-| Actual-time logging | Built as an explicit "Log actual time" button after start. The drag-to-resize handle was tried and removed (fought the move gesture). |
+| Actual-time logging | Built as an explicit "Log actual time" button after start; repeating events log per occurrence (Oct 2026). The drag-to-resize handle was tried and removed (fought the move gesture). |
 | Event editor redesign (`EditorBox`, paired times, category chips, collapsed rows) | Built |
 | Record tab (renamed from Notes): Journal / Notebooks / Jots / Lists & Notes underline selector | Built |
 | Journal (one entry per day, month-grouped list, calendar jump, search) | Built |
@@ -90,7 +123,7 @@ Still to verify on device (carried over plus new):
 | Buffer awareness (2.8) | Built (Oct 2026), awaiting device test |
 | Unused `tab*` image assets | Removed (Oct 2026) |
 | Rest days (2.2) | Not built |
-| Editor restyle for goals / settings / notes | Not built |
+| Editor restyle for goals / settings / notes | Built (Oct 2026), awaiting device test |
 | Share my day | Not built |
 | Estimate calibration (2.5) | Waiting — needs 5+ logged actuals |
 | Monthly review / recalibration (2.10, 2.11) | Waiting — needs a month of data |
@@ -109,6 +142,10 @@ Still to verify on device (carried over plus new):
 - **Segmentation prompt during planning** — real events already support parts;
   tasks stay deliberately simple.
 - **Finance inside Vectis** — removed Oct 2026; moving to its own app.
+- **Wiping history on challenge restart** — history is kept; statistics
+  restart instead (`Goal.statsStartDate`). Oct 2026.
+- **Rewriting past occurrences when a series' time changes** — "this and
+  all future days" splits the series instead. Oct 2026.
 
 ## Open queue — detail
 

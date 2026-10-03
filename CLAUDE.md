@@ -2,7 +2,9 @@
 
 A behavioural-science-based personal planner: goals, a daily time-blocked
 calendar, a long-term calendar, and a Record tab (journal, notebooks, notes).
-The name refers to Archimedes' lever. Suite-wide rules live in `../CLAUDE.md`.
+The name refers to Archimedes' lever. Since Oct 2026 the app *shows* as
+"Planner" (home screen, wordmark, launch screen); the code and Xcode project
+are still named Vectis. Suite-wide rules live in `../CLAUDE.md`.
 
 Full history and status: `docs/HANDOFF.md` (read this at the start of any
 non-trivial task). Design rationale with research: `docs/Vectis-spec.md` — the
@@ -53,10 +55,10 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Current priorities (in order)
 
-1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Shows "% of day committed" during planning,
+1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Oct 2026 audit (docs/AUDIT-2026-10.md) complete. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.
-2. **Editor restyle** — `GoalSheets`, `SettingsView`, `NoteSheets` still use
-   `Form`; restyle to match the event editor (`EditorBox` pattern).
+2. **Editor restyle** — built Oct 2026, awaiting device test. Shared editor
+   components live in CalendarHelpers.swift.
 3. **Rest days** (spec 2.2) — optional per-goal rest days; target denominator
    becomes days minus rest days.
 4. **"Share my day"** — `ShareLink` summary of today's goals for an

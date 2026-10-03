@@ -102,13 +102,13 @@ struct GoalsView: View {
                 .padding(.bottom)
             }
             .sheet(isPresented: $showingAddShortTerm) {
-                AddShortTermGoalSheet(store: store)
+                AddShortTermGoalSheet(store: store, accentColor: appearanceStore.primaryColor)
             }
             .sheet(item: $editingGoal) { goal in
                 LongTermGoalEditorSheet(goal: goal, store: store, isNewCreation: editingGoalIsNew, accentColor: appearanceStore.secondaryColor)
             }
             .sheet(item: $editingShortTermGoal) { goal in
-                ShortTermGoalEditorSheet(goal: goal, store: store, linkedAppsStore: linkedAppsStore, peopleStore: peopleStore)
+                ShortTermGoalEditorSheet(goal: goal, store: store, linkedAppsStore: linkedAppsStore, peopleStore: peopleStore, accentColor: appearanceStore.primaryColor)
             }
             .sheet(isPresented: $showingChallenges) {
                 ChallengeBrowserSheet(store: store, appearanceStore: appearanceStore)
@@ -234,10 +234,10 @@ struct ShortTermGoalRow: View {
     let goal: Goal
     @ObservedObject var store: GoalsStore
 
-    // Defaults to the original fixed teal so any call site that hasn't
+    // Defaults to the original fixed blue so any call site that hasn't
     // been updated yet still renders sensibly — but GoalsView always
     // passes the live appearance color explicitly.
-    var accentColor: Color = .vectisTeal
+    var accentColor: Color = .vectisBlue
 
     var onTapName: () -> Void
 
@@ -287,6 +287,7 @@ struct ShortTermGoalRow: View {
                         } label: {
                             Image(systemName: "minus.circle")
                         }
+                        .accessibilityLabel("One fewer")
                         .buttonStyle(.plain)
                         .disabled(goal.todayCompletionCount == 0)
 
@@ -300,6 +301,7 @@ struct ShortTermGoalRow: View {
                         } label: {
                             Image(systemName: "plus.circle.fill")
                         }
+                        .accessibilityLabel("One more")
                         .buttonStyle(.plain)
                         .foregroundStyle(accentColor)
                         .disabled(goal.todayCompletionCount >= goal.timesPerDayTarget)
@@ -464,7 +466,7 @@ struct LongTermGoalCard: View {
 
     // Same fallback-default reasoning as ShortTermGoalRow above.
     var accentColor: Color = .vectisCoral
-    var habitAccentColor: Color = .vectisTeal
+    var habitAccentColor: Color = .vectisBlue
 
     var onTapName: () -> Void
     var onTapHabit: (Goal) -> Void

@@ -227,7 +227,9 @@ struct DailyCalendarView: View {
 
     @State private var pendingRange: MinuteRange?
     @State private var editingEvent: CalendarEvent?
-    @State private var editingGoal: Goal?
+    // The goal AND the day it was tapped on, carried together in one
+    // item: a separate @State for the day can reach the sheet stale.
+    @State private var editingGoal: GoalOnDay?
     @State private var showingReviewPrompt = false
     @State private var showingFullReview = false
     @State private var showingDailyPlanning = false
@@ -294,12 +296,14 @@ struct DailyCalendarView: View {
             .sheet(item: $editingEvent) { event in
                 EventEditorSheet(store: store, peopleStore: peopleStore, goalsStore: goalsStore, editing: event)
             }
-            .sheet(item: $editingGoal) { goal in
+            .sheet(item: $editingGoal) { item in
                 ShortTermGoalEditorSheet(
-                    goal: goal,
+                    goal: item.goal,
                     store: goalsStore,
                     linkedAppsStore: linkedAppsStore,
-                    peopleStore: peopleStore
+                    peopleStore: peopleStore,
+                    accentColor: appearanceStore.primaryColor,
+                    openedFromDay: item.day
                 )
             }
             .sheet(isPresented: $showingReviewPrompt) {
@@ -351,6 +355,7 @@ struct DailyCalendarView: View {
             } label: {
                 Image(systemName: "chevron.left")
             }
+            .accessibilityLabel("Previous day")
             Spacer()
             Text(dayOffset == 0 ? "Today" : currentDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
                 .font(.subheadline.weight(.semibold))
@@ -360,6 +365,7 @@ struct DailyCalendarView: View {
             } label: {
                 Image(systemName: "chevron.right")
             }
+            .accessibilityLabel("Next day")
         }
         .padding(.horizontal)
         .padding(.vertical, 6)
@@ -559,49 +565,12 @@ struct DailyCalendarView: View {
     }
 
     private func eventsLayer(contentWidth: CGFloat) -> some View {
-        // All-day events are deliberately excluded — there's no time
-        // slot to draw them in. They show on the Long-Term calendar.
-        let realEvents = store.timedEvents(on: currentDate)
-            .filter { $0.flowsToDaily && !$0.isAllDay }
-
-        // Goals scheduled to the calendar are synthesised here rather
-        // than stored, so they always match the goal's current settings.
-        let fallbackCategory = store.categories.first?.id ?? UUID()
-        let goalBlocks = goalsStore.goals.compactMap { goal in
-            goal.scheduledBlock(on: currentDate, categoryID: goal.categoryID ?? fallbackCategory)
-        }
-
-        // A placed task becomes a transient block too, same technique —
-        // folded into the SAME layoutEvents call as everything else, so
-        // it gets correct overlap/column handling for free rather than
-        // a separate layer that could visually collide with a real event.
-        let calendar = Calendar.current
-        let taskBlocks: [CalendarEvent] = tasksStore.tasks.compactMap { task in
-            guard let scheduled = task.scheduledDate,
-                  calendar.isDate(scheduled, inSameDayAs: currentDate),
-                  let duration = task.durationMinutes
-            else { return nil }
-            var event = CalendarEvent(
-                title: task.text,
-                startDate: scheduled,
-                endDate: scheduled.addingTimeInterval(TimeInterval(duration * 60)),
-                categoryID: fallbackCategory
-            )
-            // A stable id, not the random one CalendarEvent's default
-            // init would generate fresh on every re-render — the same
-            // fix goal blocks already needed via stableBlockID. Without
-            // it, the id changes out from under armedEventID mid-drag,
-            // silently breaking the gesture. A task only has one
-            // placement at a time, so its own id is already stable
-            // enough to reuse directly — no day-derivation needed the
-            // way a repeating goal's block requires.
-            event.id = task.id
-            event.flowsToDaily = true
-            event.linkedTaskID = task.id
-            return event
-        }
-
-        let laidOut = layoutEvents(realEvents + goalBlocks + taskBlocks)
+        // Blocks entirely outside the grid's hours (or ending as the
+        // day starts, like last night's 10 PM–1 AM on a 6 AM grid) are
+        // left out, so they don't take up an overlap column unseen.
+        let blocks = DayBlocks.blocks(on: currentDate, calendarStore: store, goalsStore: goalsStore, tasksStore: tasksStore)
+            .filter { visibleMinutes(start: $0.startDate, end: $0.endDate) != nil }
+        let laidOut = layoutEvents(blocks)
         return ZStack(alignment: .topLeading) {
             ForEach(laidOut) { item in
                 eventBlock(item, contentWidth: contentWidth)
@@ -661,8 +630,10 @@ struct DailyCalendarView: View {
             displayEnd = item.event.endDate.addingTimeInterval(delta)
         }
 
-        let startMin = minutesFromMidnight(displayStart)
-        let endMin = minutesFromMidnight(displayEnd)
+        let visible = visibleMinutes(start: displayStart, end: displayEnd)
+            ?? (start: startHour * 60, end: startHour * 60)
+        let startMin = visible.start
+        let endMin = visible.end
         let top = yOffset(forMinutes: startMin)
         let height = max(yOffset(forMinutes: endMin) - top, 16)
 
@@ -696,7 +667,7 @@ struct DailyCalendarView: View {
                             .lineLimit(height > 30 ? 2 : 1)
                     }
                     if height > 34 {
-                        Text("\(timeLabel(startMin)) – \(timeLabel(endMin))")
+                        Text("\(displayStart.formatted(date: .omitted, time: .shortened)) – \(displayEnd.formatted(date: .omitted, time: .shortened))")
                             .font(.system(size: 9))
                             .foregroundStyle(textColor.opacity(0.75))
                     }
@@ -731,7 +702,9 @@ struct DailyCalendarView: View {
                 // chip strip at the top already handles ticking. An
                 // accidentally opened sheet is obvious and cancellable;
                 // an accidental completion is neither.
-                editingGoal = goalsStore.goals.first { $0.id == goalID }
+                if let goal = goalsStore.goals.first(where: { $0.id == goalID }) {
+                    editingGoal = GoalOnDay(goal: goal, day: currentDate)
+                }
             } else if let taskID {
                 // A task has no editor to open — tapping shows the
                 // small mark-done/remove action popup instead.
@@ -814,6 +787,27 @@ struct DailyCalendarView: View {
         return (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
     }
 
+    /// Minutes from the start of the day being shown — so 1 AM the
+    /// next morning is 25 × 60, not 60. Clock-based rather than elapsed
+    /// time, so a daylight-saving day still lines up with the labels.
+    private func minutesIntoShownDay(_ date: Date) -> Int {
+        let calendar = Calendar.current
+        let shownDay = calendar.startOfDay(for: currentDate)
+        let dayDifference = calendar.dateComponents([.day], from: shownDay, to: calendar.startOfDay(for: date)).day ?? 0
+        return dayDifference * 24 * 60 + minutesFromMidnight(date)
+    }
+
+    /// The part of a block that falls within the grid's hours, or nil
+    /// if none of it does. This is what fixes blocks crossing midnight:
+    /// working from clock time alone, 11 PM–12 AM came out as a sliver
+    /// (12 AM is minute 0), and an overnight event drew at its start
+    /// time on both days.
+    private func visibleMinutes(start: Date, end: Date) -> (start: Int, end: Int)? {
+        let visibleStart = max(minutesIntoShownDay(start), startHour * 60)
+        let visibleEnd = min(minutesIntoShownDay(end), endHour * 60)
+        return visibleEnd > visibleStart ? (visibleStart, visibleEnd) : nil
+    }
+
     private func yOffset(forMinutes minutes: Int) -> CGFloat {
         CGFloat(minutes - startHour * 60) / 30 * effectiveSlotHeight
     }
@@ -829,13 +823,12 @@ struct DailyCalendarView: View {
         return (raw / 30) * 30
     }
 
+    /// An hour label for the grid's gutter, in the phone's own 12- or
+    /// 24-hour style ("6 AM" or "06").
     private func timeLabel(_ minutes: Int) -> String {
-        let hour24 = minutes / 60
-        let minute = minutes % 60
-        let period = hour24 < 12 ? "AM" : "PM"
-        var hour12 = hour24 % 12
-        if hour12 == 0 { hour12 = 12 }
-        return minute == 0 ? "\(hour12) \(period)" : String(format: "%d:%02d %@", hour12, minute, period)
+        let dayStart = Calendar.current.startOfDay(for: currentDate)
+        let date = dayStart.addingTimeInterval(TimeInterval(minutes * 60))
+        return date.formatted(.dateTime.hour())
     }
 }
 
@@ -857,4 +850,11 @@ private struct PlanningDropTarget: ViewModifier {
             content
         }
     }
+}
+
+/// A goal opened from one day of the Daily planner.
+struct GoalOnDay: Identifiable {
+    let goal: Goal
+    let day: Date
+    var id: UUID { goal.id }
 }

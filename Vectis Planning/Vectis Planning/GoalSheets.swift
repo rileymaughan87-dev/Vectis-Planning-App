@@ -8,6 +8,9 @@ import SwiftUI
 /// quietly drift apart over time.
 struct RepeatDaysPicker: View {
     @Binding var repeatDays: Set<Int>
+    /// Explicit rather than `Color.accentColor`, which depends on its
+    /// surroundings and didn't reliably follow the chosen theme.
+    var accent: Color = .vectisBlue
 
     private let weekdaySymbols = Calendar.current.shortWeekdaySymbols
 
@@ -42,8 +45,8 @@ struct RepeatDaysPicker: View {
             Text(weekdaySymbols[weekday - 1])
                 .font(.caption2.weight(.medium))
                 .frame(width: 36, height: 36)
-                .background(isOn ? Color.accentColor : Color.secondary.opacity(0.15))
-                .foregroundStyle(isOn ? Color.white : Color.primary)
+                .background(isOn ? accent : Color.secondary.opacity(0.15))
+                .foregroundStyle(isOn ? accent.contrastingTextColor : Color.primary)
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -55,7 +58,7 @@ struct RepeatDaysPicker: View {
         }
         .buttonStyle(.plain)
         .font(.caption)
-        .foregroundStyle(Color.accentColor)
+        .foregroundStyle(accent)
         .frame(maxWidth: .infinity)
     }
 }
@@ -71,6 +74,7 @@ struct GoalDatePicker: View {
     @Binding var date: Date?
     var toggleLabel: String = "Set an end date"
     var dateLabel: String = "Ends on"
+    var accent: Color = .vectisBlue
 
     var body: some View {
         Toggle(toggleLabel, isOn: Binding(
@@ -104,7 +108,7 @@ struct GoalDatePicker: View {
         }
         .buttonStyle(.plain)
         .font(.caption)
-        .foregroundStyle(Color.accentColor)
+        .foregroundStyle(accent)
         .frame(maxWidth: .infinity)
     }
 }
@@ -115,6 +119,7 @@ struct GoalDatePicker: View {
 /// be created, per what we decided when designing this.
 struct AddShortTermGoalSheet: View {
     @ObservedObject var store: GoalsStore
+    var accentColor: Color = .vectisBlue
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var repeatDays: Set<Int> = Goal.allDays
@@ -122,23 +127,31 @@ struct AddShortTermGoalSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Name", text: $name)
+            ScrollView {
+                VStack(spacing: 10) {
+                    EditorTitleBox(label: "Name", placeholder: "e.g. Read 30 minutes", text: $name, accent: accentColor)
                     Text("To tie a habit to a long-term goal, add it from within that goal instead.")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
-                }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
 
-                Section("Repeats on") {
-                    RepeatDaysPicker(repeatDays: $repeatDays)
-                }
+                    EditorBox(title: "Repeats on", accent: accentColor) {
+                        RepeatDaysPicker(repeatDays: $repeatDays, accent: accentColor)
+                    }
 
-                Section("Duration") {
-                    GoalDatePicker(date: $endDate, toggleLabel: "Set a duration", dateLabel: "Ends on")
+                    EditorBox(title: "Duration", accent: accentColor) {
+                        VStack(spacing: 10) {
+                            GoalDatePicker(date: $endDate, toggleLabel: "Set a duration", dateLabel: "Ends on", accent: accentColor)
+                        }
+                        .font(.subheadline)
+                    }
                 }
+                .padding()
             }
-            .navigationTitle("Add short-term goal")
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("New goal")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -187,69 +200,42 @@ struct LongTermGoalEditorSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Name") {
-                    TextField("Name", text: $goal.title)
-                }
+            ScrollView {
+                VStack(spacing: 10) {
+                    EditorTitleBox(label: "Name", placeholder: "e.g. Finish degree", text: $goal.title, accent: accentColor)
 
-                Section("Target date") {
-                    GoalDatePicker(date: $goal.targetDate, toggleLabel: "Set a target date", dateLabel: "Complete by")
-                }
-
-                Section("Milestones") {
-                    // The `$` here gives us a Binding to each milestone in
-                    // the array, so edits inside the row (the toggle, the
-                    // text field, the date picker) write straight back into
-                    // `goal.milestones` without any extra plumbing.
-                    ForEach($goal.milestones) { $milestone in
-                        milestoneRow($milestone)
-                    }
-                    .onDelete { indexSet in
-                        goal.milestones.remove(atOffsets: indexSet)
-                    }
-
-                    Button {
-                        goal.milestones.append(Milestone(title: ""))
-                    } label: {
-                        Label("Add milestone", systemImage: "plus")
-                    }
-                }
-
-                Section("Daily habits") {
-                    let linked = store.linkedGoals(for: goal.id)
-                    if linked.isEmpty {
-                        Text("No daily habits linked yet.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(linked) { habit in
-                        Text(habit.title)
-                    }
-
-                    HStack {
-                        TextField("e.g. Study 1 hour", text: $newHabitName)
-                        Button("Add") {
-                            addHabit()
+                    EditorBox(title: "Target date", accent: accentColor) {
+                        VStack(spacing: 10) {
+                            GoalDatePicker(date: $goal.targetDate, toggleLabel: "Set a target date", dateLabel: "Complete by", accent: accentColor)
                         }
-                        .disabled(newHabitName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .font(.subheadline)
                     }
-                }
 
-                // Only when editing — during creation, Cancel already
-                // discards everything, so a Delete button would be
-                // redundant and slightly confusing.
-                if !isNewCreation {
-                    Section {
-                        Button("Delete goal", role: .destructive) {
-                            store.deleteGoal(goal.id)
-                            dismiss()
+                    milestonesBox
+                    habitsBox
+
+                    // Only when editing — during creation, Cancel already
+                    // discards everything, so a Delete button would be
+                    // redundant and slightly confusing.
+                    if !isNewCreation {
+                        VStack(spacing: 6) {
+                            Button("Delete goal") {
+                                store.deleteGoal(goal.id)
+                                dismiss()
+                            }
+                            .buttonStyle(VectisButtonStyle(kind: .destructive))
+                            Text("Any daily habits linked to this goal will be deleted too.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
-                    } footer: {
-                        Text("Any daily habits linked to this goal will be deleted too.")
+                        .padding(.top, 4)
                     }
                 }
+                .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle(isNewCreation ? "New goal" : "Edit goal")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -274,19 +260,88 @@ struct LongTermGoalEditorSheet: View {
         }
     }
 
+    private var milestonesBox: some View {
+        EditorBox(title: "Milestones", accent: accentColor, trailing: milestonesSummary) {
+            VStack(alignment: .leading, spacing: 12) {
+                // The `$` gives a Binding to each milestone, so edits in
+                // the row write straight back into `goal.milestones`.
+                ForEach($goal.milestones) { $milestone in
+                    milestoneRow($milestone)
+                    Divider()
+                }
+                Button {
+                    goal.milestones.append(Milestone(title: ""))
+                } label: {
+                    Label("Add milestone", systemImage: "plus")
+                }
+                .buttonStyle(VectisButtonStyle(kind: .secondary, accent: accentColor))
+            }
+        }
+    }
+
+    private var milestonesSummary: String? {
+        guard !goal.milestones.isEmpty else { return nil }
+        return "\(goal.milestones.filter { $0.done }.count) of \(goal.milestones.count) done"
+    }
+
+    private var habitsBox: some View {
+        EditorBox(title: "Daily habits", accent: accentColor) {
+            VStack(alignment: .leading, spacing: 10) {
+                let linked = store.linkedGoals(for: goal.id)
+                if linked.isEmpty {
+                    Text("No daily habits linked yet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(linked) { habit in
+                    Text(habit.title)
+                        .font(.subheadline)
+                }
+                HStack(spacing: 8) {
+                    TextField("e.g. Study 1 hour", text: $newHabitName)
+                        .font(.subheadline)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                                .fill(Color(.tertiarySystemGroupedBackground))
+                        )
+                    Button("Add") {
+                        addHabit()
+                    }
+                    .buttonStyle(VectisButtonStyle(kind: .primary, accent: accentColor))
+                    .fixedSize()
+                    .disabled(newHabitName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private func milestoneRow(_ milestone: Binding<Milestone>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
                 Button {
                     milestone.wrappedValue.done.toggle()
                 } label: {
                     CompletionMark(isOn: milestone.wrappedValue.done, size: 20, color: accentColor)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(milestone.wrappedValue.done ? "Mark not done" : "Mark done")
                 TextField("Milestone name", text: milestone.title)
+                    .font(.subheadline)
+                Button {
+                    let id = milestone.wrappedValue.id
+                    goal.milestones.removeAll { $0.id == id }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Delete milestone")
             }
             Toggle("Add to calendar", isOn: milestone.addToCalendar)
+                .font(.subheadline)
             if milestone.wrappedValue.addToCalendar {
                 DatePicker(
                     "Date",
@@ -296,6 +351,7 @@ struct LongTermGoalEditorSheet: View {
                     ),
                     displayedComponents: .date
                 )
+                .font(.subheadline)
             }
         }
     }
@@ -320,6 +376,11 @@ struct ShortTermGoalEditorSheet: View {
     @ObservedObject var store: GoalsStore
     @ObservedObject var linkedAppsStore: LinkedAppsStore
     @ObservedObject var peopleStore: PeopleStore
+    var accentColor: Color = .vectisBlue
+    /// Set when opened by tapping a block on the Daily planner. The
+    /// editor then offers removing just that day's block instead of
+    /// deleting the goal — deleting belongs on the Goals page.
+    var openedFromDay: Date? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var showingAppPicker = false
     @State private var showingPersonPicker = false
@@ -332,11 +393,13 @@ struct ShortTermGoalEditorSheet: View {
     @State private var originalScheduledStartMinutes: Int
     @State private var originalScheduledDurationMinutes: Int
 
-    init(goal: Goal, store: GoalsStore, linkedAppsStore: LinkedAppsStore, peopleStore: PeopleStore) {
+    init(goal: Goal, store: GoalsStore, linkedAppsStore: LinkedAppsStore, peopleStore: PeopleStore, accentColor: Color = .vectisBlue, openedFromDay: Date? = nil) {
         _goal = State(initialValue: goal)
         self.store = store
         self.linkedAppsStore = linkedAppsStore
         self.peopleStore = peopleStore
+        self.accentColor = accentColor
+        self.openedFromDay = openedFromDay
         _originalRepeatDays = State(initialValue: goal.repeatDays)
         _originalScheduledStartMinutes = State(initialValue: goal.scheduledStartMinutes)
         _originalScheduledDurationMinutes = State(initialValue: goal.scheduledDurationMinutes)
@@ -349,144 +412,69 @@ struct ShortTermGoalEditorSheet: View {
         return peopleStore.details(for: person)?.name ?? person.cachedName
     }
 
+    /// From the Daily planner: remove this day's block only. From the
+    /// Goals page: delete the goal.
+    @ViewBuilder
+    private var removeOrDeleteButton: some View {
+        if let day = openedFromDay {
+            VStack(alignment: .leading, spacing: 6) {
+                Button("Remove from \(day.formatted(.dateTime.weekday(.wide).day().month(.wide)))") {
+                    store.removeBlock(goal.id, on: day)
+                    dismiss()
+                }
+                .buttonStyle(VectisButtonStyle(kind: .destructive))
+                editorNote("Takes it off the calendar for this day only. The goal and its other days stay — delete the goal from the Goals page.")
+            }
+            .padding(.top, 4)
+        } else {
+            Button("Delete goal") {
+                store.deleteGoal(goal.id)
+                dismiss()
+            }
+            .buttonStyle(VectisButtonStyle(kind: .destructive))
+            .padding(.top, 4)
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Name") {
-                    TextField("Name", text: $goal.title)
-                }
+            ScrollView {
+                VStack(spacing: 10) {
+                    EditorTitleBox(label: "Name", placeholder: "e.g. Read 30 minutes", text: $goal.title, accent: accentColor)
+                    trackingBox
 
-                Section {
-                    Picker("Track by", selection: $goal.frequencyType) {
-                        Text("Specific days").tag(GoalFrequencyType.specificDays)
-                        Text("Times per week").tag(GoalFrequencyType.timesPerWeek)
-                        Text("Times per day").tag(GoalFrequencyType.timesPerDay)
-                    }
-
-                    switch goal.frequencyType {
-                    case .specificDays:
-                        RepeatDaysPicker(repeatDays: $goal.repeatDays)
-
-                    case .timesPerWeek:
-                        Stepper(
-                            "\(goal.timesPerWeekTarget) times a week",
-                            value: $goal.timesPerWeekTarget,
-                            in: 1...14
-                        )
-
-                    case .timesPerDay:
-                        Stepper(
-                            "\(goal.timesPerDayTarget) times a day",
-                            value: $goal.timesPerDayTarget,
-                            in: 1...20
-                        )
-                    }
-                } footer: {
-                    switch goal.frequencyType {
-                    case .specificDays:
-                        Text("Tracks a streak of specific weekdays, like Monday/Wednesday/Friday.")
-                    case .timesPerWeek:
-                        Text("Any days count, up to the weekly target — good for things like \"workout 3 times a week\" that don't need to land on set days.")
-                    case .timesPerDay:
-                        Text("Tracks multiple completions in one day, like drinking water 4 times.")
-                    }
-                }
-
-                Section("Duration") {
-                    GoalDatePicker(date: $goal.endDate, toggleLabel: "Set a duration", dateLabel: "Ends on")
-                }
-
-                Section {
-                    Toggle("Add to calendar", isOn: $goal.scheduledOnCalendar)
-
-                    if goal.scheduledOnCalendar {
-                        DatePicker(
-                            "Start time",
-                            selection: Binding(
-                                get: {
-                                    Calendar.current.date(
-                                        bySettingHour: goal.scheduledStartMinutes / 60,
-                                        minute: goal.scheduledStartMinutes % 60,
-                                        second: 0,
-                                        of: Date()
-                                    ) ?? Date()
-                                },
-                                set: { newDate in
-                                    let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                                    goal.scheduledStartMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
-                                }
-                            ),
-                            displayedComponents: .hourAndMinute
-                        )
-
-                        Picker("Length", selection: $goal.scheduledDurationMinutes) {
-                            Text("15 min").tag(15)
-                            Text("30 min").tag(30)
-                            Text("45 min").tag(45)
-                            Text("1 hour").tag(60)
-                            Text("1½ hours").tag(90)
-                            Text("2 hours").tag(120)
+                    EditorBox(title: "Duration", accent: accentColor) {
+                        VStack(spacing: 10) {
+                            GoalDatePicker(date: $goal.endDate, toggleLabel: "Set a duration", dateLabel: "Ends on", accent: accentColor)
                         }
-
-                        Text("Shows at \(goal.scheduledTimeText) on your daily planner, on the days set above.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Toggle("Flexible", isOn: $goal.isFlexible)
-                        Text("On means Plan and Review can nudge this around the day. Off treats it like a fixed appointment.")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        .font(.subheadline)
                     }
-                } footer: {
-                    Text("Blocks out time for this goal on the daily planner. Tap the block to tick the goal off for that day.")
-                }
 
-                Section {
+                    plannerBox
+
                     Button {
                         showingAppPicker = true
                     } label: {
-                        HStack {
-                            Text("Linked app")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Text(goal.linkedAppName ?? "None")
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        EditorSummaryRow(title: "Linked app", summary: goal.linkedAppName ?? "None")
                     }
-                } footer: {
-                    Text("Opens straight from the goal. Vectis asks how it went when you come back, rather than assuming.")
-                }
+                    .buttonStyle(.plain)
+                    editorNote("Opens straight from the goal. Planner asks how it went when you come back, rather than assuming.")
 
-                Section {
                     Button {
                         showingPersonPicker = true
                     } label: {
-                        HStack {
-                            Text("Linked person")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Text(linkedPersonName ?? "None")
-                                .foregroundStyle(.secondary)
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        EditorSummaryRow(title: "Linked person", summary: linkedPersonName ?? "None")
                     }
-                } footer: {
-                    Text("For goals like calling someone regularly. Their contact actions appear on the goal.")
-                }
+                    .buttonStyle(.plain)
+                    editorNote("For goals like calling someone regularly. Their contact actions appear on the goal.")
 
-                Section {
-                    Button("Delete goal", role: .destructive) {
-                        store.deleteGoal(goal.id)
-                        dismiss()
-                    }
+                    removeOrDeleteButton
                 }
+                .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Edit goal")
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingPersonPicker) {
                 PersonPickerSheet(peopleStore: peopleStore, selection: $goal.linkedPersonID)
             }
@@ -535,6 +523,126 @@ struct ShortTermGoalEditorSheet: View {
                         dismiss()
                     }
                     .disabled(goal.repeatDays.isEmpty)
+                }
+            }
+        }
+    }
+
+    private func editorNote(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 4)
+    }
+
+    private var trackingNote: String {
+        switch goal.frequencyType {
+        case .specificDays:
+            return "Tracks a streak of specific weekdays, like Monday/Wednesday/Friday."
+        case .timesPerWeek:
+            return "Any days count, up to the weekly target — good for things like \"workout 3 times a week\" that don't need to land on set days."
+        case .timesPerDay:
+            return "Tracks multiple completions in one day, like drinking water 4 times."
+        }
+    }
+
+    private var trackingBox: some View {
+        EditorBox(title: "Track by", accent: accentColor) {
+            VStack(alignment: .leading, spacing: 12) {
+                UnderlineSelector(
+                    options: [
+                        (value: GoalFrequencyType.specificDays, label: "Specific days"),
+                        (value: .timesPerWeek, label: "Times a week"),
+                        (value: .timesPerDay, label: "Times a day")
+                    ],
+                    selection: $goal.frequencyType,
+                    accent: accentColor,
+                    verticalPadding: 8
+                )
+
+                switch goal.frequencyType {
+                case .specificDays:
+                    RepeatDaysPicker(repeatDays: $goal.repeatDays, accent: accentColor)
+                case .timesPerWeek:
+                    Stepper("\(goal.timesPerWeekTarget) times a week", value: $goal.timesPerWeekTarget, in: 1...14)
+                        .font(.subheadline)
+                case .timesPerDay:
+                    Stepper("\(goal.timesPerDayTarget) times a day", value: $goal.timesPerDayTarget, in: 1...20)
+                        .font(.subheadline)
+                }
+
+                Text(trackingNote)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// The goal's start time as a Date, for the time picker — the goal
+    /// itself stores minutes from midnight.
+    private var startTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(
+                    bySettingHour: goal.scheduledStartMinutes / 60,
+                    minute: goal.scheduledStartMinutes % 60,
+                    second: 0,
+                    of: Date()
+                ) ?? Date()
+            },
+            set: { newDate in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                goal.scheduledStartMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+            }
+        )
+    }
+
+    private var plannerBox: some View {
+        EditorBox(title: "On the daily planner", accent: accentColor) {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("Add to calendar", isOn: $goal.scheduledOnCalendar)
+                    .font(.subheadline)
+
+                if goal.scheduledOnCalendar {
+                    HStack(spacing: 10) {
+                        EditorTimeField(label: "Starts", selection: startTimeBinding)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Length")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Picker("Length", selection: $goal.scheduledDurationMinutes) {
+                                Text("15 min").tag(15)
+                                Text("30 min").tag(30)
+                                Text("45 min").tag(45)
+                                Text("1 hour").tag(60)
+                                Text("1½ hours").tag(90)
+                                Text("2 hours").tag(120)
+                            }
+                            .labelsHidden()
+                            .tint(accentColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                                .fill(Color(.tertiarySystemGroupedBackground))
+                        )
+                    }
+
+                    Text("Shows at \(goal.scheduledTimeText) on your daily planner, on the days set above.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Toggle("Flexible", isOn: $goal.isFlexible)
+                        .font(.subheadline)
+                    Text("On means Plan and Review can nudge this around the day. Off treats it like a fixed appointment.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Blocks out time for this goal on the daily planner. Tap the block to tick the goal off for that day.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

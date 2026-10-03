@@ -1,164 +1,5 @@
 import SwiftUI
 
-// MARK: - Shared editor pieces
-
-/// A bordered box with an accent stripe beside its title — the same
-/// shape `SectionBox` gives the Goals and Home screens, so the editors
-/// stop looking like stock iOS Settings and start looking like the rest
-/// of this app.
-private struct EditorBox<Content: View>: View {
-    let title: String
-    let accent: Color
-    var trailing: String? = nil
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Rectangle()
-                    .fill(accent)
-                    .frame(width: 4, height: 16)
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                Spacer()
-                if let trailing {
-                    Text(trailing)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            content()
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
-    }
-}
-
-/// A collapsed row standing in for a whole section, showing a summary of
-/// what's inside so nothing becomes invisible just because it's folded
-/// away — you can see that something repeats, and how, without opening it.
-private struct EditorSummaryRow: View {
-    let title: String
-    let summary: String
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                Text(summary)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
-    }
-}
-
-/// Category as tappable colour chips rather than a text menu. The colour
-/// is real information the old picker hid — worth surfacing, though it
-/// would need rethinking past roughly five or six categories, since
-/// chips wrap rather than scroll.
-private struct CategoryChips: View {
-    let categories: [CalendarCategory]
-    @Binding var selection: UUID?
-
-    var body: some View {
-        FlowRow(spacing: 6) {
-            ForEach(categories) { category in
-                chip(for: category)
-            }
-        }
-    }
-
-    private func chip(for category: CalendarCategory) -> some View {
-        let color = Color(hex: category.colorHex)
-        let isSelected = selection == category.id
-        return Button {
-            selection = category.id
-        } label: {
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 8, height: 8)
-                Text(category.name)
-                    .font(.caption)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
-                    .fill(isSelected ? color.opacity(0.15) : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
-                    .strokeBorder(isSelected ? color : Color(.separator), lineWidth: isSelected ? 1.5 : 0.5)
-            )
-            .foregroundStyle(isSelected ? .primary : .secondary)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-/// Wraps its children onto new lines when they run out of width, which
-/// a plain HStack won't do. Needed for the category chips, since how
-/// many fit per row depends on the names.
-private struct FlowRow: Layout {
-    var spacing: CGFloat = 6
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        // Falls back to the screen width rather than infinity — an
-        // unconstrained proposal should be rare here since this always
-        // sits inside a screen-width ScrollView, but reporting infinity
-        // if it ever happened would make the whole row refuse to wrap.
-        let maxWidth = proposal.width ?? (UIScreen.main.bounds.width - 60)
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth, x > 0 {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-        return CGSize(width: maxWidth, height: y + rowHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowHeight: CGFloat = 0
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX, x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-    }
-}
-
-
 // MARK: - Event editor
 
 struct EventEditorSheet: View {
@@ -183,6 +24,7 @@ struct EventEditorSheet: View {
 
     @State private var showingPersonPicker = false
     @State private var showingDeleteOptions = false
+    @State private var showingTimeScope = false
     @State private var parts: [EventPart] = []
     @State private var loggingActual = false
     @State private var loggedMinutes = 30
@@ -266,7 +108,10 @@ struct EventEditorSheet: View {
         _recurrenceEndDate = State(initialValue: event.recurrenceEndDate)
         _repeatDays = State(initialValue: event.repeatDays)
         _parts = State(initialValue: event.parts)
-        _loggedMinutes = State(initialValue: event.actualMinutes ?? max(Int(event.endDate.timeIntervalSince(event.startDate) / 60), 5))
+        let loggedSoFar = event.recurrence == .none
+            ? event.actualMinutes
+            : event.occurrenceActuals[Goal.dayKey(event.startDate)]
+        _loggedMinutes = State(initialValue: loggedSoFar ?? max(Int(event.endDate.timeIntervalSince(event.startDate) / 60), 5))
         _linkedPersonID = State(initialValue: event.linkedPersonID)
         _linkedGoalID = State(initialValue: event.linkedGoalID)
         _userSetDailyManually = State(initialValue: true)
@@ -288,21 +133,31 @@ struct EventEditorSheet: View {
     /// of breaking a task down, not an error — see the note on `parts`
     /// in CalendarModels. So this never silently compresses or grows
     /// anything; it states the gap and offers an explicit choice.
-    /// Only offered for an existing, timed, non-repeating event whose
-    /// start time has already passed — there's nothing to log for a new
-    /// event, an all-day one, or something that hasn't happened yet.
-    /// Repeating events are excluded because there's no per-occurrence
-    /// duration override to log against yet (see the footer note above).
+    /// Only offered for an existing, timed event whose start time has
+    /// already passed — there's nothing to log for a new event, an
+    /// all-day one, or something that hasn't happened yet. For a
+    /// repeating event, it logs the occurrence that was opened.
     private var canLogActual: Bool {
-        guard let event = originalEvent, !isAllDay, event.recurrence == .none else { return false }
+        guard let event = originalEvent, !isAllDay else { return false }
         return Date() >= event.startDate
+    }
+
+    /// What's logged right now, read live from the store — the event this
+    /// editor opened with is a snapshot, so it wouldn't show a log made
+    /// a moment ago.
+    private var currentLoggedMinutes: Int? {
+        guard let original = originalEvent,
+              let live = store.events.first(where: { $0.id == original.id }) else { return nil }
+        return original.recurrence == .none
+            ? live.actualMinutes
+            : live.occurrenceActuals[Goal.dayKey(original.startDate)]
     }
 
 
     private var accentColor: Color {
         guard let categoryID,
               let category = store.categories.first(where: { $0.id == categoryID })
-        else { return .vectisTeal }
+        else { return .vectisBlue }
         return Color(hex: category.colorHex)
     }
 
@@ -411,6 +266,20 @@ struct EventEditorSheet: View {
             } message: {
                 Text("Delete just this one, or the whole series?")
             }
+            // Asked only when the time of one day of a repeating event
+            // changed. Everything else (title, category…) always applies
+            // to the whole series.
+            .confirmationDialog(
+                "This is a repeating event",
+                isPresented: $showingTimeScope,
+                titleVisibility: .visible
+            ) {
+                Button("This day only") { save(timeScope: .thisDay) }
+                Button("This and all future days") { save(timeScope: .future) }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Change the time for just this day, or from now on? Earlier days keep the times they had.")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -423,25 +292,7 @@ struct EventEditorSheet: View {
     }
 
     private var titleBox: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Title")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            TextField("New event", text: $title)
-                .font(.title3)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(
-            Rectangle().fill(Color(.secondarySystemGroupedBackground))
-        )
-        .overlay(alignment: .leading) {
-            // The category's own colour, so the event's colour is
-            // visible the moment the editor opens rather than buried
-            // inside a picker.
-            Rectangle().fill(accentColor).frame(width: 4)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.cardRadius, style: .continuous))
+        EditorTitleBox(placeholder: "New event", text: $title, accent: accentColor)
     }
 
     /// Moves BOTH start and end by the same number of days, preserving
@@ -544,25 +395,7 @@ struct EventEditorSheet: View {
     }
 
     private func timeField(_ label: String, selection: Binding<Date>) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            // Time-only, not date-and-time — a compact picker showing
-            // both ("9/18/26, 10:00 AM") is too wide for two of these
-            // side by side. scaleEffect doesn't help here: it shrinks
-            // how a view LOOKS, not the space SwiftUI reserves for it,
-            // so the row still overflowed even though it visually
-            // appeared smaller.
-            DatePicker("", selection: selection, displayedComponents: .hourAndMinute)
-                .labelsHidden()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
-                .fill(Color(.tertiarySystemGroupedBackground))
-        )
+        EditorTimeField(label: label, selection: selection)
     }
 
     private var categoryBox: some View {
@@ -607,8 +440,15 @@ struct EventEditorSheet: View {
                     HStack(spacing: 8) {
                         Button("Log it") {
                             guard let event = originalEvent else { return }
-                            let newEnd = event.startDate.addingTimeInterval(TimeInterval(loggedMinutes * 60))
-                            store.resizeEvent(event.id, newEnd: newEnd)
+                            if event.recurrence == .none {
+                                let newEnd = event.startDate.addingTimeInterval(TimeInterval(loggedMinutes * 60))
+                                store.resizeEvent(event.id, newEnd: newEnd)
+                                // Keep the editor's End in step, so tapping
+                                // Save afterwards doesn't put the old end back.
+                                end = newEnd
+                            } else {
+                                store.logOccurrenceActual(eventID: event.id, date: event.startDate, minutes: loggedMinutes)
+                            }
                             loggingActual = false
                         }
                         .buttonStyle(VectisButtonStyle(kind: .primary, accent: accentColor))
@@ -620,11 +460,11 @@ struct EventEditorSheet: View {
                     Button {
                         loggingActual = true
                     } label: {
-                        Text(originalEvent?.actualMinutes != nil ? "Update logged time" : "Log actual time")
+                        Text(currentLoggedMinutes != nil ? "Update logged time" : "Log actual time")
                     }
                     .buttonStyle(VectisButtonStyle(kind: .secondary, accent: accentColor))
 
-                    if let actual = originalEvent?.actualMinutes {
+                    if let actual = currentLoggedMinutes {
                         HStack {
                             Text("Logged: \(actual) min")
                                 .font(.caption2)
@@ -638,7 +478,12 @@ struct EventEditorSheet: View {
     }
 
 
-    private func save() {
+    private enum TimeScope { case thisDay, future }
+
+    /// `timeScope` is nil on the first tap of Save. If a repeating
+    /// event's time changed, Save stops and asks, then runs again with
+    /// the answer — before anything has been written.
+    private func save(timeScope: TimeScope? = nil) {
         guard let categoryID else { return }
         let resolvedTitle = title.trimmingCharacters(in: .whitespaces).isEmpty ? "New event" : title
 
@@ -670,6 +515,24 @@ struct EventEditorSheet: View {
                 // the occurrence-shifted copy — for anything date-related.
                 guard var series = store.events.first(where: { $0.id == original.id }) else { return }
 
+                // Times are compared as time of day and length, so this
+                // works on any occurrence, not just the series' first.
+                let calendar = Calendar.current
+                let occurrenceDay = calendar.startOfDay(for: original.startDate)
+                let originalComps = calendar.dateComponents([.hour, .minute], from: original.startDate)
+                let newComps = calendar.dateComponents([.hour, .minute], from: resolvedStart)
+                let originalStartMinutes = (originalComps.hour ?? 0) * 60 + (originalComps.minute ?? 0)
+                let newStartMinutes = (newComps.hour ?? 0) * 60 + (newComps.minute ?? 0)
+                let originalMinutes = Int(original.endDate.timeIntervalSince(original.startDate) / 60)
+                let newMinutes = Int(resolvedEnd.timeIntervalSince(resolvedStart) / 60)
+                let timesChanged = !isAllDay
+                    && (newStartMinutes != originalStartMinutes || newMinutes != originalMinutes)
+
+                guard !timesChanged || timeScope != nil else {
+                    showingTimeScope = true
+                    return
+                }
+
                 series.title = resolvedTitle
                 series.categoryID = categoryID
                 series.isAllDay = isAllDay
@@ -686,20 +549,25 @@ struct EventEditorSheet: View {
                 // the series keeps its real anchor.
                 store.updateEvent(series)
 
-                // A start-time change on THIS occurrence becomes a
-                // per-day override — the same mechanism dragging an
-                // occurrence already uses — rather than moving the
-                // series. There's currently no per-day DURATION
-                // override, so an end-only change on a repeating event
-                // isn't logged as an actual yet; that needs its own
-                // model work rather than reusing setOccurrenceTime,
-                // which assumes the series' normal duration.
-                if resolvedStart != original.startDate {
-                    let calendar = Calendar.current
-                    let occurrenceDay = calendar.startOfDay(for: original.startDate)
-                    let comps = calendar.dateComponents([.hour, .minute], from: resolvedStart)
-                    let startMinutes = (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
-                    store.setOccurrenceTime(eventID: original.id, date: occurrenceDay, startMinutes: startMinutes)
+                if timesChanged {
+                    switch timeScope {
+                    case .future:
+                        store.changeTimesFromOccurrence(
+                            eventID: original.id,
+                            date: occurrenceDay,
+                            startMinutes: newStartMinutes,
+                            durationMinutes: newMinutes
+                        )
+                    case .thisDay, .none:
+                        // Per-day overrides — the same mechanism dragging
+                        // an occurrence already uses.
+                        if newStartMinutes != originalStartMinutes {
+                            store.setOccurrenceTime(eventID: original.id, date: occurrenceDay, startMinutes: newStartMinutes)
+                        }
+                        if newMinutes != originalMinutes {
+                            store.setOccurrenceDuration(eventID: original.id, date: occurrenceDay, minutes: newMinutes)
+                        }
+                    }
                 }
             } else {
                 // A one-off event has only one occurrence, so its own
@@ -715,6 +583,13 @@ struct EventEditorSheet: View {
                 // reason) could get silently recorded as calibration
                 // data. Logging an actual is now its own explicit
                 // button below, never inferred from just editing a field.
+                //
+                // Starts from the live event rather than the snapshot the
+                // editor opened with, so a time logged moments ago with
+                // that button isn't wiped out by saving.
+                if let live = store.events.first(where: { $0.id == original.id }) {
+                    updated = live
+                }
                 updated.title = resolvedTitle
                 updated.categoryID = categoryID
                 updated.startDate = resolvedStart
@@ -814,7 +689,7 @@ private struct RepeatsDetailView: View {
                         )
                     }
                 } footer: {
-                    Text("Changing the start time of a repeating event moves only the occurrence you opened. Changing just the end time isn't tracked per-occurrence yet.")
+                    Text("Changing the time of a repeating event asks whether it's for this day only or this and all future days. Earlier days keep the times they had.")
                 }
             }
         }

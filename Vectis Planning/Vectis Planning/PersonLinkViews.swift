@@ -105,6 +105,15 @@ struct ContactActionsRow: View {
         }
     }
 
+    private func accessibilityName(for symbol: String) -> String {
+        let name = details?.name ?? ""
+        switch symbol {
+        case "phone": return "Call \(name)"
+        case "message": return "Message \(name)"
+        default: return "WhatsApp \(name)"
+        }
+    }
+
     private func action(_ symbol: String, _ template: String) -> some View {
         Button {
             guard let details else { return }
@@ -119,6 +128,7 @@ struct ContactActionsRow: View {
                 .font(.system(size: compact ? 15 : 16))
                 .foregroundStyle(accentColor)
         }
+        .accessibilityLabel(accessibilityName(for: symbol))
         .buttonStyle(.plain)
     }
 

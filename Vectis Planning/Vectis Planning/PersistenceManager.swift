@@ -160,7 +160,7 @@ extension AppearanceSettings {
         mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "system"
         selectedPresetID = try c.decodeIfPresent(String.self, forKey: .selectedPresetID) ?? "tealCoral"
         isCustom = try c.decodeIfPresent(Bool.self, forKey: .isCustom) ?? false
-        customPrimaryHex = try c.decodeIfPresent(String.self, forKey: .customPrimaryHex) ?? "1C8C82"
+        customPrimaryHex = try c.decodeIfPresent(String.self, forKey: .customPrimaryHex) ?? "0068B5"
         customSecondaryHex = try c.decodeIfPresent(String.self, forKey: .customSecondaryHex) ?? "D2574A"
         customTertiaryHex = try c.decodeIfPresent(String.self, forKey: .customTertiaryHex) ?? "C9922E"
     }

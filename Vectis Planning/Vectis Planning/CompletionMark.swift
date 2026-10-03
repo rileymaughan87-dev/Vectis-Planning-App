@@ -23,7 +23,7 @@ struct LeverTickMark: Shape {
 struct CompletionMark: View {
     var isOn: Bool
     var size: CGFloat = 20
-    var color: Color = .vectisTeal
+    var color: Color = .vectisBlue
 
     var body: some View {
         ZStack {

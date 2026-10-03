@@ -65,8 +65,9 @@ struct SidebarMenu: View {
                         Image(systemName: "xmark")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityLabel("Close menu")
                     Spacer()
-                    Text("Vectis")
+                    Text(AppBrand.wordmark)
                         .font(.system(.title3, design: .serif).italic().weight(.medium))
                         .foregroundStyle(appearanceStore.primaryColor)
                 }

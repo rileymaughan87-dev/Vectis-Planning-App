@@ -74,7 +74,7 @@ struct RecordView: View {
                 }
             }
             // No navigationTitle here, matching Goals and Home — the
-            // app's own persistent chrome already shows "Vectis" up
+            // app's own persistent chrome already shows the app name up
             // top, so a second big page-name heading directly under it
             // was pure redundancy, not helpful orientation.
             .toolbar {
@@ -98,19 +98,19 @@ struct RecordView: View {
                 }
             }
             .sheet(isPresented: $showingTypePicker) {
-                NoteTypePickerSheet { type in
+                NoteTypePickerSheet(accentColor: appearanceStore.primaryColor) { type in
                     showingTypePicker = false
                     newNoteType = type
                 }
             }
             .sheet(isPresented: $showingNewNotebook) {
-                NotebookEditorSheet(store: store, goalsStore: goalsStore)
+                NotebookEditorSheet(store: store, goalsStore: goalsStore, accentColor: appearanceStore.primaryColor)
             }
             .sheet(item: $newNoteType) { type in
-                NoteEditorSheet(store: store, goalsStore: goalsStore, type: type)
+                NoteEditorSheet(store: store, goalsStore: goalsStore, type: type, accentColor: appearanceStore.primaryColor)
             }
             .sheet(item: $editingNote) { note in
-                NoteEditorSheet(store: store, goalsStore: goalsStore, editing: note)
+                NoteEditorSheet(store: store, goalsStore: goalsStore, editing: note, accentColor: appearanceStore.primaryColor)
             }
             .sheet(item: $openNotebook) { notebook in
                 NotebookDetailView(notebook: notebook, store: store, goalsStore: goalsStore, appearanceStore: appearanceStore)
@@ -124,31 +124,11 @@ struct RecordView: View {
     // differently-behaving "+" in the nav bar at the same time would
     // just be confusing about which one to use.
     private var selector: some View {
-        HStack(spacing: 0) {
-            ForEach(RecordSection.allCases, id: \.self) { s in
-                Button {
-                    section = s
-                } label: {
-                    Text(s.label)
-                        .font(.caption.weight(section == s ? .semibold : .regular))
-                        .foregroundStyle(section == s ? appearanceStore.primaryColor : .secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .fill(section == s ? appearanceStore.primaryColor : Color.clear)
-                                .frame(height: 2)
-                        }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal)
-        .background(
-            Rectangle()
-                .fill(Color(.separator).opacity(0.5))
-                .frame(height: 0.5),
-            alignment: .bottom
+        UnderlineSelector(
+            options: RecordSection.allCases.map { (value: $0, label: $0.label) },
+            selection: $section,
+            accent: appearanceStore.primaryColor,
+            horizontalPadding: 16
         )
     }
 }

@@ -92,6 +92,7 @@ struct PeopleView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add person")
                 }
             }
             .sheet(isPresented: $showingPicker) {
@@ -122,7 +123,7 @@ struct PeopleView: View {
                     birthdayPromptPerson = nil
                 }
             } message: {
-                Text("Want Vectis to add birthdays to your calendar for everyone you add from now on? You can change this later in Settings.")
+                Text("Want Planner to add birthdays to your calendar for everyone you add from now on? You can change this later in Settings.")
             }
         }
     }
@@ -166,6 +167,14 @@ struct PeopleView: View {
         }
     }
 
+    private func accessibilityName(for action: ContactAction, name: String) -> String {
+        switch action {
+        case .call: return "Call \(name)"
+        case .message: return "Message \(name)"
+        case .whatsapp: return "WhatsApp \(name)"
+        }
+    }
+
     private func actionButton(_ person: Person, _ details: PersonDetails, _ action: ContactAction, _ symbol: String) -> some View {
         Button {
             // Only asks which number when there's genuinely a choice —
@@ -181,6 +190,7 @@ struct PeopleView: View {
                 .font(.system(size: 16))
                 .foregroundStyle(appearanceStore.primaryColor)
         }
+        .accessibilityLabel(accessibilityName(for: action, name: details.name))
         .buttonStyle(.plain)
     }
 
@@ -331,12 +341,12 @@ struct PersonDetailView: View {
                 }
 
                 Section {
-                    Button("Remove from Vectis", role: .destructive) {
+                    Button("Remove from Planner", role: .destructive) {
                         store.delete(person.id)
                         dismiss()
                     }
                 } footer: {
-                    Text("Only removes them from Vectis. The contact itself stays on your phone.")
+                    Text("Only removes them from Planner. The contact itself stays on your phone.")
                 }
             }
             .navigationTitle(details?.name ?? person.cachedName)
@@ -353,7 +363,7 @@ struct PersonDetailView: View {
                 Button("Add all") { store.enableAllBirthdays() }
                 Button("Just this one") { store.hasAskedAboutBirthdays = true }
             } message: {
-                Text("Want Vectis to add birthdays to your calendar for everyone you add from now on? You can change this later in Settings.")
+                Text("Want Planner to add birthdays to your calendar for everyone you add from now on? You can change this later in Settings.")
             }
         }
     }

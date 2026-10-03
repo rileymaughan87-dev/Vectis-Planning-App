@@ -62,23 +62,26 @@ struct NotebookEditorSheet: View {
     @ObservedObject var store: NotesStore
     @ObservedObject var goalsStore: GoalsStore
     let originalNotebook: Notebook?
+    var accentColor: Color = .vectisBlue
 
     @Environment(\.dismiss) private var dismiss
     @State private var title: String
     @State private var linkedGoalID: UUID?
 
-    init(store: NotesStore, goalsStore: GoalsStore) {
+    init(store: NotesStore, goalsStore: GoalsStore, accentColor: Color = .vectisBlue) {
         self.store = store
         self.goalsStore = goalsStore
         self.originalNotebook = nil
+        self.accentColor = accentColor
         _title = State(initialValue: "")
         _linkedGoalID = State(initialValue: nil)
     }
 
-    init(store: NotesStore, goalsStore: GoalsStore, editing notebook: Notebook) {
+    init(store: NotesStore, goalsStore: GoalsStore, editing notebook: Notebook, accentColor: Color = .vectisBlue) {
         self.store = store
         self.goalsStore = goalsStore
         self.originalNotebook = notebook
+        self.accentColor = accentColor
         _title = State(initialValue: notebook.title)
         _linkedGoalID = State(initialValue: notebook.linkedGoalID)
     }
@@ -87,26 +90,34 @@ struct NotebookEditorSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Name") {
-                    TextField("Notebook name", text: $title)
-                }
+            ScrollView {
+                VStack(spacing: 10) {
+                    EditorTitleBox(label: "Name", placeholder: "Notebook name", text: $title, accent: accentColor)
 
-                Section("Link to a goal (optional)") {
-                    GoalLinkPicker(goalsStore: goalsStore, selection: $linkedGoalID)
-                }
+                    EditorBox(title: "Link to a goal (optional)", accent: accentColor) {
+                        GoalLinkPicker(goalsStore: goalsStore, selection: $linkedGoalID)
+                            .font(.subheadline)
+                            .tint(accentColor)
+                    }
 
-                if let original = originalNotebook {
-                    Section {
-                        Button("Delete notebook", role: .destructive) {
-                            store.deleteNotebook(original.id)
-                            dismiss()
+                    if let original = originalNotebook {
+                        VStack(spacing: 6) {
+                            Button("Delete notebook") {
+                                store.deleteNotebook(original.id)
+                                dismiss()
+                            }
+                            .buttonStyle(VectisButtonStyle(kind: .destructive))
+                            Text("Notes inside this notebook won't be deleted — they'll move back to their own sections.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
-                    } footer: {
-                        Text("Notes inside this notebook won't be deleted — they'll move back to their own sections.")
+                        .padding(.top, 4)
                     }
                 }
+                .padding()
             }
+            .background(Color(.systemGroupedBackground))
+            .navigationBarTitleDisplayMode(.inline)
             .navigationTitle(isEditing ? "Edit notebook" : "New notebook")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -190,10 +201,10 @@ struct NotebookDetailView: View {
                 }
             }
             .sheet(isPresented: $showingEditNotebook) {
-                NotebookEditorSheet(store: store, goalsStore: goalsStore, editing: notebook)
+                NotebookEditorSheet(store: store, goalsStore: goalsStore, editing: notebook, accentColor: appearanceStore.primaryColor)
             }
             .sheet(isPresented: $showingTypePicker) {
-                NoteTypePickerSheet { type in
+                NoteTypePickerSheet(accentColor: appearanceStore.primaryColor) { type in
                     showingTypePicker = false
                     newNoteType = type
                 }
@@ -202,10 +213,10 @@ struct NotebookDetailView: View {
                 // Passing the notebook's ID files the new note straight
                 // into this notebook, rather than creating it loose and
                 // making you go link it afterwards.
-                NoteEditorSheet(store: store, goalsStore: goalsStore, type: type, inNotebook: notebook.id)
+                NoteEditorSheet(store: store, goalsStore: goalsStore, type: type, inNotebook: notebook.id, accentColor: appearanceStore.primaryColor)
             }
             .sheet(item: $editingNote) { note in
-                NoteEditorSheet(store: store, goalsStore: goalsStore, editing: note)
+                NoteEditorSheet(store: store, goalsStore: goalsStore, editing: note, accentColor: appearanceStore.primaryColor)
             }
         }
     }

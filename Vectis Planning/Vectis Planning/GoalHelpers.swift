@@ -118,7 +118,8 @@ extension Goal {
     /// planner knows it's goal-derived and can let you tick it off
     /// directly rather than treating it as an editable event.
     func scheduledBlock(on date: Date, categoryID: UUID) -> CalendarEvent? {
-        guard scheduledOnCalendar, isScheduled(on: date) else { return nil }
+        guard scheduledOnCalendar, isScheduled(on: date),
+              !hiddenBlockDays.contains(Goal.dayKey(date)) else { return nil }
 
         let calendar = Calendar.current
         let dayStart = calendar.startOfDay(for: date)
@@ -175,14 +176,12 @@ extension Goal {
     }
 
     /// Formatted time range for showing in the goal editor.
+    /// In the phone's own 12- or 24-hour style.
     var scheduledTimeText: String {
+        let dayStart = Calendar.current.startOfDay(for: Date())
         func label(_ minutes: Int) -> String {
-            let hour24 = (minutes / 60) % 24
-            let minute = minutes % 60
-            let period = hour24 < 12 ? "AM" : "PM"
-            var hour12 = hour24 % 12
-            if hour12 == 0 { hour12 = 12 }
-            return minute == 0 ? "\(hour12) \(period)" : String(format: "%d:%02d %@", hour12, minute, period)
+            dayStart.addingTimeInterval(TimeInterval(minutes * 60))
+                .formatted(date: .omitted, time: .shortened)
         }
         return "\(label(scheduledStartMinutes)) – \(label(scheduledStartMinutes + scheduledDurationMinutes))"
     }
@@ -228,6 +227,14 @@ extension Goal {
         return min(created, earliestLogged ?? created)
     }
 
+    /// The first day statistics count from: the goal's first day, or
+    /// a challenge restart if there's been one since. Ticks from before
+    /// stay in `completions` — they just aren't counted.
+    var statsFirstDayKey: String {
+        guard let statsStartDate else { return firstDayKey }
+        return max(firstDayKey, Goal.dayKey(statsStartDate))
+    }
+
     var isScheduledToday: Bool {
         isScheduled(on: Date())
     }
@@ -251,7 +258,8 @@ extension Goal {
         var count = 0
         var cursor = week.start
         while cursor < week.end {
-            if completions[Goal.dayKey(cursor)] == true { count += 1 }
+            let key = Goal.dayKey(cursor)
+            if key >= statsFirstDayKey && completions[key] == true { count += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
         }
@@ -292,7 +300,8 @@ extension Goal {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else {
                 return .notScheduled
             }
-            guard isScheduled(on: day) else { return .notScheduled }
+            // Before a challenge restart counts as a clean slate.
+            guard Goal.dayKey(day) >= statsFirstDayKey, isScheduled(on: day) else { return .notScheduled }
             if completions[Goal.dayKey(day)] == true { return .done }
             // Today isn't a miss yet — there's still time.
             return offset == 0 ? .pending : .missed
@@ -314,11 +323,12 @@ extension Goal {
     /// ever goes up. A bad week knocks a streak to zero but leaves this
     /// untouched, which is a truer picture of the reps accumulated.
     var totalCompletions: Int {
+        let start = statsFirstDayKey
         switch frequencyType {
         case .timesPerDay:
-            return completionCounts.values.reduce(0, +)
+            return completionCounts.filter { $0.key >= start }.values.reduce(0, +)
         case .specificDays, .timesPerWeek:
-            return completions.values.filter { $0 }.count
+            return completions.filter { $0.key >= start && $0.value }.count
         }
     }
 
@@ -334,6 +344,8 @@ extension Goal {
         var count = 0
         for offset in 1...60 {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { break }
+            // A challenge restart is a clean slate: stop counting there.
+            if Goal.dayKey(day) < statsFirstDayKey { break }
             guard isScheduled(on: day) else { continue }
             if completions[Goal.dayKey(day)] == true { break }
             // No record at all also counts — an unmarked scheduled day
@@ -362,7 +374,8 @@ extension Goal {
     /// ignored rather than counted as misses, so a brand-new goal doesn't
     /// start at 0%.
     var completionPercentage: Int {
-        let known = completions.values
+        let start = statsFirstDayKey
+        let known = completions.filter { $0.key >= start }.values
         guard !known.isEmpty else { return 0 }
         let doneCount = known.filter { $0 }.count
         return Int((Double(doneCount) / Double(known.count) * 100).rounded())

@@ -95,7 +95,7 @@ struct DayDetailSheet: View {
     @ObservedObject var calendarStore: CalendarStore
     @ObservedObject var goalsStore: GoalsStore
     @ObservedObject var peopleStore: PeopleStore
-    var milestoneColorHex: String = "#1C8C82"
+    var milestoneColorHex: String = "#0068B5"
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingAddEvent = false
@@ -111,10 +111,16 @@ struct DayDetailSheet: View {
     /// Pairs each event item with its full CalendarEvent (for the actual
     /// start/end times) and sorts by start time, so the list reads top
     /// to bottom the same way your day actually unfolds.
+    ///
+    /// Uses this day's copy of each event (`timedEvents(on:)`), not the
+    /// stored series. For a repeating event the stored one carries its
+    /// FIRST day's date, so the editor used to apply "this day only"
+    /// changes, deletions and logged time to the wrong day.
     private var sortedEventPairs: [(item: LongTermDayItem, event: CalendarEvent)] {
-        eventItems
+        let eventsOnDay = calendarStore.timedEvents(on: date)
+        return eventItems
             .compactMap { item in
-                guard let event = calendarStore.events.first(where: { $0.id == item.id }) else { return nil }
+                guard let event = eventsOnDay.first(where: { $0.id == item.id }) else { return nil }
                 return (item, event)
             }
             .sorted { $0.event.startDate < $1.event.startDate }
@@ -184,6 +190,7 @@ struct DayDetailSheet: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add event")
                 }
             }
             .sheet(isPresented: $showingAddEvent) {

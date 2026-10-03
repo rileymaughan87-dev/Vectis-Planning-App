@@ -53,9 +53,8 @@ enum PlanningItems {
 /// used by both the capture popup and the drag tray, so the two can
 /// never show different numbers for the same day.
 ///
-/// "Committed" is the time covered by at least one block — timed
-/// events on the Daily grid, short-term goals scheduled on the
-/// calendar, and placed tasks not yet done. Overlapping blocks count
+/// "Committed" is the time covered by at least one block on the Daily
+/// grid (see `DayBlocks`), leaving out placed tasks already done. Overlapping blocks count
 /// once: a goal sitting on top of a meeting doesn't make the day any
 /// fuller, and summing them could push the figure past 100%.
 enum PlanningCommitment {
@@ -68,33 +67,17 @@ enum PlanningCommitment {
         tasksStore: TasksStore,
         date: Date
     ) -> Double {
-        let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: date)
+        let dayStart = Calendar.current.startOfDay(for: date)
         let windowStart = dayStart.addingTimeInterval(TimeInterval(calendarStore.dailyCalendarStartHour * 3600))
         let windowEnd = dayStart.addingTimeInterval(TimeInterval(calendarStore.dailyCalendarEndHour * 3600))
         let windowLength = windowEnd.timeIntervalSince(windowStart)
         guard windowLength > 0 else { return 0 }
 
-        var intervals: [(start: Date, end: Date)] = []
-
-        for event in calendarStore.timedEvents(on: date) where event.flowsToDaily && !event.isAllDay {
-            intervals.append((event.startDate, event.endDate))
-        }
-
-        // The category is irrelevant here — only the block's times matter.
-        for goal in goalsStore.goals where goal.kind == .shortTerm {
-            if let block = goal.scheduledBlock(on: date, categoryID: UUID()) {
-                intervals.append((block.startDate, block.endDate))
-            }
-        }
-
-        for task in tasksStore.tasks where !task.done {
-            guard let scheduled = task.scheduledDate,
-                  calendar.isDate(scheduled, inSameDayAs: date),
-                  let duration = task.durationMinutes
-            else { continue }
-            intervals.append((scheduled, scheduled.addingTimeInterval(TimeInterval(duration * 60))))
-        }
+        // Done tasks no longer take up time; everything else on the
+        // grid does, including goals already ticked off.
+        let intervals = DayBlocks.blocks(on: date, calendarStore: calendarStore, goalsStore: goalsStore, tasksStore: tasksStore)
+            .filter { !($0.linkedTaskID != nil && $0.isCompleted) }
+            .map { (start: $0.startDate, end: $0.endDate) }
 
         return coveredLength(of: intervals, from: windowStart, to: windowEnd) / windowLength
     }

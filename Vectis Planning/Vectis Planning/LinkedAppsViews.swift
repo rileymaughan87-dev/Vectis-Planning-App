@@ -46,6 +46,7 @@ struct LinkedAppsView: View {
                                     .rotationEffect(.degrees(45))
                                     .foregroundStyle(.secondary)
                             }
+                            .accessibilityLabel("Unlink app")
                             .buttonStyle(.plain)
                         }
                     }
