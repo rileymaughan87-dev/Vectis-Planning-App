@@ -268,24 +268,26 @@ struct DailyCalendarView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 20)
                 }
-            }
-            // Swipe left/right to change days, alongside the arrow
-            // buttons. `simultaneousGesture` rather than `gesture` so it
-            // doesn't compete with the ScrollView's own vertical pan —
-            // and requiring the horizontal motion to clearly dominate
-            // the vertical means an ordinary scroll never gets
-            // mistaken for a day-change swipe.
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 40)
-                    .onEnded { value in
-                        let horizontal = value.translation.width
-                        let vertical = value.translation.height
-                        guard abs(horizontal) > abs(vertical) * 1.5 else { return }
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            dayOffset += horizontal < 0 ? 1 : -1
+                // Swipe left/right to change days, alongside the arrow
+                // buttons. Attached to the grid only — not the whole
+                // screen — so the tray and goals strip above keep their
+                // own sideways scrolling. On the whole screen, reaching
+                // the end of either strip used to flip to the next day.
+                // `simultaneousGesture` so it doesn't compete with the
+                // grid's vertical scroll, and the horizontal motion has
+                // to clearly dominate so a normal scroll never counts.
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 40)
+                        .onEnded { value in
+                            let horizontal = value.translation.width
+                            let vertical = value.translation.height
+                            guard abs(horizontal) > abs(vertical) * 1.5 else { return }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                dayOffset += horizontal < 0 ? 1 : -1
+                            }
                         }
-                    }
-            )
+                )
+            }
             .sheet(item: $pendingRange) { range in
                 EventEditorSheet(store: store, peopleStore: peopleStore, goalsStore: goalsStore, date: currentDate, startMinutes: range.start, endMinutes: range.end)
             }
@@ -414,6 +416,11 @@ struct DailyCalendarView: View {
                 .foregroundStyle(appearanceStore.primaryColor)
             }
 
+            CommitmentBar(
+                fraction: PlanningCommitment.fraction(calendarStore: store, goalsStore: goalsStore, tasksStore: tasksStore, date: currentDate),
+                accentColor: appearanceStore.primaryColor
+            )
+
             if !items.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -510,6 +517,14 @@ struct DailyCalendarView: View {
                 eventsLayer(contentWidth: contentWidth)
                 currentTimeLine(contentWidth: contentWidth)
             }
+            // The drop target is the whole grid. It used to sit on the
+            // events layer, but blocks are placed with `.offset`, which
+            // moves what you see without changing the layer's size — so
+            // the real drop area was one small box at the top, and none
+            // at all on an empty day.
+            .modifier(PlanningDropTarget(isActive: isPlanning) { payloads, location in
+                handleDrop(payloads: payloads, location: location)
+            })
         }
         .frame(height: gridHeight)
         .gesture(
@@ -587,28 +602,9 @@ struct DailyCalendarView: View {
         }
 
         let laidOut = layoutEvents(realEvents + goalBlocks + taskBlocks)
-        let stack = ZStack(alignment: .topLeading) {
+        return ZStack(alignment: .topLeading) {
             ForEach(laidOut) { item in
                 eventBlock(item, contentWidth: contentWidth)
-            }
-        }
-
-        // dropDestination only matters while the tray is visible — a
-        // drop has nowhere to come FROM otherwise. Attaching it
-        // unconditionally turned out to compete with the plain
-        // long-press-then-drag gesture used to move an existing block,
-        // which is why a placed task couldn't be re-dragged except
-        // after fully closing out of planning. Two different
-        // touch-recognition systems on the same view apparently don't
-        // share nicely — scoping this one to when it's actually needed
-        // is the fix, not trying to make them cooperate.
-        return Group {
-            if isPlanning {
-                stack.dropDestination(for: String.self) { payloads, location in
-                    handleDrop(payloads: payloads, location: location)
-                }
-            } else {
-                stack
             }
         }
     }
@@ -843,3 +839,22 @@ struct DailyCalendarView: View {
     }
 }
 
+
+/// Accepts tray drops only while planning. Attached unconditionally, a
+/// drop destination competes with the long-press-then-drag gesture used
+/// to move existing blocks — two touch systems on one view don't share
+/// nicely — so it's switched on only while the tray is showing.
+private struct PlanningDropTarget: ViewModifier {
+    let isActive: Bool
+    let onDrop: ([String], CGPoint) -> Bool
+
+    func body(content: Content) -> some View {
+        if isActive {
+            content.dropDestination(for: String.self) { payloads, location in
+                onDrop(payloads, location)
+            }
+        } else {
+            content
+        }
+    }
+}

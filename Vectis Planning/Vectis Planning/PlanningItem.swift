@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// The unified shape of something that needs a slot found for it — a
 /// goal not yet on the calendar, or a task with a duration set. Same
@@ -44,5 +44,116 @@ enum PlanningItems {
             PlanningItem(id: $0.id, title: $0.text, durationMinutes: $0.durationMinutes ?? 30, source: .task($0))
         }
         return (goalItems + taskItems).sorted { $0.durationMinutes > $1.durationMinutes }
+    }
+}
+
+// MARK: - Buffer awareness
+
+/// How much of the visible day is already spoken for. One calculation,
+/// used by both the capture popup and the drag tray, so the two can
+/// never show different numbers for the same day.
+///
+/// "Committed" is the time covered by at least one block — timed
+/// events on the Daily grid, short-term goals scheduled on the
+/// calendar, and placed tasks not yet done. Overlapping blocks count
+/// once: a goal sitting on top of a meeting doesn't make the day any
+/// fuller, and summing them could push the figure past 100%.
+enum PlanningCommitment {
+    /// Above this, a day tends to unravel as soon as anything runs long.
+    static let comfortableLimit = 0.8
+
+    static func fraction(
+        calendarStore: CalendarStore,
+        goalsStore: GoalsStore,
+        tasksStore: TasksStore,
+        date: Date
+    ) -> Double {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: date)
+        let windowStart = dayStart.addingTimeInterval(TimeInterval(calendarStore.dailyCalendarStartHour * 3600))
+        let windowEnd = dayStart.addingTimeInterval(TimeInterval(calendarStore.dailyCalendarEndHour * 3600))
+        let windowLength = windowEnd.timeIntervalSince(windowStart)
+        guard windowLength > 0 else { return 0 }
+
+        var intervals: [(start: Date, end: Date)] = []
+
+        for event in calendarStore.timedEvents(on: date) where event.flowsToDaily && !event.isAllDay {
+            intervals.append((event.startDate, event.endDate))
+        }
+
+        // The category is irrelevant here — only the block's times matter.
+        for goal in goalsStore.goals where goal.kind == .shortTerm {
+            if let block = goal.scheduledBlock(on: date, categoryID: UUID()) {
+                intervals.append((block.startDate, block.endDate))
+            }
+        }
+
+        for task in tasksStore.tasks where !task.done {
+            guard let scheduled = task.scheduledDate,
+                  calendar.isDate(scheduled, inSameDayAs: date),
+                  let duration = task.durationMinutes
+            else { continue }
+            intervals.append((scheduled, scheduled.addingTimeInterval(TimeInterval(duration * 60))))
+        }
+
+        return coveredLength(of: intervals, from: windowStart, to: windowEnd) / windowLength
+    }
+
+    /// Total time inside the window covered by at least one interval.
+    private static func coveredLength(of intervals: [(start: Date, end: Date)], from windowStart: Date, to windowEnd: Date) -> TimeInterval {
+        let clipped = intervals
+            .map { (start: max($0.start, windowStart), end: min($0.end, windowEnd)) }
+            .filter { $0.end > $0.start }
+            .sorted { $0.start < $1.start }
+
+        var total: TimeInterval = 0
+        var current: (start: Date, end: Date)?
+        for interval in clipped {
+            if let open = current, interval.start <= open.end {
+                current = (open.start, max(open.end, interval.end))
+            } else {
+                if let open = current { total += open.end.timeIntervalSince(open.start) }
+                current = interval
+            }
+        }
+        if let open = current { total += open.end.timeIntervalSince(open.start) }
+        return total
+    }
+}
+
+/// A thin "Day committed N%" bar. Information only — it never blocks
+/// placing anything and never inserts gaps. Above 80% it turns amber
+/// and says why that matters, once, in plain language.
+struct CommitmentBar: View {
+    let fraction: Double
+    let accentColor: Color
+
+    private var isOverLimit: Bool { fraction > PlanningCommitment.comfortableLimit }
+    private var percent: Int { Int((fraction * 100).rounded()) }
+    // Warning colours are semantic, not themed (see design system).
+    private var barColor: Color { isOverLimit ? .orange : accentColor }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Day committed \(percent)%")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(isOverLimit ? .orange : .secondary)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(Color(.tertiarySystemFill))
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(barColor)
+                        .frame(width: geo.size.width * min(max(fraction, 0), 1))
+                }
+            }
+            .frame(height: 4)
+            if isOverLimit {
+                Text("Above 80% tends to unravel when anything runs long.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }

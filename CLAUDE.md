@@ -53,7 +53,7 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Current priorities (in order)
 
-1. **Buffer awareness** (spec 2.8) — show "% of day committed" during planning,
+1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.
 2. **Editor restyle** — `GoalSheets`, `SettingsView`, `NoteSheets` still use
    `Form`; restyle to match the event editor (`EditorBox` pattern).

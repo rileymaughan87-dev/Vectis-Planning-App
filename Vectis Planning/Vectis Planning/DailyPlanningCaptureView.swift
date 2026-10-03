@@ -48,6 +48,10 @@ struct DailyPlanningCaptureView: View {
         PlanningItems.all(goalsStore: goalsStore, tasksStore: tasksStore, date: date)
     }
 
+    private var committedFraction: Double {
+        PlanningCommitment.fraction(calendarStore: calendarStore, goalsStore: goalsStore, tasksStore: tasksStore, date: date)
+    }
+
     // ~60 minutes decides the split; nothing breaks if something sits
     // right on the boundary, since this only decides which step it
     // surfaces in, not how it behaves.
@@ -68,11 +72,16 @@ struct DailyPlanningCaptureView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if activeSteps.isEmpty {
-                    emptyState
-                } else {
-                    stepContent
+            VStack(spacing: 0) {
+                CommitmentBar(fraction: committedFraction, accentColor: appearanceStore.primaryColor)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                Group {
+                    if activeSteps.isEmpty {
+                        emptyState
+                    } else {
+                        stepContent
+                    }
                 }
             }
             .navigationTitle("Plan today")

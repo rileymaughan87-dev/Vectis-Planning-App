@@ -33,26 +33,34 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
-## Last session (3 Oct 2026, Claude Code CLI)
+## Last session (3 Oct 2026, second Claude Code session)
 
-Done and pushed (`578fe95`, `d0c2d9c`):
-- Removed Finance: models, store, views, sheets, sidebar entry,
-  `financeEvents` filename, `tabFinance` image. Build succeeded.
-- Deleted the orphaned `SplashView`. The other four files on the orphan list
-  were already gone.
-- Committed the planning stage-2 work in the same commit. (It had been sitting
-  uncommitted, and the files overlapped with the cleanup.)
-- Added `.gitignore` and stopped tracking `.DS_Store` and Xcode user state.
+Done:
+- Deleted the unused `tab*.imageset` assets and loose `tab_*.png` files
+  (tab icons are SF Symbols). Build succeeded. Committed `3aa1efd`.
+- Built buffer awareness (see Open queue). `PlanningCommitment` and
+  `CommitmentBar` live in `PlanningItem.swift`; the bar shows at the top of
+  the capture popup and under the drag tray's header. Builds; **not yet
+  tested on device or committed**.
+- One change from the original design: overlapping blocks count once
+  (time covered by at least one block), not summed — summing double-counts
+  a goal sitting on a meeting and can exceed 100%.
 
-Unfinished / not yet verified:
-- **Not yet tested on device.** Check that the sidebar shows only People,
-  Linked apps and Settings and that each opens. Check that the launch screen
-  still appears. Check that Linked apps still lists Wallet and Stocks (the
-  "Finance" group in `LinkedApps.json` is app shortcuts, not the removed
-  feature, so it was kept).
-- The other `tab*.imageset` assets and loose `tab_*.png` files in the source
-  folder look unused (tab icons are SF Symbols). Confirm, then delete.
-- Next priority is buffer awareness (see Open queue below).
+- Fixed two drag-tray bugs (not yet device-tested): swiping to the end of
+  the tray no longer changes day (day swipe now on the grid only), and tray
+  items can be dropped anywhere on the grid (drop target was the size of one
+  block at the top).
+- Full app audit: `docs/AUDIT-2026-10.md`. Batch A (data safety) is the
+  recommended next step, ahead of the editor restyle.
+
+Still to verify on device (carried over plus new):
+- Sidebar shows only People, Linked apps, Settings; launch screen appears;
+  Linked apps still lists Wallet and Stocks.
+- The commitment bar: percentage looks right on a sample day, moves when a
+  tray item is dropped or a goal is given a time, turns amber with the line
+  above 80%, and nothing is ever blocked.
+- Tray: scrolling to the end stays on the same day; dragging a chip onto an
+  empty part of the grid places it at that time.
 
 ## Status by feature
 
@@ -76,7 +84,8 @@ Unfinished / not yet verified:
 | Native launch screen (wordmark image, all 3 scales) | Built |
 | Finance removed (moving to its own app); orphaned `SplashView` deleted | Done (Oct 2026). Old `finance_events.json` stays on the phone, unread. |
 | Repo hygiene: `.gitignore` for `.DS_Store` and `xcuserdata/`; those files untracked | Done (Oct 2026) |
-| Buffer awareness (2.8) | **Next** — designed, not built |
+| Buffer awareness (2.8) | Built (Oct 2026), awaiting device test |
+| Unused `tab*` image assets | Removed (Oct 2026) |
 | Rest days (2.2) | Not built |
 | Editor restyle for goals / settings / notes | Not built |
 | Share my day | Not built |
@@ -107,7 +116,8 @@ due that day + placed undone tasks that day; total = calendar start→end hours.
 Show a thin bar "Day committed N%", amber with the line "Above 80% tends to
 unravel when anything runs long." Never block, never insert gaps. A draft
 (`PlanningCommitment` + `CommitmentBar`) was written into `PlanningItem.swift`
-in the last chat session but never pasted into the project — rebuild it there.
+in a chat session but never pasted in; rebuilt there in Oct 2026. Window is
+the Daily grid's start→end hours; overlaps count once; done tasks don't count.
 
 **Rest days.** Optional per-goal count. Denominator is the target, not the
 calendar (daily with 1 rest day → 6/6 when hit). Rest-day dots outlined,
