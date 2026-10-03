@@ -478,12 +478,13 @@ struct Goal: Identifiable, Codable {
 
     /// The canonical string key for a given day — always local-calendar
     /// based, so "today" means today where you are.
+    ///
+    /// Built from date components rather than a `DateFormatter`: this
+    /// runs hundreds of times per redraw (history dots, miss counts),
+    /// and creating a formatter each time is slow. Same output.
     static func dayKey(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar.current
-        formatter.timeZone = TimeZone.current
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
     // The two ways a long-term goal can track progress — milestones with
@@ -806,3 +807,94 @@ struct AppSettings: Codable {
     var dailyCalendarEndHour: Int = 24
 }
 
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension CalendarCategory {
+    enum CodingKeys: String, CodingKey {
+        case id, name, colorHex
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        colorHex = try c.decodeIfPresent(String.self, forKey: .colorHex) ?? "#999999"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(colorHex, forKey: .colorHex)
+    }
+}
+
+extension EventPart {
+    enum CodingKeys: String, CodingKey {
+        case id, title, estimatedMinutes, actualMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        estimatedMinutes = try c.decodeIfPresent(Int.self, forKey: .estimatedMinutes) ?? 30
+        actualMinutes = try c.decodeIfPresent(Int.self, forKey: .actualMinutes)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(title, forKey: .title)
+        try c.encode(estimatedMinutes, forKey: .estimatedMinutes)
+        try c.encodeIfPresent(actualMinutes, forKey: .actualMinutes)
+    }
+}
+
+extension Milestone {
+    enum CodingKeys: String, CodingKey {
+        case id, title, done, addToCalendar, date
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        done = try c.decodeIfPresent(Bool.self, forKey: .done) ?? false
+        addToCalendar = try c.decodeIfPresent(Bool.self, forKey: .addToCalendar) ?? false
+        date = try c.decodeIfPresent(Date.self, forKey: .date)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(title, forKey: .title)
+        try c.encode(done, forKey: .done)
+        try c.encode(addToCalendar, forKey: .addToCalendar)
+        try c.encodeIfPresent(date, forKey: .date)
+    }
+}
+
+extension GoalNote {
+    enum CodingKeys: String, CodingKey {
+        case id, date, text
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        date = try c.decodeIfPresent(Date.self, forKey: .date) ?? Date()
+        text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(date, forKey: .date)
+        try c.encode(text, forKey: .text)
+    }
+}

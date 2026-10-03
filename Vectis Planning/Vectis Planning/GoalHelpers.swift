@@ -195,6 +195,10 @@ extension Goal {
     /// particular day at all.
     func isScheduled(on date: Date) -> Bool {
         let calendar = Calendar.current
+        // Days before the goal existed aren't scheduled, so they can
+        // never count as misses. Day keys are "yyyy-MM-dd", which sort
+        // the same way as the dates they stand for.
+        if Goal.dayKey(date) < firstDayKey { return false }
         if let endDate {
             let day = calendar.startOfDay(for: date)
             let end = calendar.startOfDay(for: endDate)
@@ -210,6 +214,18 @@ extension Goal {
         case .timesPerWeek, .timesPerDay:
             return true
         }
+    }
+
+    /// The day this goal counts from: the day it was created, or the
+    /// earliest day anything was logged for it, whichever came first.
+    ///
+    /// The logged days matter because goals saved before `createdDate`
+    /// existed got "now" filled in when loaded. Their real history
+    /// still has to count.
+    var firstDayKey: String {
+        let created = Goal.dayKey(createdDate)
+        let earliestLogged = (Array(completions.keys) + Array(completionCounts.keys)).min()
+        return min(created, earliestLogged ?? created)
     }
 
     var isScheduledToday: Bool {
@@ -335,6 +351,8 @@ extension Goal {
     /// the research says it starts to matter.
     var missNudge: String? {
         guard frequencyType == .specificDays else { return nil }
+        // Done today means it has been picked back up.
+        guard !isCompletedToday else { return nil }
         let misses = consecutiveMisses
         guard misses >= 2 else { return nil }
         return "Missed \(misses) in a row — worth picking back up today."
@@ -381,3 +399,32 @@ extension Array where Element == Milestone {
     }
 }
 
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension ScheduleVersion {
+    enum CodingKeys: String, CodingKey {
+        case id, effectiveFrom, repeatDays, startMinutes, durationMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        effectiveFrom = try c.decodeIfPresent(Date.self, forKey: .effectiveFrom) ?? .distantPast
+        repeatDays = try c.decodeIfPresent(Set<Int>.self, forKey: .repeatDays) ?? Goal.allDays
+        startMinutes = try c.decodeIfPresent(Int.self, forKey: .startMinutes) ?? 21 * 60
+        durationMinutes = try c.decodeIfPresent(Int.self, forKey: .durationMinutes) ?? 30
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(effectiveFrom, forKey: .effectiveFrom)
+        try c.encode(repeatDays, forKey: .repeatDays)
+        try c.encode(startMinutes, forKey: .startMinutes)
+        try c.encode(durationMinutes, forKey: .durationMinutes)
+    }
+}

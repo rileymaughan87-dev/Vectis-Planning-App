@@ -54,3 +54,82 @@ struct Note: Identifiable, Codable {
     var updatedDate: Date = Date()
 }
 
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension ChecklistItem {
+    enum CodingKeys: String, CodingKey {
+        case id, text, done
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
+        done = try c.decodeIfPresent(Bool.self, forKey: .done) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(text, forKey: .text)
+        try c.encode(done, forKey: .done)
+    }
+}
+
+extension Notebook {
+    enum CodingKeys: String, CodingKey {
+        case id, title, linkedGoalID, createdDate
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        linkedGoalID = try c.decodeIfPresent(UUID.self, forKey: .linkedGoalID)
+        createdDate = try c.decodeIfPresent(Date.self, forKey: .createdDate) ?? Date()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(title, forKey: .title)
+        try c.encodeIfPresent(linkedGoalID, forKey: .linkedGoalID)
+        try c.encode(createdDate, forKey: .createdDate)
+    }
+}
+
+extension Note {
+    enum CodingKeys: String, CodingKey {
+        case id, type, title, jotText, richTextData, checklistItems, linkedGoalID, notebookID, updatedDate
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        type = (try? c.decodeIfPresent(NoteType.self, forKey: .type)) ?? .classic
+        title = try c.decodeIfPresent(String.self, forKey: .title) ?? ""
+        jotText = try c.decodeIfPresent(String.self, forKey: .jotText) ?? ""
+        richTextData = try c.decodeIfPresent(Data.self, forKey: .richTextData)
+        checklistItems = try c.decodeIfPresent([ChecklistItem].self, forKey: .checklistItems) ?? []
+        linkedGoalID = try c.decodeIfPresent(UUID.self, forKey: .linkedGoalID)
+        notebookID = try c.decodeIfPresent(UUID.self, forKey: .notebookID)
+        updatedDate = try c.decodeIfPresent(Date.self, forKey: .updatedDate) ?? Date()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(type, forKey: .type)
+        try c.encode(title, forKey: .title)
+        try c.encode(jotText, forKey: .jotText)
+        try c.encodeIfPresent(richTextData, forKey: .richTextData)
+        try c.encode(checklistItems, forKey: .checklistItems)
+        try c.encodeIfPresent(linkedGoalID, forKey: .linkedGoalID)
+        try c.encodeIfPresent(notebookID, forKey: .notebookID)
+        try c.encode(updatedDate, forKey: .updatedDate)
+    }
+}

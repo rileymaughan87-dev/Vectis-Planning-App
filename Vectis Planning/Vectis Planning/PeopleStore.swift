@@ -156,3 +156,49 @@ class PeopleStore: ObservableObject {
         people.removeAll { $0.id == personID }
     }
 }
+
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension Person {
+    enum CodingKeys: String, CodingKey {
+        case id, contactIdentifier, cachedName, birthdayOnCalendar
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        contactIdentifier = try c.decodeIfPresent(String.self, forKey: .contactIdentifier) ?? ""
+        cachedName = try c.decodeIfPresent(String.self, forKey: .cachedName) ?? ""
+        birthdayOnCalendar = try c.decodeIfPresent(Bool.self, forKey: .birthdayOnCalendar) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(contactIdentifier, forKey: .contactIdentifier)
+        try c.encode(cachedName, forKey: .cachedName)
+        try c.encode(birthdayOnCalendar, forKey: .birthdayOnCalendar)
+    }
+}
+
+extension PeopleStore.BirthdayPrefs {
+    enum CodingKeys: String, CodingKey {
+        case hasAsked, addAll
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        hasAsked = try c.decodeIfPresent(Bool.self, forKey: .hasAsked) ?? false
+        addAll = try c.decodeIfPresent(Bool.self, forKey: .addAll) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(hasAsked, forKey: .hasAsked)
+        try c.encode(addAll, forKey: .addAll)
+    }
+}

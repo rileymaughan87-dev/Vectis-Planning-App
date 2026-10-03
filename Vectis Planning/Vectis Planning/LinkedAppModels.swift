@@ -111,3 +111,29 @@ enum AppLauncher {
         return true
     }
 }
+
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension CustomApp {
+    enum CodingKeys: String, CodingKey {
+        case id, name, scheme
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        scheme = try c.decodeIfPresent(String.self, forKey: .scheme) ?? ""
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(name, forKey: .name)
+        try c.encode(scheme, forKey: .scheme)
+    }
+}

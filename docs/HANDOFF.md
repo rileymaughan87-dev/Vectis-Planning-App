@@ -50,8 +50,11 @@ Done:
   the tray no longer changes day (day swipe now on the grid only), and tray
   items can be dropped anywhere on the grid (drop target was the size of one
   block at the top).
-- Full app audit: `docs/AUDIT-2026-10.md`. Batch A (data safety) is the
-  recommended next step, ahead of the editor restyle.
+- Full app audit: `docs/AUDIT-2026-10.md`. Batch A (data safety) done:
+  unreadable save files are set aside instead of overwritten, and every
+  persisted type now has hand-written Codable. Batch B (goal fairness) done:
+  goals no longer count misses before they began, the nudge clears once
+  ticked today, and `dayKey` is faster. Next: Batch C (Daily grid).
 
 Still to verify on device (carried over plus new):
 - Sidebar shows only People, Linked apps, Settings; launch screen appears;

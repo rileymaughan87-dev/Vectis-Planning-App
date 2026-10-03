@@ -42,6 +42,11 @@ enum PersistenceManager {
 
     /// Reads a Codable value back from a named file, or returns nil if
     /// the file doesn't exist yet (first launch) or can't be read.
+    ///
+    /// A file that exists but can't be read is moved aside before
+    /// returning nil. Every store treats nil as "start fresh", and the
+    /// next save would otherwise write straight over the only copy of
+    /// the data. Set aside, it can still be recovered by hand.
     static func load<T: Decodable>(_ type: T.Type, from filename: String) -> T? {
         let url = fileURL(filename)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
@@ -52,7 +57,25 @@ enum PersistenceManager {
             return try decoder.decode(type, from: data)
         } catch {
             print("Vectis: failed to load \(filename) — \(error)")
+            setAside(url)
             return nil
+        }
+    }
+
+    /// Renames an unreadable file to e.g.
+    /// `goals.unreadable-2026-10-03-091500.json`, next to where it was.
+    private static func setAside(_ url: URL) {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        let stamp = formatter.string(from: Date())
+        let name = "\(url.deletingPathExtension().lastPathComponent).unreadable-\(stamp).\(url.pathExtension)"
+        let destination = url.deletingLastPathComponent().appendingPathComponent(name)
+        do {
+            try FileManager.default.moveItem(at: url, to: destination)
+            print("Vectis: kept unreadable file as \(name)")
+        } catch {
+            print("Vectis: couldn't set aside \(url.lastPathComponent) — \(error)")
         }
     }
 
@@ -103,3 +126,52 @@ struct AppearanceSettings: Codable {
     var customTertiaryHex: String
 }
 
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension CalendarHours {
+    enum CodingKeys: String, CodingKey {
+        case startHour, endHour
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        startHour = try c.decodeIfPresent(Int.self, forKey: .startHour) ?? 6
+        endHour = try c.decodeIfPresent(Int.self, forKey: .endHour) ?? 24
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(startHour, forKey: .startHour)
+        try c.encode(endHour, forKey: .endHour)
+    }
+}
+
+extension AppearanceSettings {
+    enum CodingKeys: String, CodingKey {
+        case mode, selectedPresetID, isCustom, customPrimaryHex, customSecondaryHex, customTertiaryHex
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try c.decodeIfPresent(String.self, forKey: .mode) ?? "system"
+        selectedPresetID = try c.decodeIfPresent(String.self, forKey: .selectedPresetID) ?? "tealCoral"
+        isCustom = try c.decodeIfPresent(Bool.self, forKey: .isCustom) ?? false
+        customPrimaryHex = try c.decodeIfPresent(String.self, forKey: .customPrimaryHex) ?? "1C8C82"
+        customSecondaryHex = try c.decodeIfPresent(String.self, forKey: .customSecondaryHex) ?? "D2574A"
+        customTertiaryHex = try c.decodeIfPresent(String.self, forKey: .customTertiaryHex) ?? "C9922E"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(mode, forKey: .mode)
+        try c.encode(selectedPresetID, forKey: .selectedPresetID)
+        try c.encode(isCustom, forKey: .isCustom)
+        try c.encode(customPrimaryHex, forKey: .customPrimaryHex)
+        try c.encode(customSecondaryHex, forKey: .customSecondaryHex)
+        try c.encode(customTertiaryHex, forKey: .customTertiaryHex)
+    }
+}

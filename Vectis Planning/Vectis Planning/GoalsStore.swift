@@ -184,6 +184,10 @@ class GoalsStore: ObservableObject {
             habit.frequency = .daily
             habit.linkedToGoalID = goal.id
             habit.endDate = end
+            // Counts from the challenge's first day, not from when it
+            // was set up, so a challenge starting next Monday doesn't
+            // log misses for the days in between.
+            habit.createdDate = start
             goals.append(habit)
         }
 

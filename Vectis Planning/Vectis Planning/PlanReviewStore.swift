@@ -23,7 +23,7 @@ class PlanReviewStore: ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
 
-    private struct SavedSettings: Codable {
+    fileprivate struct SavedSettings: Codable {
         var isEnabled: Bool
         var reviewTimeEstimates: Bool
         var rehearsePlans: Bool
@@ -69,5 +69,37 @@ class PlanReviewStore: ObservableObject {
     func hasReviewedToday(journalStore: JournalStore) -> Bool {
         guard let entry = journalStore.entry(for: Date()) else { return false }
         return entry.reflectionPrompt != nil
+    }
+}
+
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension PlanReviewStore.SavedSettings {
+    enum CodingKeys: String, CodingKey {
+        case isEnabled, reviewTimeEstimates, rehearsePlans, flagRepeatedMisses, freshStartPrompts, eveningReviewMinutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        isEnabled = try c.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+        reviewTimeEstimates = try c.decodeIfPresent(Bool.self, forKey: .reviewTimeEstimates) ?? true
+        rehearsePlans = try c.decodeIfPresent(Bool.self, forKey: .rehearsePlans) ?? true
+        flagRepeatedMisses = try c.decodeIfPresent(Bool.self, forKey: .flagRepeatedMisses) ?? true
+        freshStartPrompts = try c.decodeIfPresent(Bool.self, forKey: .freshStartPrompts) ?? true
+        eveningReviewMinutes = try c.decodeIfPresent(Int.self, forKey: .eveningReviewMinutes) ?? 20 * 60 + 30
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(isEnabled, forKey: .isEnabled)
+        try c.encode(reviewTimeEstimates, forKey: .reviewTimeEstimates)
+        try c.encode(rehearsePlans, forKey: .rehearsePlans)
+        try c.encode(flagRepeatedMisses, forKey: .flagRepeatedMisses)
+        try c.encode(freshStartPrompts, forKey: .freshStartPrompts)
+        try c.encode(eveningReviewMinutes, forKey: .eveningReviewMinutes)
     }
 }

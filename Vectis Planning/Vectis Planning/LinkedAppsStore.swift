@@ -70,3 +70,29 @@ class LinkedAppsStore: ObservableObject {
         max(Int(Date().timeIntervalSince(launch.startedAt) / 60), 0)
     }
 }
+
+// MARK: - Hand-written Codable
+//
+// Written out by hand so a missing field falls back to a default instead
+// of failing the whole file (see the suite's engineering rules). Kept in
+// extensions so Swift still generates the memberwise initialiser.
+
+extension PendingLaunch {
+    enum CodingKeys: String, CodingKey {
+        case goalID, appName, startedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        goalID = try c.decodeIfPresent(UUID.self, forKey: .goalID) ?? UUID()
+        appName = try c.decodeIfPresent(String.self, forKey: .appName) ?? ""
+        startedAt = try c.decodeIfPresent(Date.self, forKey: .startedAt) ?? Date()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(goalID, forKey: .goalID)
+        try c.encode(appName, forKey: .appName)
+        try c.encode(startedAt, forKey: .startedAt)
+    }
+}
