@@ -72,7 +72,6 @@ enum PersistenceManager {
         static let calendarHours = "calendar_hours.json"
         static let notes = "notes.json"
         static let notebooks = "notebooks.json"
-        static let financeEvents = "finance_events.json"
         static let appearance = "appearance.json"
         static let tasks = "tasks.json"
         static let customApps = "custom_apps.json"

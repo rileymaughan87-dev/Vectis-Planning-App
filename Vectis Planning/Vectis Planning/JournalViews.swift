@@ -170,8 +170,8 @@ private struct JournalEntryRow: View {
 
 // MARK: - Calendar jump view
 
-/// Reuses `MonthGridView` — the same component Long-Term and Finance
-/// already use — pointed at journal data instead. Dots mark days with
+/// Reuses `MonthGridView` — the same component Long-Term already
+/// uses — pointed at journal data instead. Dots mark days with
 /// an entry; tapping one opens it.
 private struct JournalCalendarJumpView: View {
     @ObservedObject var journalStore: JournalStore

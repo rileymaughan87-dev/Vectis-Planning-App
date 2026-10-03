@@ -22,6 +22,12 @@ struct VectisTask: Identifiable, Codable {
     /// recurring thing; it stays undated and one-off either way.
     var durationMinutes: Int? = nil
 
+    /// The exact day and time this task was dragged onto the grid.
+    /// `nil` means it's unplaced — still just a checklist item, or
+    /// sitting in the planning tray waiting for a spot. Setting this is
+    /// the only thing that makes a task show up on the Daily calendar.
+    var scheduledDate: Date? = nil
+
     // MARK: - Codable
     //
     // Hand-written rather than left to Swift's automatic synthesis —
@@ -31,7 +37,7 @@ struct VectisTask: Identifiable, Codable {
     // silently wiped every saved task the moment durationMinutes was
     // added if this struct had been left on automatic Codable.
     enum CodingKeys: String, CodingKey {
-        case id, text, done, createdDate, durationMinutes
+        case id, text, done, createdDate, durationMinutes, scheduledDate
     }
 
     init(
@@ -39,13 +45,15 @@ struct VectisTask: Identifiable, Codable {
         text: String,
         done: Bool = false,
         createdDate: Date = Date(),
-        durationMinutes: Int? = nil
+        durationMinutes: Int? = nil,
+        scheduledDate: Date? = nil
     ) {
         self.id = id
         self.text = text
         self.done = done
         self.createdDate = createdDate
         self.durationMinutes = durationMinutes
+        self.scheduledDate = scheduledDate
     }
 
     init(from decoder: Decoder) throws {
@@ -55,6 +63,7 @@ struct VectisTask: Identifiable, Codable {
         done = try c.decodeIfPresent(Bool.self, forKey: .done) ?? false
         createdDate = try c.decodeIfPresent(Date.self, forKey: .createdDate) ?? Date()
         durationMinutes = try c.decodeIfPresent(Int.self, forKey: .durationMinutes)
+        scheduledDate = try c.decodeIfPresent(Date.self, forKey: .scheduledDate)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -64,6 +73,7 @@ struct VectisTask: Identifiable, Codable {
         try c.encode(done, forKey: .done)
         try c.encode(createdDate, forKey: .createdDate)
         try c.encodeIfPresent(durationMinutes, forKey: .durationMinutes)
+        try c.encodeIfPresent(scheduledDate, forKey: .scheduledDate)
     }
 }
 
@@ -115,6 +125,21 @@ class TasksStore: ObservableObject {
 
     /// Sets or clears a task's duration. `nil` puts it back to being a
     /// plain checklist item with nothing to place on the calendar.
+    /// Drags a task onto the Daily grid at a specific moment — the only
+    /// thing that makes it show up there. Doesn't touch `done` or
+    /// anything else; placing is about when, not whether it's finished.
+    func place(_ id: UUID, at date: Date) {
+        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[index].scheduledDate = date
+    }
+
+    /// Drops it back into the tray — a plain checklist item again until
+    /// placed somewhere new.
+    func unplace(_ id: UUID) {
+        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
+        tasks[index].scheduledDate = nil
+    }
+
     func setDuration(_ id: UUID, minutes: Int?) {
         guard let index = tasks.firstIndex(where: { $0.id == id }) else { return }
         tasks[index].durationMinutes = minutes

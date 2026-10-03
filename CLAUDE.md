@@ -22,8 +22,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 ## Structure
 
 - **Tabs (custom bar):** Home, Goals, Daily, Long-Term, Record.
-- **Sidebar:** People, Linked apps, Settings. (Finance is being removed —
-  see priorities.)
+- **Sidebar:** People, Linked apps, Settings. (Finance was removed in
+  Oct 2026 — it is moving to its own app.)
 - **Stores (all created in `ContentView`):** GoalsStore, CalendarStore,
   TasksStore, NotesStore, JournalStore, PlanReviewStore, AppearanceStore,
   LinkedAppsStore, PeopleStore. Challenges load from `Challenges.json`.
@@ -53,21 +53,11 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Current priorities (in order)
 
-1. **Remove Finance** — it is moving to its own app. Delete `FinanceModels`,
-   `FinanceStore`, `FinanceView`, `FinanceSheets`; remove `financeStore` and the
-   `.finance` case from `ContentView`; remove `.finance` from
-   `SidebarDestination` and its `destinations` list in `SidebarMenu`; remove
-   the `financeEvents` filename from `PersistenceManager`. Build and confirm.
-   Any finance data already on Riley's phone will not carry over to the new app
-   (separate sandbox) — check with Riley before deleting if it matters.
-2. **Delete orphaned files** if still in the project (nothing references them):
-   `DailyPlanRehearsalView`, `NotesView`, `SplashView`, `LogPastDaysSheet`,
-   `MasterCalendarView`.
-3. **Buffer awareness** (spec 2.8) — show "% of day committed" during planning,
+1. **Buffer awareness** (spec 2.8) — show "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.
-4. **Editor restyle** — `GoalSheets`, `SettingsView`, `NoteSheets` still use
+2. **Editor restyle** — `GoalSheets`, `SettingsView`, `NoteSheets` still use
    `Form`; restyle to match the event editor (`EditorBox` pattern).
-5. **Rest days** (spec 2.2) — optional per-goal rest days; target denominator
+3. **Rest days** (spec 2.2) — optional per-goal rest days; target denominator
    becomes days minus rest days.
-6. **"Share my day"** — `ShareLink` summary of today's goals for an
+4. **"Share my day"** — `ShareLink` summary of today's goals for an
    accountability partner via Messages. Free alternative to accounts/CloudKit.

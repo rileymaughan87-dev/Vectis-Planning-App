@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// The five main sections in the bottom tab bar. Finance moved out to
-/// the sidebar — it's an important feature but not a several-times-a-day
-/// one, and keeping the bar to five keeps it readable.
+/// The five main sections in the bottom tab bar. Occasional destinations
+/// live in the sidebar instead — keeping the bar to five keeps it readable.
 enum AppTab: CaseIterable {
     case home, goals, daily, longTerm, notes
 
@@ -33,7 +32,6 @@ struct ContentView: View {
     @StateObject private var notesStore = NotesStore()
     @StateObject private var journalStore = JournalStore()
     @StateObject private var planReviewStore = PlanReviewStore()
-    @StateObject private var financeStore = FinanceStore()
     @StateObject private var tasksStore = TasksStore()
     @StateObject private var appearanceStore = AppearanceStore()
     @StateObject private var linkedAppsStore = LinkedAppsStore()
@@ -130,8 +128,6 @@ struct ContentView: View {
     @ViewBuilder
     private func sidebarSheet(for destination: SidebarDestination) -> some View {
         switch destination {
-        case .finance:
-            FinanceView(store: financeStore)
         case .settings:
             SettingsView(calendarStore: calendarStore, appearanceStore: appearanceStore, planReviewStore: planReviewStore)
         case .people:

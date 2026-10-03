@@ -1,42 +1,28 @@
 import SwiftUI
 
-/// The unified shape of something the capture popup can offer a
-/// duration for — a goal not yet on the calendar, or a task with a
-/// duration set. Same problem either way: it needs a gap found for it,
-/// and sorting/display treats both identically. Source only matters
-/// for which icon shows and what "give it a time" actually does.
-private enum PlanningItemSource {
-    case goal(Goal)
-    case task(VectisTask)
-}
-
-private struct PlanningItem: Identifiable {
-    let id: UUID
-    let title: String
-    let durationMinutes: Int
-    let source: PlanningItemSource
-}
-
 /// Stage 1 of morning planning: capture, not placement. Reviews what's
 /// already fixed today, then works through anything flexible that
 /// still needs a duration decided — big things first, matching the
 /// spec's "sort the tray longest-first" rule, here applied to the list
-/// order directly since there's no tray yet.
+/// order directly since there's no tray in THIS screen.
 ///
-/// What this deliberately does NOT do yet: place anything on the
-/// calendar via drag, or offer to break a task into parts (parts only
-/// exist on `CalendarEvent`, and nothing here creates one). Goals CAN
-/// be given a real time here, reusing the same calendar-scheduling
-/// fields the goal editor already has — that's a genuine placement,
-/// just via a time picker rather than a drag gesture. Tasks can only
-/// have their duration confirmed here; actually placing a task on the
-/// grid is Stage 2's job.
+/// Goals can be given a real time right here, reusing the same
+/// calendar-scheduling fields the goal editor already has. Tasks can
+/// only have their duration confirmed here — actually placing a task
+/// (or a goal you'd rather drag than pick a time for) happens via the
+/// drag tray on the Daily grid itself, entered automatically if
+/// anything's still unplaced when this closes.
 struct DailyPlanningCaptureView: View {
     @ObservedObject var goalsStore: GoalsStore
     @ObservedObject var tasksStore: TasksStore
     @ObservedObject var calendarStore: CalendarStore
     @ObservedObject var appearanceStore: AppearanceStore
     let date: Date
+
+    /// Set to true on close if anything's still unplaced — that's what
+    /// triggers the Daily grid's drag tray to appear right after this
+    /// sheet dismisses, rather than leaving the person to go find it.
+    @Binding var isPlanning: Bool
 
     @Environment(\.dismiss) private var dismiss
 
@@ -58,26 +44,8 @@ struct DailyPlanningCaptureView: View {
     /// Once `scheduledOnCalendar` is true it's pre-placed — this popup
     /// has nothing left to ask about it, so it drops out of the list
     /// the moment "give it a time" is confirmed.
-    private var unplacedGoals: [Goal] {
-        goalsStore.goals.filter {
-            $0.kind == .shortTerm && $0.isScheduled(on: date) && !$0.scheduledOnCalendar
-        }
-    }
-
-    private var unplacedTasks: [VectisTask] {
-        tasksStore.tasks.filter { !$0.done && $0.durationMinutes != nil }
-    }
-
     private var allUnplacedItems: [PlanningItem] {
-        let goalItems = unplacedGoals.map {
-            PlanningItem(id: $0.id, title: $0.title, durationMinutes: $0.scheduledDurationMinutes, source: .goal($0))
-        }
-        let taskItems = unplacedTasks.map {
-            PlanningItem(id: $0.id, title: $0.text, durationMinutes: $0.durationMinutes ?? 30, source: .task($0))
-        }
-        // Longest first, regardless of source — a 90-minute goal and a
-        // 90-minute task have the same problem either way.
-        return (goalItems + taskItems).sorted { $0.durationMinutes > $1.durationMinutes }
+        PlanningItems.all(goalsStore: goalsStore, tasksStore: tasksStore, date: date)
     }
 
     // ~60 minutes decides the split; nothing breaks if something sits
@@ -119,7 +87,12 @@ struct DailyPlanningCaptureView: View {
                     }
                 } else if !activeSteps.isEmpty {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }
+                        Button(allUnplacedItems.isEmpty ? "Done" : "Place on calendar") {
+                            if !allUnplacedItems.isEmpty {
+                                isPlanning = true
+                            }
+                            dismiss()
+                        }
                     }
                 }
             }
@@ -353,3 +326,4 @@ private struct PlanningItemRow: View {
         showingTimePicker = false
     }
 }
+

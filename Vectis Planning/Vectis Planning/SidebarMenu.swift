@@ -3,14 +3,12 @@ import SwiftUI
 /// Destinations that live in the sidebar rather than the bottom tab bar
 /// — things you visit occasionally rather than several times a day.
 enum SidebarDestination: Identifiable {
-    case finance
     case people
     case linkedApps
     case settings
 
     var id: String {
         switch self {
-        case .finance: return "finance"
         case .people: return "people"
         case .linkedApps: return "linkedApps"
         case .settings: return "settings"
@@ -19,7 +17,6 @@ enum SidebarDestination: Identifiable {
 
     var title: String {
         switch self {
-        case .finance: return "Finance"
         case .people: return "People"
         case .linkedApps: return "Linked apps"
         case .settings: return "Settings"
@@ -28,7 +25,6 @@ enum SidebarDestination: Identifiable {
 
     var subtitle: String {
         switch self {
-        case .finance: return "Budget and financial calendar"
         case .people: return "Contacts, birthdays, quick actions"
         case .linkedApps: return "Apps you can open from goals"
         case .settings: return "Appearance, categories, preferences"
@@ -37,7 +33,6 @@ enum SidebarDestination: Identifiable {
 
     var icon: String {
         switch self {
-        case .finance: return "dollarsign.circle"
         case .people: return "person.2"
         case .linkedApps: return "square.grid.2x2"
         case .settings: return "gearshape"
@@ -54,7 +49,7 @@ struct SidebarMenu: View {
     @ObservedObject var appearanceStore: AppearanceStore
     var onSelect: (SidebarDestination) -> Void
 
-    private let destinations: [SidebarDestination] = [.finance, .people, .linkedApps]
+    private let destinations: [SidebarDestination] = [.people, .linkedApps]
 
     var body: some View {
         ZStack(alignment: .trailing) {

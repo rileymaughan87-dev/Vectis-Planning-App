@@ -53,6 +53,7 @@ Research that shaped the design:
 | Morning planning stage 2: drag tray, tasks placeable on the grid, task action popup | Built |
 | Task durations (`VectisTask.durationMinutes`, `scheduledDate`) | Built |
 | Native launch screen (wordmark image, all 3 scales) | Built |
+| Finance removed (moving to its own app); orphaned `SplashView` deleted | Done (Oct 2026). Old `finance_events.json` stays on the phone, unread. |
 | Buffer awareness (2.8) | **Next** — designed, not built |
 | Rest days (2.2) | Not built |
 | Editor restyle for goals / settings / notes | Not built |
@@ -73,7 +74,7 @@ Research that shaped the design:
   buttons above the grid.
 - **Segmentation prompt during planning** — real events already support parts;
   tasks stay deliberately simple.
-- **Finance inside Vectis** — moving to its own app.
+- **Finance inside Vectis** — removed Oct 2026; moving to its own app.
 
 ## Open queue — detail
 
@@ -101,7 +102,7 @@ deferred: they need a paid Apple Developer account. If revisited, keep Journal,
 Notes, People private; share Goals and Calendar read-only.
 
 **Sidebar.** People and Linked apps are low-visibility; decide whether they earn
-their place once Finance is gone.
+their place now that Finance is gone.
 
 ## Gotchas met so far
 

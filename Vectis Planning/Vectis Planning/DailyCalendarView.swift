@@ -24,6 +24,40 @@ import SwiftUI
 /// The small popup shown when tapping the review block on the
 /// calendar — a deliberate extra step before the full review opens,
 /// rather than jumping straight in from a single tap.
+/// The small popup shown when tapping a placed task on the calendar —
+/// a task has no full editor, so this is its whole interaction: mark
+/// it done, or take it back off the calendar.
+private struct TaskActionSheet: View {
+    let task: VectisTask
+    @ObservedObject var tasksStore: TasksStore
+    let accentColor: Color
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "checkmark.circle")
+                .font(.title)
+                .foregroundStyle(accentColor)
+            Text(task.text)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+
+            Button(task.done ? "Mark not done" : "Mark done") {
+                tasksStore.toggle(task.id)
+                onDismiss()
+            }
+            .buttonStyle(VectisButtonStyle(kind: .primary, accent: accentColor))
+
+            Button("Take off the calendar") {
+                tasksStore.unplace(task.id)
+                onDismiss()
+            }
+            .buttonStyle(VectisButtonStyle(kind: .secondary, accent: accentColor))
+        }
+        .padding(24)
+    }
+}
+
 private struct ReviewPromptSheet: View {
     let accentColor: Color
     let onStart: () -> Void
@@ -49,6 +83,60 @@ private struct ReviewPromptSheet: View {
                 .buttonStyle(VectisButtonStyle(kind: .secondary, accent: accentColor))
         }
         .padding(24)
+    }
+}
+
+/// One draggable chip in the planning tray. The drag payload is a
+/// plain "source:uuid" string — simple enough that String itself can
+/// be the Transferable type, no custom payload struct needed.
+private struct PlanningTrayChip: View {
+    let item: PlanningItem
+    let accentColor: Color
+
+    private var isGoal: Bool {
+        if case .goal = item.source { return true }
+        return false
+    }
+
+    private var payload: String {
+        switch item.source {
+        case .goal(let goal): return "goal:\(goal.id.uuidString)"
+        case .task(let task): return "task:\(task.id.uuidString)"
+        }
+    }
+
+    private var durationText: String {
+        let h = item.durationMinutes / 60
+        let m = item.durationMinutes % 60
+        if h == 0 { return "\(m)m" }
+        if m == 0 { return "\(h)h" }
+        return "\(h)h \(m)m"
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: isGoal ? "target" : "checkmark.circle")
+                .font(.caption2)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(item.title)
+                    .font(.caption.weight(.medium))
+                    .lineLimit(1)
+                Text(durationText)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                .fill(accentColor.opacity(0.15))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignTokens.smallRadius, style: .continuous)
+                .strokeBorder(accentColor.opacity(0.4), lineWidth: 1)
+        )
+        .draggable(payload)
     }
 }
 
@@ -143,6 +231,8 @@ struct DailyCalendarView: View {
     @State private var showingReviewPrompt = false
     @State private var showingFullReview = false
     @State private var showingDailyPlanning = false
+    @State private var isPlanning = false
+    @State private var taskActionID: UUID?
 
     // Dragging an event to a new time. An event has to be "armed" by a
     // long press first, so a quick scroll swipe that happens to start
@@ -167,7 +257,9 @@ struct DailyCalendarView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 dayHeader
-                if planReviewStore.isEnabled {
+                if isPlanning {
+                    planningTray
+                } else if planReviewStore.isEnabled {
                     planReviewButtonsRow
                 }
                 todaysGoalsStrip
@@ -229,8 +321,21 @@ struct DailyCalendarView: View {
                     tasksStore: tasksStore,
                     calendarStore: store,
                     appearanceStore: appearanceStore,
-                    date: currentDate
+                    date: currentDate,
+                    isPlanning: $isPlanning
                 )
+            }
+            .sheet(isPresented: Binding(
+                get: { taskActionID != nil },
+                set: { if !$0 { taskActionID = nil } }
+            )) {
+                if let taskID = taskActionID,
+                   let task = tasksStore.tasks.first(where: { $0.id == taskID }) {
+                    TaskActionSheet(task: task, tasksStore: tasksStore, accentColor: appearanceStore.tertiaryColor) {
+                        taskActionID = nil
+                    }
+                    .presentationDetents([.height(220)])
+                }
             }
         }
     }
@@ -287,6 +392,39 @@ struct DailyCalendarView: View {
         // Explicit and equal on both sides, rather than leaning on
         // dayHeader's own bottom inset above and a separate value below
         // — those didn't actually match, which read as lopsided.
+        .padding(.top, 10)
+        .padding(.bottom, 10)
+    }
+
+    /// The drag tray — replaces the plan/review buttons while active.
+    /// Items are draggable chips; dropping one onto the grid below
+    /// calls `handleDrop`, which places it at the dropped time.
+    private var planningTray: some View {
+        VStack(spacing: 8) {
+            let items = PlanningItems.all(goalsStore: goalsStore, tasksStore: tasksStore, date: currentDate)
+            HStack {
+                Text(items.isEmpty ? "Everything's placed" : "Drag onto the day")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Done placing") {
+                    isPlanning = false
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(appearanceStore.primaryColor)
+            }
+
+            if !items.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(items) { item in
+                            PlanningTrayChip(item: item, accentColor: appearanceStore.tertiaryColor)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
         .padding(.top, 10)
         .padding(.bottom, 10)
     }
@@ -418,12 +556,87 @@ struct DailyCalendarView: View {
             goal.scheduledBlock(on: currentDate, categoryID: goal.categoryID ?? fallbackCategory)
         }
 
-        let laidOut = layoutEvents(realEvents + goalBlocks)
-        return ZStack(alignment: .topLeading) {
+        // A placed task becomes a transient block too, same technique —
+        // folded into the SAME layoutEvents call as everything else, so
+        // it gets correct overlap/column handling for free rather than
+        // a separate layer that could visually collide with a real event.
+        let calendar = Calendar.current
+        let taskBlocks: [CalendarEvent] = tasksStore.tasks.compactMap { task in
+            guard let scheduled = task.scheduledDate,
+                  calendar.isDate(scheduled, inSameDayAs: currentDate),
+                  let duration = task.durationMinutes
+            else { return nil }
+            var event = CalendarEvent(
+                title: task.text,
+                startDate: scheduled,
+                endDate: scheduled.addingTimeInterval(TimeInterval(duration * 60)),
+                categoryID: fallbackCategory
+            )
+            // A stable id, not the random one CalendarEvent's default
+            // init would generate fresh on every re-render — the same
+            // fix goal blocks already needed via stableBlockID. Without
+            // it, the id changes out from under armedEventID mid-drag,
+            // silently breaking the gesture. A task only has one
+            // placement at a time, so its own id is already stable
+            // enough to reuse directly — no day-derivation needed the
+            // way a repeating goal's block requires.
+            event.id = task.id
+            event.flowsToDaily = true
+            event.linkedTaskID = task.id
+            return event
+        }
+
+        let laidOut = layoutEvents(realEvents + goalBlocks + taskBlocks)
+        let stack = ZStack(alignment: .topLeading) {
             ForEach(laidOut) { item in
                 eventBlock(item, contentWidth: contentWidth)
             }
         }
+
+        // dropDestination only matters while the tray is visible — a
+        // drop has nowhere to come FROM otherwise. Attaching it
+        // unconditionally turned out to compete with the plain
+        // long-press-then-drag gesture used to move an existing block,
+        // which is why a placed task couldn't be re-dragged except
+        // after fully closing out of planning. Two different
+        // touch-recognition systems on the same view apparently don't
+        // share nicely — scoping this one to when it's actually needed
+        // is the fix, not trying to make them cooperate.
+        return Group {
+            if isPlanning {
+                stack.dropDestination(for: String.self) { payloads, location in
+                    handleDrop(payloads: payloads, location: location)
+                }
+            } else {
+                stack
+            }
+        }
+    }
+
+    /// Parses a tray item's drag payload ("goal:<uuid>" or
+    /// "task:<uuid>") and places it at the dropped time — reusing
+    /// `minutes(fromY:)`, the exact same snapping math the tap-to-create
+    /// and drag-to-move gestures already use, so a dropped item lands
+    /// on the same grid lines everything else does.
+    private func handleDrop(payloads: [String], location: CGPoint) -> Bool {
+        guard let payload = payloads.first else { return false }
+        let parts = payload.split(separator: ":", maxSplits: 1)
+        guard parts.count == 2, let id = UUID(uuidString: String(parts[1])) else { return false }
+
+        let startMinutes = minutes(fromY: location.y)
+        let calendar = Calendar.current
+        let dropDate = calendar.startOfDay(for: currentDate).addingTimeInterval(TimeInterval(startMinutes * 60))
+
+        switch parts[0] {
+        case "goal":
+            guard let goal = goalsStore.goals.first(where: { $0.id == id }) else { return false }
+            goalsStore.scheduleOnCalendar(goal.id, startMinutes: startMinutes, durationMinutes: goal.scheduledDurationMinutes)
+        case "task":
+            tasksStore.place(id, at: dropDate)
+        default:
+            return false
+        }
+        return true
     }
 
     private func eventBlock(_ item: LaidOutEvent, contentWidth: CGFloat) -> some View {
@@ -433,10 +646,16 @@ struct DailyCalendarView: View {
 
         // Goal-derived blocks are generated on the fly, not stored, so
         // they behave differently: accent-coloured, tickable, and not
-        // editable as events.
+        // editable as events. Task blocks are a third kind, generated
+        // the same way — their own colour, and "done" reflects the
+        // actual task's own `done` field, since the synthesized event
+        // itself never carries real completion state.
         let goalID = item.event.linkedGoalID
         let isGoalBlock = goalID != nil
-        let isDone = item.event.isCompleted
+        let taskID = item.event.linkedTaskID
+        let isTaskBlock = taskID != nil
+        let linkedTask = taskID.flatMap { id in tasksStore.tasks.first { $0.id == id } }
+        let isDone = isTaskBlock ? (linkedTask?.done ?? false) : item.event.isCompleted
 
         var displayStart = item.event.startDate
         var displayEnd = item.event.endDate
@@ -453,18 +672,24 @@ struct DailyCalendarView: View {
 
         let baseColor = isGoalBlock
             ? appearanceStore.primaryColor
-            : Color(hex: store.category(for: item.event.categoryID)?.colorHex ?? "#999999")
+            : isTaskBlock
+                ? appearanceStore.tertiaryColor
+                : Color(hex: store.category(for: item.event.categoryID)?.colorHex ?? "#999999")
         let color = isDone ? baseColor.opacity(0.45) : baseColor
         let textColor = baseColor.contrastingTextColor
 
         return Group {
-            if !isGoalBlock, !item.event.parts.isEmpty {
+            if !isGoalBlock, !isTaskBlock, !item.event.parts.isEmpty {
                 PartsStack(parts: item.event.parts, height: height, textColor: textColor)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 3) {
                         if isGoalBlock {
                             Image(systemName: isDone ? "checkmark.circle.fill" : "target")
+                                .font(.system(size: 9))
+                                .foregroundStyle(textColor.opacity(0.9))
+                        } else if isTaskBlock {
+                            Image(systemName: isDone ? "checkmark.circle.fill" : "checkmark.circle")
                                 .font(.system(size: 9))
                                 .foregroundStyle(textColor.opacity(0.9))
                         }
@@ -511,6 +736,10 @@ struct DailyCalendarView: View {
                 // accidentally opened sheet is obvious and cancellable;
                 // an accidental completion is neither.
                 editingGoal = goalsStore.goals.first { $0.id == goalID }
+            } else if let taskID {
+                // A task has no editor to open — tapping shows the
+                // small mark-done/remove action popup instead.
+                taskActionID = taskID
             } else {
                 editingEvent = item.event
             }
@@ -542,6 +771,11 @@ struct DailyCalendarView: View {
                         // other day is untouched. Changing the time in
                         // the goal editor is what moves the series.
                         goalsStore.setScheduledTimeOverride(goalID, date: currentDate, startMinutes: newStartMinutes)
+                    } else if let taskID {
+                        // A task isn't part of a series — moving it
+                        // just re-places it at the new time directly.
+                        let newStart = item.event.startDate.addingTimeInterval(TimeInterval(delta * 60))
+                        tasksStore.place(taskID, at: newStart)
                     } else if item.event.recurrence != .none {
                         // Same rule for a repeating event: this
                         // occurrence moves, the series does not.
