@@ -33,6 +33,27 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
+## Last session (3 Oct 2026, Claude Code CLI)
+
+Done and pushed (`578fe95`, `d0c2d9c`):
+- Removed Finance: models, store, views, sheets, sidebar entry,
+  `financeEvents` filename, `tabFinance` image. Build succeeded.
+- Deleted the orphaned `SplashView`. The other four files on the orphan list
+  were already gone.
+- Committed the planning stage-2 work in the same commit. (It had been sitting
+  uncommitted, and the files overlapped with the cleanup.)
+- Added `.gitignore` and stopped tracking `.DS_Store` and Xcode user state.
+
+Unfinished / not yet verified:
+- **Not yet tested on device.** Check that the sidebar shows only People,
+  Linked apps and Settings and that each opens. Check that the launch screen
+  still appears. Check that Linked apps still lists Wallet and Stocks (the
+  "Finance" group in `LinkedApps.json` is app shortcuts, not the removed
+  feature, so it was kept).
+- The other `tab*.imageset` assets and loose `tab_*.png` files in the source
+  folder look unused (tab icons are SF Symbols). Confirm, then delete.
+- Next priority is buffer awareness (see Open queue below).
+
 ## Status by feature
 
 | Area | Status |
@@ -54,6 +75,7 @@ Research that shaped the design:
 | Task durations (`VectisTask.durationMinutes`, `scheduledDate`) | Built |
 | Native launch screen (wordmark image, all 3 scales) | Built |
 | Finance removed (moving to its own app); orphaned `SplashView` deleted | Done (Oct 2026). Old `finance_events.json` stays on the phone, unread. |
+| Repo hygiene: `.gitignore` for `.DS_Store` and `xcuserdata/`; those files untracked | Done (Oct 2026) |
 | Buffer awareness (2.8) | **Next** — designed, not built |
 | Rest days (2.2) | Not built |
 | Editor restyle for goals / settings / notes | Not built |
