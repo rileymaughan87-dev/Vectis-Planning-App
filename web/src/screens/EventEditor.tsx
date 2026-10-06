@@ -184,7 +184,6 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
                 return <option key={g.id} value={g.id}>{parent ? `${g.title} (${parent.title})` : g.title}</option>
               })}
             </select>
-            <p className="help">Linking people arrives with the People page.</p>
           </EditorBox>
         )}
       </Sheet>

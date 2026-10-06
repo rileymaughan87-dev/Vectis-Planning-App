@@ -17,8 +17,9 @@ status table in HANDOFF.md supersedes the spec where they disagree.
   interchangeable. Ported so far: shell, side menu, Home, Goals, Daily,
   Long-Term, plan and review (capture, drag tray, evening review),
   Record (journal, notebooks, notes), challenges, Settings, and
-  Accountability (sharing via Google Drive, partner view). Not yet: People,
-  Linked apps. Classic notes stay RTF so the iPhone can read them. Live at
+  Accountability (sharing via Google Drive, partner view). People and
+  Linked apps are deliberately left out of the web app (they need phone
+  contacts and app-launching); their saved links are kept, not shown. Classic notes stay RTF so the iPhone can read them. Live at
   https://rileymaughan87-dev.github.io/Vectis-Planning-App/ (deploys on
   push to master). Layout must work from 360px phones to wide desktops.
 - **`Vectis Planning/` — the Swift app, kept as a fallback.** Don't delete or
@@ -38,7 +39,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 ## Structure
 
 - **Tabs (custom bar):** Home, Goals, Daily, Long-Term, Record.
-- **Sidebar:** People, Linked apps, Settings. (Finance was removed in
+- **Sidebar (Swift):** People, Linked apps, Settings. **Web:** Accountability
+  (with partners), Settings. (Finance was removed in
   Oct 2026 — it is moving to its own app.)
 - **Stores (all created in `ContentView`):** GoalsStore, CalendarStore,
   TasksStore, NotesStore, JournalStore, PlanReviewStore, AppearanceStore,
@@ -80,8 +82,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Current priorities (in order)
 
-0. **Web port** — next: decide what People and Linked apps should be on
-   the web (they rely on phone contacts and app-launching). See HANDOFF.md.
+0. **Web port** — complete except People/Linked apps (left out). Next:
+   bring in Riley's unpushed Mac work and port anything new. See HANDOFF.md.
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.
