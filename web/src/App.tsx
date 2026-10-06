@@ -1,12 +1,15 @@
-// The app shell: header, five tabs, the slide-in side menu, and a
-// partner's view laid over the top when one is open.
+// The app shell. On a phone: header, five tabs along the bottom, and a
+// slide-in side menu. On a wider screen the tabs and side-menu items sit
+// together in a permanent sidebar instead. A partner's view is laid over
+// the top when one is open.
 
 import { CalendarClock, CalendarDays, Hammer, Home, Menu, NotebookText, Settings, Target, Users, UsersRound, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
+import { AccountabilityScreen } from './screens/AccountabilityScreen'
 import { DailyScreen } from './screens/DailyScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 import { HomeScreen } from './screens/HomeScreen'
-import { AccountabilityScreen } from './screens/AccountabilityScreen'
+import { LongTermScreen } from './screens/LongTermScreen'
 import { PartnerView } from './screens/PartnerView'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { useData } from './store/data'
@@ -18,12 +21,12 @@ import { themeColors, useApplyTheme } from './ui/theme'
 type Tab = 'home' | 'goals' | 'daily' | 'longTerm' | 'record'
 type SidebarDestination = 'accountability' | 'people' | 'settings'
 
-const tabs: { id: Tab; title: string; icon: ReactNode }[] = [
-  { id: 'home', title: 'Home', icon: <Home size={19} /> },
-  { id: 'goals', title: 'Goals', icon: <Target size={19} /> },
-  { id: 'daily', title: 'Daily', icon: <CalendarDays size={19} /> },
-  { id: 'longTerm', title: 'Long-Term', icon: <CalendarClock size={19} /> },
-  { id: 'record', title: 'Record', icon: <NotebookText size={19} /> },
+const tabs: { id: Tab; title: string; icon: (size: number) => ReactNode }[] = [
+  { id: 'home', title: 'Home', icon: s => <Home size={s} /> },
+  { id: 'goals', title: 'Goals', icon: s => <Target size={s} /> },
+  { id: 'daily', title: 'Daily', icon: s => <CalendarDays size={s} /> },
+  { id: 'longTerm', title: 'Long-Term', icon: s => <CalendarClock size={s} /> },
+  { id: 'record', title: 'Record', icon: s => <NotebookText size={s} /> },
 ]
 
 function ComingSoon({ title, detail }: { title: string; detail: string }) {
@@ -36,11 +39,49 @@ function ComingSoon({ title, detail }: { title: string; detail: string }) {
   )
 }
 
+/** Accountability (with partners under it), People, then Settings set apart. */
+function MenuItems(props: { onGo: (d: SidebarDestination) => void; onPartner: (id: string) => void }) {
+  const share = useShare()
+  return (
+    <>
+      <button className="sidebar-row" onClick={() => props.onGo('accountability')}>
+        <UsersRound size={22} color="var(--primary)" />
+        <span>
+          <div className="title">Accountability</div>
+          <div className="subtitle">Share progress, view partners</div>
+        </span>
+        {share.hasUnpublishedChanges && <span className="badge" aria-label="Unpublished changes" />}
+      </button>
+      {share.partners.map(p => (
+        <button key={p.id} className="sidebar-row partner-row" onClick={() => props.onPartner(p.id)}>
+          <span className="title">{p.name}</span>
+        </button>
+      ))}
+      <button className="sidebar-row" onClick={() => props.onGo('people')}>
+        <Users size={22} color="var(--primary)" />
+        <span>
+          <div className="title">People</div>
+          <div className="subtitle">Contacts, birthdays, quick actions</div>
+        </span>
+      </button>
+      <div className="sidebar-spacer" />
+      <hr className="divider" />
+      <button className="sidebar-row" style={{ marginBottom: 8 }} onClick={() => props.onGo('settings')}>
+        <Settings size={22} color="var(--text-2)" />
+        <span>
+          <div className="title">Settings</div>
+          <div className="subtitle">Appearance, categories, your data</div>
+        </span>
+      </button>
+    </>
+  )
+}
+
 export default function App() {
   const appearance = useData(s => s.appearance)
   useApplyTheme(appearance)
   const colors = themeColors(appearance)
-  const share = useShare()
+  const addPartner = useShare(s => s.addPartner)
 
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('vectis:ui:tab') as Tab) || 'home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -78,7 +119,7 @@ export default function App() {
     setInviteBusy(true)
     setInviteError(null)
     try {
-      const partner = await share.addPartner(invite)
+      const partner = await addPartner(invite)
       setInvite(null)
       setPartnerID(partner.id)
     } catch (error) {
@@ -92,37 +133,57 @@ export default function App() {
     setSidebarOpen(false)
     setDestination(d)
   }
+  const openPartner = (id: string) => {
+    setSidebarOpen(false)
+    setPartnerID(id)
+  }
 
   const title = tabs.find(t => t.id === tab)!.title
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="topbar-row">
-          <span className="wordmark">Vectis</span>
-          <button className="icon-button" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-            <Menu size={22} />
-          </button>
-        </div>
-        <h1>{title}</h1>
-      </header>
+      <aside className="rail" aria-label="Navigation">
+        <div className="rail-head"><span className="wordmark">Vectis</span></div>
+        <nav aria-label="Sections">
+          {tabs.map(t => (
+            <button key={t.id} className="rail-tab" aria-current={tab === t.id ? 'page' : undefined} onClick={() => setTab(t.id)}>
+              {t.icon(18)}
+              {t.title}
+            </button>
+          ))}
+        </nav>
+        <hr className="divider" style={{ margin: '10px 0' }} />
+        <MenuItems onGo={go} onPartner={openPartner} />
+      </aside>
 
-      <main className="content" style={tab === 'daily' ? { overflow: 'hidden' } : undefined}>
-        {tab === 'home' && <HomeScreen colors={colors} />}
-        {tab === 'goals' && <GoalsScreen colors={colors} />}
-        {tab === 'daily' && <DailyScreen colors={colors} />}
-        {tab === 'longTerm' && <ComingSoon title="Long-Term calendar" detail="The month view is next in line for the web version. Your long-term events and milestones are safe in the meantime." />}
-        {tab === 'record' && <ComingSoon title="Record" detail="Journal, notebooks and notes are coming to the web version after the Long-Term calendar." />}
-      </main>
+      <div className="main">
+        <header className="topbar">
+          <div className="topbar-row">
+            <span className="wordmark">Vectis</span>
+            <button className="icon-button menu-button" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+              <Menu size={22} />
+            </button>
+          </div>
+          <h1>{title}</h1>
+        </header>
 
-      <nav className="tabbar" aria-label="Sections">
-        {tabs.map(t => (
-          <button key={t.id} className="tab" aria-current={tab === t.id ? 'page' : undefined} onClick={() => setTab(t.id)}>
-            {t.icon}
-            {t.title}
-          </button>
-        ))}
-      </nav>
+        <main className={`content ${tab === 'daily' ? 'content-daily' : ''}`}>
+          {tab === 'home' && <HomeScreen colors={colors} />}
+          {tab === 'goals' && <GoalsScreen colors={colors} />}
+          {tab === 'daily' && <DailyScreen colors={colors} />}
+          {tab === 'longTerm' && <LongTermScreen colors={colors} />}
+          {tab === 'record' && <ComingSoon title="Record" detail="Journal, notebooks and notes are next in line for the web version." />}
+        </main>
+
+        <nav className="tabbar" aria-label="Sections">
+          {tabs.map(t => (
+            <button key={t.id} className="tab" aria-current={tab === t.id ? 'page' : undefined} onClick={() => setTab(t.id)}>
+              {t.icon(19)}
+              {t.title}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {sidebarOpen && (
         <>
@@ -132,35 +193,7 @@ export default function App() {
               <button className="icon-button" style={{ color: 'var(--text-2)' }} onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20} /></button>
               <span className="wordmark">Vectis</span>
             </div>
-            <button className="sidebar-row" onClick={() => go('accountability')}>
-              <UsersRound size={22} color="var(--primary)" />
-              <span>
-                <div className="title">Accountability</div>
-                <div className="subtitle">Share progress, view partners</div>
-              </span>
-              {share.hasUnpublishedChanges && <span className="badge" aria-label="Unpublished changes" />}
-            </button>
-            {share.partners.map(p => (
-              <button key={p.id} className="sidebar-row" style={{ paddingLeft: 52 }} onClick={() => { setSidebarOpen(false); setPartnerID(p.id) }}>
-                <span className="title" style={{ fontWeight: 400 }}>{p.name}</span>
-              </button>
-            ))}
-            <button className="sidebar-row" onClick={() => go('people')}>
-              <Users size={22} color="var(--primary)" />
-              <span>
-                <div className="title">People</div>
-                <div className="subtitle">Contacts, birthdays, quick actions</div>
-              </span>
-            </button>
-            <div className="sidebar-spacer" />
-            <hr className="divider" />
-            <button className="sidebar-row" style={{ marginBottom: 8 }} onClick={() => go('settings')}>
-              <Settings size={22} color="var(--text-2)" />
-              <span>
-                <div className="title">Settings</div>
-                <div className="subtitle">Appearance, categories, your data</div>
-              </span>
-            </button>
+            <MenuItems onGo={go} onPartner={openPartner} />
           </aside>
         </>
       )}

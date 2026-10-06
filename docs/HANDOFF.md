@@ -33,7 +33,25 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
-## Latest session (5 Oct 2026) — web port begun
+## Latest session (6 Oct 2026) — hosting, Long-Term, wide screens
+
+- Hosted on GitHub Pages: https://rileymaughan87-dev.github.io/Vectis-Planning-App/
+  (repo made public; `.github/workflows/deploy-web.yml` deploys on push to
+  master touching `web/`; Google keys come from repo secrets). Riley
+  confirmed the partner link works phone-to-phone.
+- **Long-Term tab ported** (`screens/LongTermScreen.tsx`, `model/longTerm.ts`):
+  goals progress summary, month grid (events with `origin: longTerm` plus
+  dated milestones, 3 per cell then "+N more"; dots on very narrow phones),
+  tap a day → list, add (all-day, off the Daily grid by default), edit.
+- **Wide screens:** from 900px wide a permanent left sidebar holds the tabs
+  and side-menu items; Home, Goals, Long-Term and the partner view go
+  two-column; Daily is capped at 960px. Mouse users drag blocks directly
+  (long-press stays for touch). Hover states added.
+- **Regional:** weeks start on the region's first day (`firstWeekday()` via
+  `Intl.Locale` week info) in the month grid, weekday picker and "times per
+  week" counts.
+
+## Session 5 Oct 2026 — web port begun
 
 Riley is on Windows now and decided to move Vectis to a web app, keeping the
 Swift project untouched as a fallback. New in `web/` (React + TS + Vite):
@@ -141,7 +159,8 @@ Still to verify on device (carried over plus new):
 | Monthly review / recalibration (2.10, 2.11) | Waiting — needs a month of data |
 | Web app (`web/`): model, Home, Goals, Daily, event editor, Settings | Built (Oct 2026), browser-tested |
 | Accountability sharing via Google Drive + partner view (web) | Built (Oct 2026); publishing confirmed 6 Oct; cross-device needs hosting |
-| Web: Long-Term, Record, planning/review, challenges, People | Not ported yet |
+| Web: Long-Term tab, wide-screen layout, GitHub Pages hosting | Built (6 Oct 2026) |
+| Web: Record, planning/review, challenges, People | Not ported yet |
 
 ## Decided against (don't reopen without a reason)
 

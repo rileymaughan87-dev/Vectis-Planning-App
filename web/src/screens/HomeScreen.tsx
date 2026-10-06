@@ -42,7 +42,7 @@ export function HomeScreen({ colors }: { colors: ThemeColors }) {
   const incomplete = tasks.filter(t => !t.done).length
 
   return (
-    <div className="page">
+    <div className="page home">
       <SectionBox
         title="Right now"
         accent={nowAccent}

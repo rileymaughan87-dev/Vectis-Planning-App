@@ -1,7 +1,7 @@
 // The Daily grid, ported from DailyCalendarView.swift.
 //
 // Tap an empty slot to add an event, tap a block to open it, press and
-// hold a block to pick it up and drag it. Moving one occurrence of a
+// hold a block to pick it up and drag it (with a mouse, just drag). Moving one occurrence of a
 // goal or repeating event moves that day only. Swipe sideways on the
 // grid to change day.
 
@@ -32,6 +32,8 @@ interface DragState {
   startX: number
   armed: boolean
   moved: boolean
+  /** A mouse has no scroll to confuse with, so it can drag straight away. */
+  isMouse: boolean
   deltaMinutes: number
   timer: ReturnType<typeof setTimeout> | undefined
 }
@@ -99,9 +101,13 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
     e.stopPropagation()
     const state: DragState = {
       id: block.id, pointerID: e.pointerId, startY: e.clientY, startX: e.clientX,
-      armed: false, moved: false, deltaMinutes: 0, timer: undefined,
+      armed: false, moved: false, isMouse: e.pointerType === 'mouse', deltaMinutes: 0, timer: undefined,
     }
     const target = e.currentTarget as HTMLElement
+    if (state.isMouse) {
+      updateDrag(state)
+      return
+    }
     state.timer = setTimeout(() => {
       if (dragRef.current?.id !== block.id || dragRef.current.moved) return
       try {
@@ -119,6 +125,16 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
     const d = dragRef.current
     if (!d || d.pointerID !== e.pointerId) return
     const dy = e.clientY - d.startY
+    if (!d.armed && d.isMouse) {
+      if (Math.abs(dy) < 4) return
+      try {
+        ;(e.currentTarget as HTMLElement).setPointerCapture(d.pointerID)
+      } catch {
+        // Pointer already gone.
+      }
+      dragRef.current = { ...d, armed: true, moved: true }
+      return onBlockPointerMove(e)
+    }
     if (!d.armed) {
       // Moving before the long press lands means this is a scroll.
       if (Math.abs(dy) > 8 || Math.abs(e.clientX - d.startX) > 8) {

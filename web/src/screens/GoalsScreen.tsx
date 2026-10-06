@@ -25,7 +25,7 @@ export function GoalsScreen({ colors }: { colors: ThemeColors }) {
   const longTerm = goals.filter(g => g.kind === 'longTerm')
 
   return (
-    <div className="page">
+    <div className="page goals">
       <SectionBox title="Short-term goals" accent={colors.primary}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {shortTerm.map(g => <ShortTermGoalRow key={g.id} goal={g} accent={colors.primary} {...handlers} />)}

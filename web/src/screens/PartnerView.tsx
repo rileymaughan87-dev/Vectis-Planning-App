@@ -42,7 +42,7 @@ export function PartnerView({ partnerID, colors, onBack }: { partnerID: string; 
   const date = addDays(today, offset)
 
   return (
-    <div className="app" style={{ position: 'fixed', inset: 0, zIndex: 25, maxWidth: 640 }}>
+    <div className="partner-overlay">
       <header className="partner-banner">
         <button className="back" onClick={onBack}><ArrowLeft size={16} /> My Vectis</button>
         <div className="grow">
@@ -58,7 +58,7 @@ export function PartnerView({ partnerID, colors, onBack }: { partnerID: string; 
 
       <main className="content">
         {snap && <p className="read-only-note">Read-only · published {relativeTime(parseDate(snap.publishedAt))}</p>}
-        <div className="page" style={{ paddingTop: 10 }}>
+        <div className="page partner-page" style={{ paddingTop: 10 }}>
           {error && <div className="notice error">{error}</div>}
           {!snap ? (
             <div className="empty">Nothing loaded yet. {canRefresh ? 'Tap refresh to load their file.' : ''}</div>

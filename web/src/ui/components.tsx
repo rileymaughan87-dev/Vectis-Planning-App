@@ -3,7 +3,7 @@
 
 import { ChevronRight, X } from 'lucide-react'
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react'
-import { ALL_DAYS, WEEKDAYS_ONLY, WEEKEND_ONLY, sameSet } from '../model/dates'
+import { ALL_DAYS, WEEKDAYS_ONLY, WEEKEND_ONLY, firstWeekday, sameSet } from '../model/dates'
 import { COMFORTABLE_LIMIT } from '../model/dayBlocks'
 
 type WithAccent = CSSProperties & { '--accent'?: string; '--chip-color'?: string; '--on-accent'?: string }
@@ -137,11 +137,17 @@ const weekdayNames = (() => {
   )
 })()
 
+/** Sunday-first in the US, Monday-first in most other places. */
+function daysInLocalOrder(): number[] {
+  const first = firstWeekday()
+  return ALL_DAYS.map(i => ((first - 1 + i - 1) % 7) + 1)
+}
+
 export function RepeatDaysPicker({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div className="day-picker">
-        {ALL_DAYS.map(d => {
+        {daysInLocalOrder().map(d => {
           const on = days.includes(d)
           return (
             <button
