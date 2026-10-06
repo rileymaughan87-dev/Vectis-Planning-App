@@ -2,7 +2,7 @@
 // one-file backup of everything stored here.
 
 import {
-  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodePlanReview, decodeTask, list,
+  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview, decodeTask, list,
 } from '../model/decode'
 import { useData, type DataState } from '../store/data'
 import { Filename, allEntries, saveRaw } from '../store/persist'
@@ -17,6 +17,8 @@ const swiftFiles: Record<string, (raw: unknown) => Partial<DataState>> = {
   [Filename.appearance]: raw => ({ appearance: decodeAppearance(raw) }),
   [Filename.planReviewSettings]: raw => ({ planReview: decodePlanReview(raw) }),
   [Filename.journalEntries]: raw => ({ journal: list(raw, decodeJournalEntry) }),
+  [Filename.notes]: raw => ({ notes: list(raw, decodeNote) }),
+  [Filename.notebooks]: raw => ({ notebooks: list(raw, decodeNotebook) }),
 }
 
 export interface ImportResult {

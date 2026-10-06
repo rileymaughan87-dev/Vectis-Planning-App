@@ -174,3 +174,38 @@ describe('plan and review', () => {
     expect(reviewPrompt(flaggedGoals([missed], today, false))).toBe('What worked today?')
   })
 })
+
+describe('classic note RTF', () => {
+  // What Cocoa writes for the iPhone's sample "Trip planning" note.
+  const cocoa = String.raw`{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform1{\fonttbl\f0\fswiss\fcharset0 Helvetica-Bold;\f1\fswiss\fcharset0 Helvetica;\f2\fswiss\fcharset0 Helvetica-Oblique;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\b\fs32 \cf0 Flights booked for June 14\
+\f1\b0 Need to sort out accommodation still. 
+\f2\i Check reviews before booking. Caf\'e9 \uc0\u8212  done}`
+
+  it('reads Cocoa RTF, including fonts that carry bold and italic', async () => {
+    const { rtfToParagraphs, paragraphsToText } = await import('./rtf')
+    const paras = rtfToParagraphs(cocoa)
+    expect(paragraphsToText(paras)).toBe('Flights booked for June 14\nNeed to sort out accommodation still. Check reviews before booking. Café — done')
+    expect(paras[0][0]).toMatchObject({ bold: true, italic: false })
+    expect(paras[1].find(r => r.text.startsWith('Check'))).toMatchObject({ italic: true, bold: false })
+  })
+
+  it('round-trips styles, headings, escapes and non-ASCII', async () => {
+    const { rtfToParagraphs, paragraphsToRtf, base64FromRtf, rtfFromBase64 } = await import('./rtf')
+    const original = [
+      [{ text: 'Plan', bold: true, italic: false, heading: true }],
+      [{ text: 'Mix ', bold: false, italic: false, heading: false }, { text: 'bold', bold: true, italic: false, heading: false }, { text: ' and {braces} \ 😀 é', bold: false, italic: true, heading: false }],
+      [],
+      [{ text: 'End', bold: false, italic: false, heading: false }],
+    ]
+    const rtf = rtfFromBase64(base64FromRtf(paragraphsToRtf(original)))
+    const back = rtfToParagraphs(rtf)
+    expect(back).toEqual(original.map(p => p.map(r => (r.heading ? { ...r, bold: true } : r))))
+  })
+})

@@ -11,6 +11,7 @@ import { GoalsScreen } from './screens/GoalsScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { LongTermScreen } from './screens/LongTermScreen'
 import { PartnerView } from './screens/PartnerView'
+import { RecordScreen } from './screens/RecordScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { useData } from './store/data'
 import { useShare } from './store/share'
@@ -172,7 +173,7 @@ export default function App() {
           {tab === 'goals' && <GoalsScreen colors={colors} />}
           {tab === 'daily' && <DailyScreen colors={colors} />}
           {tab === 'longTerm' && <LongTermScreen colors={colors} />}
-          {tab === 'record' && <ComingSoon title="Record" detail="Journal, notebooks and notes are next in line for the web version." />}
+          {tab === 'record' && <RecordScreen colors={colors} />}
         </main>
 
         <nav className="tabbar" aria-label="Sections">

@@ -16,6 +16,8 @@ export const Filename = {
   appearance: 'appearance.json',
   planReviewSettings: 'plan_review_settings.json',
   journalEntries: 'journal_entries.json',
+  notes: 'notes.json',
+  notebooks: 'notebooks.json',
   // Web-only
   share: 'share.json',
   partners: 'partners.json',

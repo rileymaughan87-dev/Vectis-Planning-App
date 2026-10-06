@@ -145,6 +145,38 @@ export interface JournalEntry {
   text: string
 }
 
+export type NoteType = 'jot' | 'list' | 'classic'
+
+export interface ChecklistItem {
+  id: ID
+  text: string
+  done: boolean
+}
+
+export interface Notebook {
+  id: ID
+  title: string
+  linkedGoalID?: ID
+  createdDate: ISODate
+}
+
+/** One note; only the fields for its `type` are used. */
+export interface Note {
+  id: ID
+  type: NoteType
+  title: string
+  /** Jots only. */
+  jotText: string
+  /** Classic notes only: RTF, base64-encoded (Swift `Data`). */
+  richTextData?: string
+  /** Lists only. */
+  checklistItems: ChecklistItem[]
+  linkedGoalID?: ID
+  /** Unset means it sits loose in its type's section. */
+  notebookID?: ID
+  updatedDate: ISODate
+}
+
 export interface CalendarHours {
   startHour: number
   endHour: number
