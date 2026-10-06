@@ -1,15 +1,18 @@
 // What's happening right now, today's goals, and tasks. Built on the
 // same dayBlocks() as the Daily grid, so a placed task shows here too.
 
-import { ArrowRight, Clock, Plus, X } from 'lucide-react'
+import { ArrowRight, ChevronRight, Clock, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { dayKey } from '../model/dates'
 import { allDayEvents, dayBlocks } from '../model/dayBlocks'
 import { formatDuration, formatTime, formatTimeRange } from '../model/format'
+import { minutesFromMidnight } from '../model/dates'
 import { isScheduled } from '../model/goals'
+import { hasReviewed } from '../model/planning'
 import { sortedTasks, useData } from '../store/data'
 import { CompletionMark, SectionBox } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
+import { EveningReview } from './EveningReview'
 
 /** Re-renders every 30 seconds so "42 min left" stays roughly right. */
 export function useNow(intervalMs = 30_000) {
@@ -23,8 +26,13 @@ export function useNow(intervalMs = 30_000) {
 
 export function HomeScreen({ colors }: { colors: ThemeColors }) {
   const now = useNow()
-  const { goals, events, tasks, categories, setCompletion, addTask, toggleTask, setTaskDuration, deleteTask } = useData()
+  const { goals, events, tasks, categories, journal, planReview, setCompletion, addTask, toggleTask, setTaskDuration, deleteTask } = useData()
   const [newTask, setNewTask] = useState('')
+  const [reviewing, setReviewing] = useState(false)
+
+  // Quiet until it's relevant and gone once done: only with Plan and
+  // review on, after the evening time, until today's review is answered.
+  const showReview = planReview.isEnabled && minutesFromMidnight(now) >= planReview.eveningReviewMinutes && !hasReviewed(journal, now)
 
   const blocks = dayBlocks({ events, goals, tasks, categories }, now)
   const current = blocks.find(b => b.start <= now && b.end > now)
@@ -143,6 +151,18 @@ export function HomeScreen({ colors }: { colors: ThemeColors }) {
           <input value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a task" aria-label="Add a task" style={{ background: 'transparent', padding: '4px 0' }} />
         </form>
       </SectionBox>
+
+      {showReview && (
+        <button style={{ textAlign: 'left' }} onClick={() => setReviewing(true)}>
+          <SectionBox title="Evening review" accent={colors.primary}>
+            <div className="row spread">
+              <span className="caption">A quick look back, and a line or two if you want.</span>
+              <ChevronRight size={14} className="muted" />
+            </div>
+          </SectionBox>
+        </button>
+      )}
+      {reviewing && <EveningReview colors={colors} onClose={() => setReviewing(false)} />}
     </div>
   )
 }

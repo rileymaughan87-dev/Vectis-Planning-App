@@ -150,3 +150,27 @@ describe('long-term calendar', () => {
     expect(longTermItems({ events, goals: [goal], categories: [] }, addDays(today, 1), '#000').map(i => i.title)).toEqual(['Holiday'])
   })
 })
+
+describe('plan and review', () => {
+  it('lists unplaced goals and tasks with durations, longest first', async () => {
+    const { planningItems } = await import('./planning')
+    const goals = [
+      makeGoal('Read', { createdDate: toISO(addDays(today, -1)), scheduledDurationMinutes: 30 }),
+      makeGoal('Gym', { createdDate: toISO(addDays(today, -1)), scheduledOnCalendar: true }),
+      makeGoal('Degree', { kind: 'longTerm' }),
+    ]
+    const tasks = [
+      { id: 'A', text: 'Essay', done: false, createdDate: toISO(today), durationMinutes: 90 },
+      { id: 'B', text: 'Milk', done: false, createdDate: toISO(today) },
+      { id: 'C', text: 'Placed', done: false, createdDate: toISO(today), durationMinutes: 15, scheduledDate: toISO(today) },
+    ]
+    expect(planningItems(goals, tasks, today).map(i => i.title)).toEqual(['Essay', 'Read'])
+  })
+
+  it('asks the diagnostic question only when misses are flagged', async () => {
+    const { flaggedGoals, reviewPrompt } = await import('./planning')
+    const missed = makeGoal('Habit', { createdDate: toISO(addDays(today, -5)) })
+    expect(reviewPrompt(flaggedGoals([missed], today, true))).toBe('What slowed you down today?')
+    expect(reviewPrompt(flaggedGoals([missed], today, false))).toBe('What worked today?')
+  })
+})

@@ -15,6 +15,7 @@ export const Filename = {
   tasks: 'tasks.json',
   appearance: 'appearance.json',
   planReviewSettings: 'plan_review_settings.json',
+  journalEntries: 'journal_entries.json',
   // Web-only
   share: 'share.json',
   partners: 'partners.json',

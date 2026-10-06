@@ -9,7 +9,7 @@ import { ALL_DAYS, DISTANT_PAST, toISO } from './dates'
 import { newID } from './ids'
 import type {
   AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, EventPart,
-  Goal, GoalNote, Milestone, PlanReviewSettings, ScheduleVersion, VectisTask,
+  Goal, GoalNote, JournalEntry, Milestone, PlanReviewSettings, ScheduleVersion, VectisTask,
 } from './types'
 
 type Raw = Record<string, unknown>
@@ -162,6 +162,11 @@ export function decodeTask(r: Raw): VectisTask | null {
     durationMinutes: optNum(r.durationMinutes),
     scheduledDate: optStr(r.scheduledDate),
   }
+}
+
+export function decodeJournalEntry(r: Raw): JournalEntry | null {
+  if (typeof r.date !== 'string') return null
+  return { id: str(r.id, newID()), date: r.date, reflectionPrompt: optStr(r.reflectionPrompt), text: str(r.text, '') }
 }
 
 export function decodeHours(v: unknown): CalendarHours {

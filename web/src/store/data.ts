@@ -6,16 +6,16 @@
 // Each slice saves to its own file whenever it changes.
 
 import { create } from 'zustand'
-import { dayKey, parseDate, toISO } from '../model/dates'
+import { dayKey, isSameDay, parseDate, startOfDay, toISO } from '../model/dates'
 import {
-  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodePlanReview, decodeTask, list,
+  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodePlanReview, decodeTask, list,
 } from '../model/decode'
 import { moved, resized } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
 import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals } from '../model/sample'
 import type {
-  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, PlanReviewSettings, VectisTask,
+  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, PlanReviewSettings, VectisTask,
 } from '../model/types'
 import { Filename, loadRaw, saveRaw } from './persist'
 
@@ -27,6 +27,7 @@ export interface DataState {
   tasks: VectisTask[]
   appearance: AppearanceSettings
   planReview: PlanReviewSettings
+  journal: JournalEntry[]
 }
 
 interface Actions {
@@ -41,6 +42,8 @@ interface Actions {
   toggleMilestone(goalID: string, milestoneID: string): void
   scheduleGoalOnCalendar(goalID: string, startMinutes: number, durationMinutes: number): void
   setGoalTimeOverride(goalID: string, date: Date, startMinutes: number): void
+  /** A goal's length before it's on the calendar — nothing to version yet. */
+  setGoalDuration(goalID: string, minutes: number): void
   // Events
   addEvent(event: CalendarEvent): void
   updateEvent(event: CalendarEvent): void
@@ -60,6 +63,10 @@ interface Actions {
   // Settings
   setAppearance(patch: Partial<AppearanceSettings>): void
   setPlanReview(patch: Partial<PlanReviewSettings>): void
+  // Journal
+  /** Attaches the review's prompt to the day's entry; never touches its text. */
+  seedReflection(date: Date, prompt: string): void
+  setJournalText(date: Date, text: string): void
   /** Replaces whole slices — used by import from the iPhone app. */
   replace(patch: Partial<DataState>): void
 }
@@ -83,6 +90,7 @@ function initialState(): DataState {
     tasks: savedTasks === undefined ? [] : list(savedTasks, decodeTask),
     appearance: decodeAppearance(loadRaw(Filename.appearance)),
     planReview: decodePlanReview(loadRaw(Filename.planReviewSettings)),
+    journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry),
   }
 }
 
@@ -142,6 +150,9 @@ export const useData = create<DataState & Actions>()(set => ({
       })),
     })),
 
+  setGoalDuration: (goalID, minutes) =>
+    set(s => ({ goals: mapGoal(s.goals, goalID, g => ({ ...g, scheduledDurationMinutes: Math.max(5, minutes) })) })),
+
   addEvent: event => set(s => ({ events: [...s.events, event] })),
   updateEvent: event => set(s => ({ events: mapEvent(s.events, event.id, () => event) })),
   moveEvent: (id, newStart) => set(s => ({ events: mapEvent(s.events, id, e => moved(e, newStart)) })),
@@ -177,6 +188,23 @@ export const useData = create<DataState & Actions>()(set => ({
   setAppearance: patch => set(s => ({ appearance: { ...s.appearance, ...patch } })),
   setPlanReview: patch => set(s => ({ planReview: { ...s.planReview, ...patch } })),
 
+  seedReflection: (date, prompt) =>
+    set(s => {
+      const existing = s.journal.find(e => isSameDay(parseDate(e.date), date))
+      if (existing) {
+        if (existing.reflectionPrompt) return {}
+        return { journal: s.journal.map(e => (e === existing ? { ...e, reflectionPrompt: prompt } : e)) }
+      }
+      return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), reflectionPrompt: prompt, text: '' }] }
+    }),
+
+  setJournalText: (date, text) =>
+    set(s => {
+      const existing = s.journal.find(e => isSameDay(parseDate(e.date), date))
+      if (existing) return { journal: s.journal.map(e => (e === existing ? { ...e, text } : e)) }
+      return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), text }] }
+    }),
+
   replace: patch => set(patch),
 }))
 
@@ -189,6 +217,7 @@ const fileFor: Record<keyof DataState, string> = {
   tasks: Filename.tasks,
   appearance: Filename.appearance,
   planReview: Filename.planReviewSettings,
+  journal: Filename.journalEntries,
 }
 
 useData.subscribe((state, prev) => {
