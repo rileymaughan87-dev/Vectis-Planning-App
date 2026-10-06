@@ -1,11 +1,24 @@
-import { Plus } from 'lucide-react'
+import { Flag, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { unresolvedDays } from '../model/challenges'
 import type { Goal } from '../model/types'
 import { useData } from '../store/data'
 import { SectionBox, VButton } from '../ui/components'
 import { LongTermGoalCard, ShortTermGoalRow, type GoalHandlers } from '../ui/goalCards'
 import type { ThemeColors } from '../ui/theme'
+import { ChallengeBrowser, ChallengeCatchUp } from './ChallengeSheets'
 import { AddShortTermGoalSheet, LongTermGoalEditor, ShortTermGoalEditor, newLongTermGoal } from './GoalEditors'
+
+const ASKED_KEY = 'vectis:ui:catchup-asked'
+
+/** Challenges whose catch-up was already offered this visit. */
+function askedThisVisit(): string[] {
+  try {
+    return JSON.parse(sessionStorage.getItem(ASKED_KEY) ?? '[]')
+  } catch {
+    return []
+  }
+}
 
 export function GoalsScreen({ colors }: { colors: ThemeColors }) {
   const goals = useData(s => s.goals)
@@ -13,6 +26,20 @@ export function GoalsScreen({ colors }: { colors: ThemeColors }) {
   const [adding, setAdding] = useState(false)
   const [editingShort, setEditingShort] = useState<Goal | null>(null)
   const [editingLong, setEditingLong] = useState<{ goal: Goal; isNew: boolean } | null>(null)
+  const [browsing, setBrowsing] = useState(false)
+  // The first challenge with unconfirmed days, offered once per visit.
+  const [catchUp, setCatchUp] = useState<Goal | null>(() => {
+    const asked = askedThisVisit()
+    const goal = goals.find(g => g.challengeTemplateID && !asked.includes(g.id) && unresolvedDays(goals, g).length > 0) ?? null
+    if (goal) {
+      try {
+        sessionStorage.setItem(ASKED_KEY, JSON.stringify([...asked, goal.id]))
+      } catch {
+        // It may just ask again next time.
+      }
+    }
+    return goal
+  })
 
   const handlers: GoalHandlers = {
     onEdit: g => (g.kind === 'longTerm' ? setEditingLong({ goal: g, isNew: false }) : setEditingShort(g)),
@@ -38,13 +65,20 @@ export function GoalsScreen({ colors }: { colors: ThemeColors }) {
           {longTerm.map(g => (
             <LongTermGoalCard key={g.id} goal={g} allGoals={goals} accent={colors.secondary} habitAccent={colors.primary} {...handlers} />
           ))}
-          <VButton accent={colors.secondary} onClick={() => setEditingLong({ goal: newLongTermGoal(), isNew: true })}>
-            <Plus size={16} /> Add goal
-          </VButton>
+          <div className="button-row">
+            <VButton accent={colors.secondary} onClick={() => setEditingLong({ goal: newLongTermGoal(), isNew: true })}>
+              <Plus size={16} /> Add goal
+            </VButton>
+            <VButton accent={colors.secondary} onClick={() => setBrowsing(true)}>
+              <Flag size={16} /> Challenges
+            </VButton>
+          </div>
         </div>
       </SectionBox>
 
       {adding && <AddShortTermGoalSheet onClose={() => setAdding(false)} />}
+      {browsing && <ChallengeBrowser colors={colors} onClose={() => setBrowsing(false)} />}
+      {catchUp && <ChallengeCatchUp goal={catchUp} colors={colors} onClose={() => setCatchUp(null)} />}
       {editingShort && <ShortTermGoalEditor goal={editingShort} onClose={() => setEditingShort(null)} />}
       {editingLong && (
         <LongTermGoalEditor goal={editingLong.goal} isNew={editingLong.isNew} accent={colors.secondary} onClose={() => setEditingLong(null)} />

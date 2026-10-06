@@ -10,6 +10,7 @@ import { dayKey, isSameDay, parseDate, startOfDay, toISO } from '../model/dates'
 import {
   decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview, decodeTask, list,
 } from '../model/decode'
+import * as challenges from '../model/challenges'
 import { moved, resized } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
@@ -46,6 +47,11 @@ interface Actions {
   setGoalTimeOverride(goalID: string, date: Date, startMinutes: number): void
   /** A goal's length before it's on the calendar — nothing to version yet. */
   setGoalDuration(goalID: string, minutes: number): void
+  // Challenges
+  startChallenge(template: challenges.ChallengeTemplate, tasks: challenges.ChallengeTask[], startDate: Date, strictMode: boolean): void
+  /** Day one again; the habits keep their earlier ticks. */
+  restartChallenge(goalID: string): void
+  resolveChallengeDay(goalID: string, date: Date, completed: boolean): void
   // Events
   addEvent(event: CalendarEvent): void
   updateEvent(event: CalendarEvent): void
@@ -165,6 +171,11 @@ export const useData = create<DataState & Actions>()(set => ({
 
   setGoalDuration: (goalID, minutes) =>
     set(s => ({ goals: mapGoal(s.goals, goalID, g => ({ ...g, scheduledDurationMinutes: Math.max(5, minutes) })) })),
+
+  startChallenge: (template, tasks, startDate, strictMode) =>
+    set(s => ({ goals: [...s.goals, ...challenges.startChallenge(template, tasks, startDate, strictMode)] })),
+  restartChallenge: goalID => set(s => ({ goals: challenges.restartChallenge(s.goals, goalID) })),
+  resolveChallengeDay: (goalID, date, completed) => set(s => ({ goals: challenges.resolveDay(s.goals, goalID, date, completed) })),
 
   addEvent: event => set(s => ({ events: [...s.events, event] })),
   updateEvent: event => set(s => ({ events: mapEvent(s.events, event.id, () => event) })),

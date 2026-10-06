@@ -65,6 +65,12 @@ Research that shaped the design:
   (bold, italic, heading — the iPhone editor's three styles) and
   `ui/RichTextEditor.tsx` edits them as HTML. Tested with Cocoa-style RTF.
   The wifi-password sample jot was dropped from the web samples.
+- **Challenges ported** (`model/challenges.ts`, `screens/ChallengeSheets.tsx`,
+  catalog = the iPhone's Challenges.json copied to `web/src/model/`):
+  browse 8 templates, choose tasks, start date, strict mode; catch-up for
+  unconfirmed days (offered once per visit); strict-mode miss → restart.
+  **Riley decided restarts keep habit history** (audit item 8): the
+  challenge counts from the new day 1, earlier ticks stay.
 - **Regional:** weeks start on the region's first day (`firstWeekday()` via
   `Intl.Locale` week info) in the month grid, weekday picker and "times per
   week" counts.
@@ -180,7 +186,8 @@ Still to verify on device (carried over plus new):
 | Web: Long-Term tab, wide-screen layout, GitHub Pages hosting | Built (6 Oct 2026) |
 | Web: plan and review (capture, drag tray, evening review → journal) | Built (6 Oct 2026), browser-tested |
 | Web: Record (journal, notebooks, jots, lists & notes with RTF) | Built (6 Oct 2026), browser-tested |
-| Web: challenges, People, Linked apps | Not ported yet |
+| Web: challenges (restart keeps history) | Built (6 Oct 2026), browser-tested |
+| Web: People, Linked apps | Not ported — need a web design (no contacts or app-launching on the web) |
 
 ## Decided against (don't reopen without a reason)
 
