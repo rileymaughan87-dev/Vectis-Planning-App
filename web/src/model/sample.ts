@@ -4,7 +4,8 @@ import { WEEKDAYS_ONLY, addDays, addMonths, atMinutes, dayKey, startOfDay, toISO
 import { makeEvent } from './events'
 import { makeGoal } from './goals'
 import { newID } from './ids'
-import type { CalendarCategory, CalendarEvent, Goal } from './types'
+import { base64FromRtf, paragraphsToRtf } from './rtf'
+import type { CalendarCategory, CalendarEvent, Goal, Note } from './types'
 
 /** Fixed ids, so events never lose their category's colour. */
 export const DEFAULT_CATEGORIES: CalendarCategory[] = [
@@ -82,3 +83,32 @@ export function sampleEvents(categories: CalendarCategory[]): CalendarEvent[] {
   ]
 }
 
+
+export function sampleNotes(): Note[] {
+  const now = toISO(new Date())
+  const note = (fields: Partial<Note> & Pick<Note, 'type'>): Note => ({
+    id: newID(), title: '', jotText: '', checklistItems: [], updatedDate: now, ...fields,
+  })
+  const body = (text: string, style: { bold?: boolean; italic?: boolean } = {}) =>
+    ({ text, bold: Boolean(style.bold), italic: Boolean(style.italic), heading: false })
+  return [
+    note({ type: 'jot', jotText: '4 cups flour, 2 eggs, 1 cup sugar' }),
+    note({
+      type: 'list',
+      title: 'Grocery list',
+      checklistItems: [
+        { id: newID(), text: 'Oat milk', done: true },
+        { id: newID(), text: 'Eggs', done: false },
+        { id: newID(), text: 'Spinach', done: false },
+      ],
+    }),
+    note({
+      type: 'classic',
+      title: 'Trip planning',
+      richTextData: base64FromRtf(paragraphsToRtf([
+        [body('Flights booked for June 14', { bold: true })],
+        [body('Need to sort out accommodation still. '), body('Check reviews before booking.', { italic: true })],
+      ])),
+    }),
+  ]
+}

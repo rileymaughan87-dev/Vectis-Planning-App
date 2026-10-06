@@ -9,7 +9,7 @@ import { ALL_DAYS, DISTANT_PAST, toISO } from './dates'
 import { newID } from './ids'
 import type {
   AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, EventPart,
-  Goal, GoalNote, JournalEntry, Milestone, PlanReviewSettings, ScheduleVersion, VectisTask,
+  ChecklistItem, Goal, GoalNote, JournalEntry, Milestone, Note, Notebook, PlanReviewSettings, ScheduleVersion, VectisTask,
 } from './types'
 
 type Raw = Record<string, unknown>
@@ -167,6 +167,28 @@ export function decodeTask(r: Raw): VectisTask | null {
 export function decodeJournalEntry(r: Raw): JournalEntry | null {
   if (typeof r.date !== 'string') return null
   return { id: str(r.id, newID()), date: r.date, reflectionPrompt: optStr(r.reflectionPrompt), text: str(r.text, '') }
+}
+
+export function decodeChecklistItem(r: Raw): ChecklistItem {
+  return { id: str(r.id, newID()), text: str(r.text, ''), done: bool(r.done, false) }
+}
+
+export function decodeNotebook(r: Raw): Notebook {
+  return { id: str(r.id, newID()), title: str(r.title, ''), linkedGoalID: optStr(r.linkedGoalID), createdDate: str(r.createdDate, now()) }
+}
+
+export function decodeNote(r: Raw): Note {
+  return {
+    id: str(r.id, newID()),
+    type: oneOf(r.type, ['jot', 'list', 'classic'] as const, 'classic'),
+    title: str(r.title, ''),
+    jotText: str(r.jotText, ''),
+    richTextData: optStr(r.richTextData),
+    checklistItems: list(r.checklistItems, decodeChecklistItem),
+    linkedGoalID: optStr(r.linkedGoalID),
+    notebookID: optStr(r.notebookID),
+    updatedDate: str(r.updatedDate, now()),
+  }
 }
 
 export function decodeHours(v: unknown): CalendarHours {

@@ -8,14 +8,14 @@
 import { create } from 'zustand'
 import { dayKey, isSameDay, parseDate, startOfDay, toISO } from '../model/dates'
 import {
-  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodePlanReview, decodeTask, list,
+  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview, decodeTask, list,
 } from '../model/decode'
 import { moved, resized } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
-import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals } from '../model/sample'
+import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals, sampleNotes } from '../model/sample'
 import type {
-  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, PlanReviewSettings, VectisTask,
+  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, Note, Notebook, PlanReviewSettings, VectisTask,
 } from '../model/types'
 import { Filename, loadRaw, saveRaw } from './persist'
 
@@ -28,6 +28,8 @@ export interface DataState {
   appearance: AppearanceSettings
   planReview: PlanReviewSettings
   journal: JournalEntry[]
+  notes: Note[]
+  notebooks: Notebook[]
 }
 
 interface Actions {
@@ -67,6 +69,14 @@ interface Actions {
   /** Attaches the review's prompt to the day's entry; never touches its text. */
   seedReflection(date: Date, prompt: string): void
   setJournalText(date: Date, text: string): void
+  deleteJournalEntry(id: string): void
+  // Notes
+  /** Adds or replaces a note, stamping it as just updated. */
+  saveNote(note: Note): void
+  deleteNote(id: string): void
+  saveNotebook(notebook: Notebook): void
+  /** Keeps its notes — they go back to their own sections. */
+  deleteNotebook(id: string): void
   /** Replaces whole slices — used by import from the iPhone app. */
   replace(patch: Partial<DataState>): void
 }
@@ -78,6 +88,7 @@ function initialState(): DataState {
   const savedGoals = loadRaw(Filename.goals)
   const savedEvents = loadRaw(Filename.calendarEvents)
   const savedTasks = loadRaw(Filename.tasks)
+  const savedNotes = loadRaw(Filename.notes)
 
   let events = savedEvents === undefined ? sampleEvents(categories) : list(savedEvents, decodeEvent)
   events = repairOrphanedEvents(events, categories)
@@ -91,6 +102,8 @@ function initialState(): DataState {
     appearance: decodeAppearance(loadRaw(Filename.appearance)),
     planReview: decodePlanReview(loadRaw(Filename.planReviewSettings)),
     journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry),
+    notes: savedNotes === undefined ? sampleNotes() : list(savedNotes, decodeNote),
+    notebooks: list(loadRaw(Filename.notebooks), decodeNotebook),
   }
 }
 
@@ -205,6 +218,27 @@ export const useData = create<DataState & Actions>()(set => ({
       return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), text }] }
     }),
 
+  deleteJournalEntry: id => set(s => ({ journal: s.journal.filter(e => e.id !== id) })),
+
+  saveNote: note =>
+    set(s => {
+      const stamped = { ...note, updatedDate: toISO(new Date()) }
+      const exists = s.notes.some(n => n.id === note.id)
+      return { notes: exists ? s.notes.map(n => (n.id === note.id ? stamped : n)) : [...s.notes, stamped] }
+    }),
+  deleteNote: id => set(s => ({ notes: s.notes.filter(n => n.id !== id) })),
+  saveNotebook: notebook =>
+    set(s => ({
+      notebooks: s.notebooks.some(b => b.id === notebook.id)
+        ? s.notebooks.map(b => (b.id === notebook.id ? notebook : b))
+        : [...s.notebooks, notebook],
+    })),
+  deleteNotebook: id =>
+    set(s => ({
+      notebooks: s.notebooks.filter(b => b.id !== id),
+      notes: s.notes.map(n => (n.notebookID === id ? { ...n, notebookID: undefined } : n)),
+    })),
+
   replace: patch => set(patch),
 }))
 
@@ -218,6 +252,8 @@ const fileFor: Record<keyof DataState, string> = {
   appearance: Filename.appearance,
   planReview: Filename.planReviewSettings,
   journal: Filename.journalEntries,
+  notes: Filename.notes,
+  notebooks: Filename.notebooks,
 }
 
 useData.subscribe((state, prev) => {
