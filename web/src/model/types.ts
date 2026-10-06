@@ -132,6 +132,19 @@ export interface VectisTask {
   scheduledDate?: ISODate
 }
 
+/**
+ * One per day. The evening review's reflection and freeform journaling
+ * are the same entry, never two records for one day.
+ */
+export interface JournalEntry {
+  id: ID
+  /** The day this entry is for, not necessarily when it was written. */
+  date: ISODate
+  /** Set only if the evening review's prompt started it. */
+  reflectionPrompt?: string
+  text: string
+}
+
 export interface CalendarHours {
   startHour: number
   endHour: number

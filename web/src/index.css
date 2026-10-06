@@ -349,7 +349,28 @@ input[type='checkbox'] { width: auto; }
 .part-row { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; font-size: 10px; font-weight: 500; overflow: hidden; }
 .part-row + .part-row { border-top: 0.5px solid currentColor; }
 .zoom { display: flex; gap: 4px; }
-.plan-tray { padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; border-bottom: 0.5px solid var(--separator); }
+.plan-tray { padding: 4px 16px 10px; display: flex; flex-direction: column; gap: 8px; border-bottom: 0.5px solid var(--separator); }
+
+/* ---------- Plan and review ---------- */
+
+.plan-buttons { display: flex; gap: 10px; padding: 4px 16px 10px; }
+.plan-buttons .vbutton { padding: 8px; font-size: 13px; }
+.tray-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.tray-chip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px;
+  border-radius: var(--radius-small); text-align: left; color: var(--text);
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  touch-action: pan-x; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.tray-chip .chip-title { display: block; font-size: 12px; font-weight: 500; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tray-chip .chip-duration { display: block; font-size: 9px; color: var(--text-2); }
+.tray-chip.ghost { position: fixed; z-index: 40; pointer-events: none; transform: translate(-50%, -120%); box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+.drop-preview {
+  position: absolute; border: 2px dashed var(--tertiary); border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--tertiary) 18%, transparent); font-size: 11px; font-weight: 600;
+  padding: 2px 6px; pointer-events: none; z-index: 4; overflow: hidden;
+}
 
 /* ---------- Commitment bar ---------- */
 
@@ -461,11 +482,12 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
 
   .page.home {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start;
-    grid-template-areas: 'now tasks' 'goals tasks';
+    grid-template-areas: 'now tasks' 'goals tasks' 'review tasks';
   }
   .home > :nth-child(1) { grid-area: now; }
   .home > :nth-child(2) { grid-area: goals; }
   .home > :nth-child(3) { grid-area: tasks; }
+  .home > :nth-child(4) { grid-area: review; }
   .home .scroll-list { max-height: 320px; }
 
   .page.goals { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }

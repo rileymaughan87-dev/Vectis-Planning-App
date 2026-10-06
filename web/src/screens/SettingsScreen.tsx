@@ -44,7 +44,12 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
             <Toggle label="Fresh start prompts" checked={planReview.freshStartPrompts} onChange={v => setPlanReview({ freshStartPrompts: v })} />
           </>
         )}
-        <p className="help">The daily planning and evening review screens are coming to the web version next. These settings are kept until then.</p>
+        <p className="help">
+          {planReview.isEnabled
+            ? 'Daily planning and Review buttons sit above the Daily grid. A quiet evening review shows on Home once the time above passes, until you’ve answered it.'
+            : 'Off by default. Turning it on adds daily planning above the Daily grid and a short evening review — what got done, and an optional line of reflection.'}
+          {' '}Only "flag repeated misses" changes anything yet; the others are kept for later.
+        </p>
       </EditorBox>
 
       <EditorBox title="Display mode">

@@ -15,9 +15,12 @@ import type { Goal } from '../model/types'
 import { useData } from '../store/data'
 import { CompletionMark, Sheet, VButton } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
+import { EveningReview } from './EveningReview'
 import { EventEditor, type EventEditorTarget } from './EventEditor'
 import { ShortTermGoalEditor } from './GoalEditors'
 import { useNow } from './HomeScreen'
+import { PlanningCapture } from './PlanningCapture'
+import { PlanningTray, type DropPreview } from './PlanningTray'
 
 const GUTTER = 46
 const SNAP = 15
@@ -51,6 +54,12 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const dragRef = useRef<DragState | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const swipeRef = useRef<{ x: number; y: number } | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [capturing, setCapturing] = useState(false)
+  const [placing, setPlacing] = useState(false)
+  const [reviewPrompt, setReviewPrompt] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
+  const [preview, setPreview] = useState<DropPreview | null>(null)
 
   const date = useMemo(() => addDays(startOfDay(new Date()), dayOffset), [dayOffset])
   const startMin = hours.startHour * 60
@@ -87,6 +96,18 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
     const rect = gridRef.current!.getBoundingClientRect()
     const raw = ((clientY - rect.top) / slot) * 30
     return Math.max(startMin, startMin + Math.floor(raw / 30) * 30)
+  }
+
+  /** The snapped grid minute under a screen point, or null if it's off the grid. */
+  const minutesAt = (clientX: number, clientY: number): number | null => {
+    const grid = gridRef.current
+    const scroller = scrollRef.current
+    if (!grid || !scroller) return null
+    const rect = grid.getBoundingClientRect()
+    const visible = scroller.getBoundingClientRect()
+    if (clientX < rect.left || clientX > rect.right || clientY < Math.max(rect.top, visible.top) || clientY > Math.min(rect.bottom, visible.bottom)) return null
+    const raw = startMin + ((clientY - rect.top) / slot) * 30
+    return Math.min(Math.max(Math.round(raw / SNAP) * SNAP, startMin), endMin - SNAP)
   }
 
   // MARK: - Block pointer handling
@@ -226,6 +247,23 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
         </div>
       </div>
 
+      {placing ? (
+        <PlanningTray
+          date={date}
+          colors={colors}
+          gridRef={gridRef}
+          scrollRef={scrollRef}
+          minutesAt={minutesAt}
+          onPreview={setPreview}
+          onDone={() => { setPlacing(false); setPreview(null) }}
+        />
+      ) : data.planReview.isEnabled && (
+        <div className="plan-buttons">
+          <VButton accent={colors.secondary} onClick={() => setCapturing(true)}>Daily planning</VButton>
+          <VButton accent={colors.secondary} onClick={() => setReviewPrompt(true)}>Review</VButton>
+        </div>
+      )}
+
       {stripGoals.length > 0 && (
         <div className="goal-strip">
           {stripGoals.map(g => {
@@ -241,7 +279,7 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
         </div>
       )}
 
-      <div className="grid-scroll" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="grid-scroll" ref={scrollRef} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div
           ref={gridRef}
           className="grid"
@@ -324,10 +362,29 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
           })}
 
           {showNow && <div className="now-line" style={{ top: y(nowMinutes), left: GUTTER, right: 0 }} />}
+
+          {preview && (
+            <div
+              className="drop-preview"
+              style={{ top: y(preview.minutes), height: Math.max(y(Math.min(preview.minutes + preview.durationMinutes, endMin)) - y(preview.minutes), 16), left: GUTTER, right: 8 }}
+            >
+              {formatMinutes(preview.minutes)} · {preview.title}
+            </div>
+          )}
         </div>
       </div>
 
       {editor && <EventEditor target={editor} onClose={() => setEditor(null)} />}
+      {capturing && <PlanningCapture date={date} colors={colors} onClose={() => setCapturing(false)} onStartPlacing={() => setPlacing(true)} />}
+      {reviewPrompt && (
+        // A deliberate extra step before the full review, rather than jumping straight in.
+        <Sheet title="Evening review" compact onClose={() => setReviewPrompt(false)}>
+          <p className="muted" style={{ margin: 0, textAlign: 'center' }}>A quick look back, and a line or two if you want.</p>
+          <VButton kind="primary" accent={colors.secondary} onClick={() => { setReviewPrompt(false); setReviewing(true) }}>Start review</VButton>
+          <VButton accent={colors.secondary} onClick={() => setReviewPrompt(false)}>Not now</VButton>
+        </Sheet>
+      )}
+      {reviewing && <EveningReview colors={colors} onClose={() => setReviewing(false)} />}
       {editingGoal && <ShortTermGoalEditor goal={editingGoal} onClose={() => setEditingGoal(null)} />}
       {taskForAction && (
         <Sheet title="Task" compact onClose={() => setTaskActionID(null)}>

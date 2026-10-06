@@ -47,6 +47,16 @@ Research that shaped the design:
   and side-menu items; Home, Goals, Long-Term and the partner view go
   two-column; Daily is capped at 960px. Mouse users drag blocks directly
   (long-press stays for touch). Hover states added.
+- **Plan and review ported** (on in Settings): "Daily planning" and "Review"
+  buttons above the Daily grid. Planning = 3-step capture popup (fixed
+  events → big items → small items, empty steps skipped, each step's items
+  fixed on open) → drag tray with the commitment bar. Tray: pull a chip
+  down onto the grid (sideways swipes scroll the tray; mouse drags
+  directly), dashed drop preview, auto-scroll near edges, tap a chip to
+  type a time instead. Review = prompt sheet → done goals (tickable) →
+  repeated misses → one prompt that seeds that day's journal entry
+  (`journal_entries.json`, same format as iPhone). Home shows the review
+  card after the evening time until answered. Logic in `model/planning.ts`.
 - **Regional:** weeks start on the region's first day (`firstWeekday()` via
   `Intl.Locale` week info) in the month grid, weekday picker and "times per
   week" counts.
@@ -160,7 +170,8 @@ Still to verify on device (carried over plus new):
 | Web app (`web/`): model, Home, Goals, Daily, event editor, Settings | Built (Oct 2026), browser-tested |
 | Accountability sharing via Google Drive + partner view (web) | Built (Oct 2026); publishing confirmed 6 Oct; cross-device needs hosting |
 | Web: Long-Term tab, wide-screen layout, GitHub Pages hosting | Built (6 Oct 2026) |
-| Web: Record, planning/review, challenges, People | Not ported yet |
+| Web: plan and review (capture, drag tray, evening review → journal) | Built (6 Oct 2026), browser-tested |
+| Web: Record, challenges, People | Not ported yet |
 
 ## Decided against (don't reopen without a reason)
 
