@@ -209,3 +209,39 @@ describe('classic note RTF', () => {
     expect(back).toEqual(original.map(p => p.map(r => (r.heading ? { ...r, bold: true } : r))))
   })
 })
+
+describe('challenges', () => {
+  it('loads the full catalog', async () => {
+    const { CHALLENGES } = await import('./challenges')
+    expect(CHALLENGES.map(c => c.id)).toEqual(['75hard', '75soft', 'whole30', 'dryjan', 'c25k', '100doc', 'miracle', 'nospend'])
+  })
+
+  it('starts as a long-term goal with habits that count from the start day', async () => {
+    const { CHALLENGES, startChallenge } = await import('./challenges')
+    const template = CHALLENGES[0]
+    const [goal, ...habits] = startChallenge(template, template.tasks.slice(0, 2), addDays(today, 3), true)
+    expect(goal.kind).toBe('longTerm')
+    expect(goal.challengeStrictMode).toBe(true)
+    expect(habits).toHaveLength(2)
+    expect(habits.every(h => h.linkedToGoalID === goal.id)).toBe(true)
+    expect(isScheduled(habits[0], addDays(today, 2))).toBe(false)
+    expect(isScheduled(habits[0], addDays(today, 3))).toBe(true)
+    expect(isScheduled(habits[0], addDays(today, 3 + template.durationDays))).toBe(false)
+  })
+
+  it('asks about unconfirmed days, and restarting keeps the record', async () => {
+    const { CHALLENGES, startChallenge, unresolvedDays, resolveDay, restartChallenge } = await import('./challenges')
+    let goals = startChallenge(CHALLENGES[0], CHALLENGES[0].tasks.slice(0, 2), addDays(today, -3), true)
+    const goalID = goals[0].id
+    expect(unresolvedDays(goals, goals[0], today)).toHaveLength(3)
+    goals = resolveDay(goals, goalID, addDays(today, -3), true)
+    expect(unresolvedDays(goals, goals[0], today)).toHaveLength(2)
+
+    goals = restartChallenge(goals, goalID, today)
+    expect(goals[0].challengeAttempt).toBe(2)
+    expect(dayKey(new Date(goals[0].challengeStartDate!))).toBe(dayKey(today))
+    // The earlier attempt's tick is still there.
+    expect(goals[1].completions[dayKey(addDays(today, -3))]).toBe(true)
+    expect(unresolvedDays(goals, goals[0], today)).toHaveLength(0)
+  })
+})

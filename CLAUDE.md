@@ -16,8 +16,8 @@ status table in HANDOFF.md supersedes the spec where they disagree.
   uses the iPhone app's JSON format and file names, so the two stay
   interchangeable. Ported so far: shell, side menu, Home, Goals, Daily,
   Long-Term, plan and review (capture, drag tray, evening review),
-  Record (journal, notebooks, notes), Settings, and Accountability
-  (sharing via Google Drive, partner view). Not yet: challenges, People,
+  Record (journal, notebooks, notes), challenges, Settings, and
+  Accountability (sharing via Google Drive, partner view). Not yet: People,
   Linked apps. Classic notes stay RTF so the iPhone can read them. Live at
   https://rileymaughan87-dev.github.io/Vectis-Planning-App/ (deploys on
   push to master). Layout must work from 360px phones to wide desktops.
@@ -80,8 +80,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Current priorities (in order)
 
-0. **Web port** — next: challenges, then decide what People and Linked
-   apps should be on the web. See HANDOFF.md.
+0. **Web port** — next: decide what People and Linked apps should be on
+   the web (they rely on phone contacts and app-launching). See HANDOFF.md.
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.
