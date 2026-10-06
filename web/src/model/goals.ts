@@ -3,7 +3,7 @@
 // read-only view of their shared file.
 
 import {
-  ALL_DAYS, DISTANT_PAST, addDays, atMinutes, dayKey, parseDate, startOfDay, toISO, weekday,
+  ALL_DAYS, DISTANT_PAST, addDays, atMinutes, dayKey, parseDate, startOfDay, startOfWeek, toISO, weekday,
 } from './dates'
 import { newID } from './ids'
 import type { Goal, Milestone } from './types'
@@ -150,8 +150,8 @@ export function isDoneOn(goal: Goal, date: Date): boolean {
 }
 
 export function weeklyCompletionCount(goal: Goal, asOf: Date = new Date()): number {
-  // Week starts on the locale's first day; Sunday matches the iPhone default in the US.
-  const start = addDays(startOfDay(asOf), -(asOf.getDay()))
+  // The week starts on the region's first day, like the iPhone's Calendar.current.
+  const start = startOfWeek(asOf)
   let count = 0
   for (let i = 0; i < 7; i++) if (goal.completions[dayKey(addDays(start, i))] === true) count++
   return count

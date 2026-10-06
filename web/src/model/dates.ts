@@ -60,6 +60,35 @@ export function weekday(date: Date): number {
   return date.getDay() + 1
 }
 
+/**
+ * The weekday a week starts on for the user's region, 1 = Sunday … 7 =
+ * Saturday (Monday across most of the world, Sunday in the US).
+ */
+export function firstWeekday(locale: string = navigatorLocale()): number {
+  try {
+    const info = (new Intl.Locale(locale) as Intl.Locale & {
+      getWeekInfo?: () => { firstDay: number }
+      weekInfo?: { firstDay: number }
+    })
+    const firstDay = info.getWeekInfo?.().firstDay ?? info.weekInfo?.firstDay
+    // Intl counts 1 = Monday … 7 = Sunday.
+    if (firstDay) return (firstDay % 7) + 1
+  } catch {
+    // Unknown locale; fall through.
+  }
+  return 1
+}
+
+function navigatorLocale() {
+  return typeof navigator === 'undefined' ? 'en-US' : navigator.language
+}
+
+/** The first day of the week containing `date`. */
+export function startOfWeek(date: Date, first: number = firstWeekday()): Date {
+  const back = (weekday(date) - first + 7) % 7
+  return addDays(startOfDay(date), -back)
+}
+
 /** Whole days from `a` to `b`, by calendar day rather than 24h blocks. */
 export function daysBetween(a: Date, b: Date): number {
   const ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())

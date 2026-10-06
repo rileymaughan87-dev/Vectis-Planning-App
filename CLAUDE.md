@@ -15,9 +15,11 @@ status table in HANDOFF.md supersedes the spec where they disagree.
   in `web/README.md` (`npm run dev`, `npm test`, `npm run build`). Saved data
   uses the iPhone app's JSON format and file names, so the two stay
   interchangeable. Ported so far: shell, side menu, Home, Goals, Daily,
-  Settings, and Accountability (sharing via Google Drive, partner view).
-  Not yet: Long-Term, Record, planning capture/tray, evening review,
-  challenges, People, Linked apps.
+  Long-Term, Settings, and Accountability (sharing via Google Drive,
+  partner view). Not yet: Record, planning capture/tray, evening review,
+  challenges, People, Linked apps. Live at
+  https://rileymaughan87-dev.github.io/Vectis-Planning-App/ (deploys on
+  push to master). Layout must work from 360px phones to wide desktops.
 - **`Vectis Planning/` — the Swift app, kept as a fallback.** Don't delete or
   restructure it. It needs a Mac to build.
 
@@ -77,9 +79,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Current priorities (in order)
 
-0. **Web port** — next: Long-Term month view, then planning capture + drag
-   tray (with the commitment bar), evening review, Record. Host on GitHub
-   Pages so a partner can open links. See HANDOFF.md.
+0. **Web port** — next: planning capture + drag tray (with the commitment
+   bar), evening review, then Record. See HANDOFF.md.
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.

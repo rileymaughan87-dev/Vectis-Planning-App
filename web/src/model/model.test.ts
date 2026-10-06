@@ -121,3 +121,32 @@ describe('reading iPhone save files', () => {
     expect(decodeEvent({ title: 'Broken', categoryID: 'C', endDate: '2026-10-05T10:00:00Z' })).toBeNull()
   })
 })
+
+describe('long-term calendar', () => {
+  it('starts weeks on the region\'s first day', async () => {
+    const { firstWeekday, startOfWeek } = await import('./dates')
+    expect(firstWeekday('en-US')).toBe(1)
+    expect(firstWeekday('en-GB')).toBe(2)
+    expect(startOfWeek(today, 2).getDay()).toBe(1) // Monday
+    expect(startOfWeek(today, 1).getDay()).toBe(0) // Sunday
+  })
+
+  it('lays a month out in whole weeks', async () => {
+    const { monthGridDays } = await import('./longTerm')
+    const days = monthGridDays(new Date(2026, 9, 1))
+    expect(days.length % 7).toBe(0)
+    expect(days.filter(d => d.inMonth)).toHaveLength(31)
+  })
+
+  it('shows long-term events and dated milestones, not daily-only events', async () => {
+    const { longTermItems } = await import('./longTerm')
+    const goal = makeGoal('Degree', { kind: 'longTerm', milestones: [{ id: 'M', title: 'Finals', done: false, addToCalendar: true, date: toISO(atMinutes(today, 600)) }] })
+    const events = [
+      makeEvent({ title: 'Holiday', startDate: toISO(today), endDate: toISO(atMinutes(addDays(today, 2), 0)), categoryID: 'C', isAllDay: true, origin: 'longTerm' }),
+      makeEvent({ title: 'Standup', startDate: toISO(atMinutes(today, 540)), endDate: toISO(atMinutes(today, 570)), categoryID: 'C', flowsToDaily: true }),
+    ]
+    const items = longTermItems({ events, goals: [goal], categories: [] }, today, '#D2574A')
+    expect(items.map(i => i.title)).toEqual(['Holiday', 'Finals'])
+    expect(longTermItems({ events, goals: [goal], categories: [] }, addDays(today, 1), '#000').map(i => i.title)).toEqual(['Holiday'])
+  })
+})
