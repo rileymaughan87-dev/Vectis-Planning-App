@@ -8,7 +8,20 @@ Full history and status: `docs/HANDOFF.md` (read this at the start of any
 non-trivial task). Design rationale with research: `docs/Vectis-spec.md` — the
 status table in HANDOFF.md supersedes the spec where they disagree.
 
-## Build
+## Two codebases (Oct 2026)
+
+- **`web/` — the active app.** React + TypeScript + Vite, being ported from
+  Swift so it runs on Windows and any phone browser. Build/test commands are
+  in `web/README.md` (`npm run dev`, `npm test`, `npm run build`). Saved data
+  uses the iPhone app's JSON format and file names, so the two stay
+  interchangeable. Ported so far: shell, side menu, Home, Goals, Daily,
+  Settings, and Accountability (sharing via Google Drive, partner view).
+  Not yet: Long-Term, Record, planning capture/tray, evening review,
+  challenges, People, Linked apps.
+- **`Vectis Planning/` — the Swift app, kept as a fallback.** Don't delete or
+  restructure it. It needs a Mac to build.
+
+## Build (Swift, Mac only)
 
 ```
 xcodebuild -project "Vectis Planning/Vectis Planning.xcodeproj" \
@@ -51,7 +64,22 @@ never the plain folder (opening the folder gives a scheme-less window).
 - **Long-term vs short-term goals.** Only short-term goals are daily-trackable;
   a short-term goal can link to a long-term one via `linkedToGoalID`.
 
+## Web-only rules
+
+- Model logic lives in `web/src/model/` as pure functions over plain data,
+  so the same code drives your screens and a partner's read-only view.
+- Every saved type is read through `decode.ts` with a default for every
+  missing field (same rule as the Swift hand-written Codable).
+- `dayBlocks()` is the single answer to "what's on a day" — Daily, Home,
+  buffer awareness and the partner view all use it.
+- The share file (`sync/shareFile.ts`) carries goals and calendar only;
+  journal, notes and people never leave the device.
+
 ## Current priorities (in order)
+
+0. **Web port** — next: Long-Term month view, then planning capture + drag
+   tray (with the commitment bar), evening review, Record. Host on GitHub
+   Pages so a partner can open links. See HANDOFF.md.
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.

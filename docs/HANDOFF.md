@@ -33,7 +33,52 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
-## Last session (3 Oct 2026, second Claude Code session)
+## Latest session (5 Oct 2026) — web port begun
+
+Riley is on Windows now and decided to move Vectis to a web app, keeping the
+Swift project untouched as a fallback. New in `web/` (React + TS + Vite):
+
+- **Model ported** (`web/src/model/`): types that match the iPhone JSON
+  exactly, defaults-tolerant decoding, goal schedule versioning, per-day
+  overrides, consistency/miss-nudge logic, recurrence, estimate-lock, overlap
+  layout, buffer awareness. 13 vitest tests cover the "don't break these"
+  mechanisms.
+- **Screens:** shell + side menu, Home, Goals (add/edit short- and long-term,
+  milestones, habits), Daily (tap to create, long-press-drag to move, swipe
+  days, zoom buttons, goal chips, task blocks), event editor (repeats, parts,
+  goal link, log actual time, delete one/all), Settings (plan & review
+  toggles, appearance, categories, hours, iPhone import, backup/restore).
+- **Audit fixes folded into the port:** blocks crossing midnight (item 4),
+  one shared `dayBlocks()` (item 7), times follow the device's 12/24h setting
+  (item 9), icon buttons have labels (item 10).
+- **Accountability (new, sidebar):** you publish a share file to your Google
+  Drive (`drive.file` scope, link-readable). The share link is the app URL
+  with `#partner=<file id>`; opening it offers to follow you. Partners are
+  listed in the sidebar; their view is read-only, built from the same model
+  code, with "‹ My Vectis" to go back. Auto-publishes ~4s after changes
+  while the Google token is fresh, else shows a dot + "Publish now". Also
+  works with a plain share file (no Google) for testing. Setup:
+  `docs/GOOGLE-SETUP.md`.
+- **Importing iPhone data:** Settings → Your data → pick the JSON files from
+  an Xcode container download. Needs a Mac once.
+
+Verified in the browser (mobile size): Home ticking/tasks, Goals, Daily
+layout, event create + weekly repeat, long-press drag writing a per-day
+override without touching the anchor, partner view and back. Google Cloud
+set up 6 Oct (keys in git-ignored `web/.env.local`, localhost origin only):
+sign-in and publishing to Drive confirmed working; the API key reads Drive.
+**Not yet verified:** following a partner on a second device (needs
+hosting), touch drag on an actual phone, iPhone import with real files.
+
+Deliberate differences from Swift: drag snaps to 15 min (was 30); zoom is
++/- buttons (no pinch); the Daily planning/review buttons and Long-Term,
+Record, People, Linked apps, Challenges are not ported yet.
+
+Next: host on GitHub Pages (needed for partners on other devices; add the
+Pages URL to the OAuth origins and API key referrers), then Long-Term, then
+planning capture + tray, evening review, Record.
+
+## Previous session (3 Oct 2026, second Claude Code session)
 
 Done:
 - Deleted the unused `tab*.imageset` assets and loose `tab_*.png` files
@@ -94,6 +139,9 @@ Still to verify on device (carried over plus new):
 | Share my day | Not built |
 | Estimate calibration (2.5) | Waiting — needs 5+ logged actuals |
 | Monthly review / recalibration (2.10, 2.11) | Waiting — needs a month of data |
+| Web app (`web/`): model, Home, Goals, Daily, event editor, Settings | Built (Oct 2026), browser-tested |
+| Accountability sharing via Google Drive + partner view (web) | Built (Oct 2026); publishing confirmed 6 Oct; cross-device needs hosting |
+| Web: Long-Term, Record, planning/review, challenges, People | Not ported yet |
 
 ## Decided against (don't reopen without a reason)
 

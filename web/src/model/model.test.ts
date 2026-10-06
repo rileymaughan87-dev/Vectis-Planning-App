@@ -1,0 +1,123 @@
+import { describe, expect, it } from 'vitest'
+import { addDays, atMinutes, dayKey, startOfDay, toISO } from './dates'
+import { commitmentFraction, dayBlocks, layoutBlocks, minutesIntoDay } from './dayBlocks'
+import { decodeEvent, decodeGoal } from './decode'
+import { makeEvent, occupies, resized, timesOn } from './events'
+import {
+  applyScheduleChange, consecutiveMisses, isScheduled, liveSchedule, makeGoal, missNudge, recentHistory, scheduleOn,
+} from './goals'
+
+const today = startOfDay(new Date(2026, 9, 5)) // Monday 5 Oct 2026
+
+describe('goal schedule versioning', () => {
+  it('keeps past days on the old schedule and moves future days', () => {
+    const goal = makeGoal('Read', { createdDate: toISO(addDays(today, -30)), scheduledStartMinutes: 21 * 60 })
+    const previous = liveSchedule(goal)
+    const edited = applyScheduleChange({ ...goal, scheduledStartMinutes: 7 * 60, repeatDays: [2, 4, 6] }, previous, today)
+
+    expect(scheduleOn(edited, addDays(today, -3)).startMinutes).toBe(21 * 60)
+    expect(scheduleOn(edited, addDays(today, -3)).repeatDays).toHaveLength(7)
+    expect(scheduleOn(edited, today).startMinutes).toBe(7 * 60)
+    expect(scheduleOn(edited, addDays(today, 5)).repeatDays).toEqual([2, 4, 6])
+    expect(edited.scheduleVersions).toHaveLength(1)
+  })
+
+  it('records nothing when the schedule did not change', () => {
+    const goal = makeGoal('Read')
+    expect(applyScheduleChange(goal, liveSchedule(goal)).scheduleVersions).toHaveLength(0)
+  })
+})
+
+describe('goal fairness', () => {
+  it('does not count days before the goal began', () => {
+    const goal = makeGoal('New', { createdDate: toISO(today) })
+    expect(isScheduled(goal, addDays(today, -1))).toBe(false)
+    expect(consecutiveMisses(goal, today)).toBe(0)
+    expect(recentHistory(goal, 14, today).slice(0, 13).every(s => s === 'notScheduled')).toBe(true)
+  })
+
+  it('counts from the oldest logged day when older than createdDate', () => {
+    const goal = makeGoal('Old', { createdDate: toISO(today), completions: { [dayKey(addDays(today, -5))]: true } })
+    expect(isScheduled(goal, addDays(today, -5))).toBe(true)
+  })
+
+  it('nudges at two misses, not one, and clears once done today', () => {
+    const goal = makeGoal('Habit', { createdDate: toISO(addDays(today, -10)) })
+    goal.completions[dayKey(addDays(today, -3))] = true
+    expect(consecutiveMisses(goal, today)).toBe(2)
+    expect(missNudge(goal, today)).toContain('Missed 2')
+    goal.completions[dayKey(today)] = true
+    expect(missNudge(goal, today)).toBeNull()
+  })
+})
+
+describe('events', () => {
+  const cat = 'C'
+  it('repeats weekly on the same weekday and respects excluded days', () => {
+    const e = makeEvent({ title: 'Class', startDate: toISO(atMinutes(today, 600)), endDate: toISO(atMinutes(today, 660)), categoryID: cat, recurrence: 'weekly' })
+    expect(occupies(e, addDays(today, 7))).toBe(true)
+    expect(occupies(e, addDays(today, 8))).toBe(false)
+    e.excludedOccurrences = [dayKey(addDays(today, 14))]
+    expect(occupies(e, addDays(today, 14))).toBe(false)
+  })
+
+  it('clamps a monthly 31st to shorter months', () => {
+    const anchor = new Date(2026, 0, 31, 9)
+    const e = makeEvent({ title: 'Rent', startDate: toISO(anchor), endDate: toISO(addDays(anchor, 0)), categoryID: cat, recurrence: 'monthly' })
+    expect(occupies(e, new Date(2026, 1, 28))).toBe(true)
+    expect(occupies(e, new Date(2026, 3, 30))).toBe(true)
+  })
+
+  it('moves one occurrence via an override without touching the anchor', () => {
+    const e = makeEvent({ title: 'Gym', startDate: toISO(atMinutes(today, 360)), endDate: toISO(atMinutes(today, 420)), categoryID: cat, recurrence: 'daily' })
+    e.timeOverrides = { [dayKey(addDays(today, 2))]: 480 }
+    const t = timesOn(e, addDays(today, 2))
+    expect(t.start.getHours()).toBe(8)
+    expect(t.end.getHours()).toBe(9)
+    expect(timesOn(e, addDays(today, 3)).start.getHours()).toBe(6)
+  })
+
+  it('only logs an actual after the event started', () => {
+    const e = makeEvent({ title: 'Write', startDate: toISO(atMinutes(today, 600)), endDate: toISO(atMinutes(today, 660)), categoryID: cat })
+    const before = resized(e, atMinutes(today, 690), atMinutes(today, 500))
+    expect(before.actualMinutes).toBeUndefined()
+    const after = resized(e, atMinutes(today, 690), atMinutes(today, 700))
+    expect(after.estimatedMinutes).toBe(60)
+    expect(after.actualMinutes).toBe(90)
+  })
+})
+
+describe('day blocks', () => {
+  it('measures a block that crosses midnight from the start of the shown day', () => {
+    expect(minutesIntoDay(atMinutes(addDays(today, 1), 60), today)).toBe(25 * 60)
+  })
+
+  it('includes events, goal blocks and placed tasks in one list', () => {
+    const data = {
+      events: [makeEvent({ title: 'Meet', startDate: toISO(atMinutes(today, 540)), endDate: toISO(atMinutes(today, 600)), categoryID: 'C', flowsToDaily: true })],
+      goals: [makeGoal('Read', { createdDate: toISO(addDays(today, -1)), scheduledOnCalendar: true, scheduledStartMinutes: 570 })],
+      tasks: [{ id: 'T', text: 'Email', done: false, createdDate: toISO(today), durationMinutes: 30, scheduledDate: toISO(atMinutes(today, 720)) }],
+      categories: [{ id: 'C', name: 'Work', colorHex: '#4A7FE8' }],
+    }
+    const blocks = dayBlocks(data, today)
+    expect(blocks.map(b => b.kind)).toEqual(['event', 'goal', 'task'])
+
+    // 9:00–10:00 and 9:30–10:00 overlap and count once; plus 12:00–12:30.
+    expect(commitmentFraction(data, { startHour: 8, endHour: 18 }, today)).toBeCloseTo(90 / 600)
+    expect(layoutBlocks(blocks).find(l => l.item.kind === 'goal')?.columnCount).toBe(2)
+  })
+})
+
+describe('reading iPhone save files', () => {
+  it('fills in defaults for missing fields', () => {
+    const goal = decodeGoal({ id: 'A', title: 'Old goal', createdDate: '2026-09-01T10:00:00Z', repeatDays: [2, 3] })
+    expect(goal.frequencyType).toBe('specificDays')
+    expect(goal.isFlexible).toBe(true)
+    expect(goal.currentScheduleEffectiveFrom).toBe('0001-01-01T00:00:00Z')
+    expect(goal.repeatDays).toEqual([2, 3])
+  })
+
+  it('drops an event that has no start time instead of failing', () => {
+    expect(decodeEvent({ title: 'Broken', categoryID: 'C', endDate: '2026-10-05T10:00:00Z' })).toBeNull()
+  })
+})
