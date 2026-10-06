@@ -35,7 +35,7 @@ doesn't sign in; the app reads it with an API key.
 - Authorized JavaScript origins:
   - `http://localhost:5173` (development — this is all you need until the
     app is hosted)
-  - later, once hosted: e.g. `https://<your-github-name>.github.io`
+  - later, once hosted: `https://rileymaughan87-dev.github.io`
 - No redirect URIs needed.
 
 Copy the **Client ID** (ends in `.apps.googleusercontent.com`).
@@ -46,7 +46,7 @@ Copy the **Client ID** (ends in `.apps.googleusercontent.com`).
 
 - API restrictions: **Restrict key** → only **Google Drive API**.
 - Application restrictions: **Websites** → `http://localhost:5173/*` for
-  now; add `https://<your-github-name>.github.io/*` once hosted.
+  now; add `https://rileymaughan87-dev.github.io/*` once hosted.
 
 Copy the key (starts with `AIza`).
 
@@ -68,6 +68,15 @@ Either:
 
 Both values are designed to be public (they end up in the web page either
 way). The restrictions in steps 4 and 5 are what keep them safe.
+
+## Hosting (GitHub Pages)
+
+The app is published to <https://rileymaughan87-dev.github.io/Vectis-Planning-App/>
+by `.github/workflows/deploy-web.yml` on every push to `master` that touches
+`web/`. The build reads the two values from repository secrets named
+`VITE_GOOGLE_CLIENT_ID` and `VITE_GOOGLE_API_KEY` (Settings → Secrets and
+variables → Actions). Google only needs the origin
+(`https://rileymaughan87-dev.github.io`), not the path.
 
 ## How sharing works once set up
 
