@@ -33,6 +33,26 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
+## Mac work brought in (7 Oct 2026)
+
+Riley's Mac work (Planner rename, blue theme, "Remove from [day]", editor
+restyle, audit batch C, items 5/8/10/12/13) was merged to master from the
+Mac and pulled here cleanly; it touched only the Swift app and docs. The
+Finance Swift app is at `rileymaughan87-dev/Finance-App` (private), cloned
+next to this repo. Riley's decisions: the Finance **web** app lives
+alongside Planner in this repo with a shared component folder; **no page
+titles** under the chrome (design-system.md wins over the handoff doc).
+
+Web port batches:
+1. **Done:** Planner name everywhere people see it (`ui/brand.ts`), blue
+   `#0068B5` theme (preset ids kept), new icon (`public/icon-1024.png`,
+   `favicon.svg`), no page title (wide screens drop the top bar).
+2. Next: "Remove from [day]" (`hiddenBlockDays`) + challenge stats start
+   fresh after a restart (`statsStartDate`, matching the Mac).
+3. Then: repeating-event "this day / all future days" split,
+   `durationOverrides`, per-occurrence actuals — needed before importing
+   iPhone data, since the web reader would otherwise drop those fields.
+
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
 
 Brief: an Apple Notes / Math Notes–style editor in Vectis's own style, as

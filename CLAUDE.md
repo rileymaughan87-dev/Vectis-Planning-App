@@ -4,7 +4,8 @@ A behavioural-science-based personal planner: goals, a daily time-blocked
 calendar, a long-term calendar, and a Record tab (journal, notebooks, notes).
 The name refers to Archimedes' lever. Since Oct 2026 the app *shows* as
 "Planner" (home screen, wordmark, launch screen); the code and Xcode project
-are still named Vectis. Suite-wide rules live in `../CLAUDE.md`.
+are still named Vectis. Suite-wide rules: `docs/suite-rules.md`; design
+system: `docs/design-system.md` (copies shared with the Finance app).
 
 Full history and status: `docs/HANDOFF.md` (read this at the start of any
 non-trivial task). Design rationale with research: `docs/Vectis-spec.md` — the
@@ -90,9 +91,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 0. **Web port** — complete except People/Linked apps (left out). Riley's Mac
    work (Oct 2026) is now merged; port it to the web app:
-   - Shown name is **Planner** (wordmark, launch screen, in-app text).
-   - Theme blue `#0068B5` replaces teal `#1C8C82` (presets "Blue and coral",
-     "Monochrome blue"; preset ids unchanged). New blue lever icon.
+   - ~~Planner name, blue theme, icon~~ — done on the web (batch 1,
+     7 Oct 2026), along with no page titles (design-system.md).
    - Daily: tapping a goal block offers "Remove from [day]" — hides that
      day's block only (`hiddenBlockDays` on the goal); deleting a goal only
      from the Goals page.
