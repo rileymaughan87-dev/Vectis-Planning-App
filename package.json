@@ -1,0 +1,14 @@
+{
+  "name": "vectis-suite",
+  "private": true,
+  "workspaces": [
+    "web",
+    "finance",
+    "suite"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build -w web && npm run build -w finance",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}

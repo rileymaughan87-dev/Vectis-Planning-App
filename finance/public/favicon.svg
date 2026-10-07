@@ -1,0 +1,7 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Finance icon: suite blue square, thin black ring, and a rising line
+       breaking out of the ring at the top right (matches icon-1024.png). -->
+  <rect width="1024" height="1024" fill="#0068B5"/>
+  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
+  <path d="M284 655 L444 495 L565 600 L792 266" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,13 +1,14 @@
-# Builds the web app and publishes it to GitHub Pages on every push to
-# master. The Google client ID and API key come from repository secrets
-# (Settings → Secrets and variables → Actions), so they stay out of git.
+# Builds both web apps and publishes them to GitHub Pages on every push to
+# master that touches them: Planner at the site root, Finance at /finance/.
+# The Google client ID and API key (Planner's sharing) come from repository
+# secrets (Settings → Secrets and variables → Actions), so they stay out of git.
 
-name: Deploy web app
+name: Deploy web apps
 
 on:
   push:
     branches: [master]
-    paths: ['web/**', '.github/workflows/deploy-web.yml']
+    paths: ['web/**', 'finance/**', 'suite/**', 'package.json', 'package-lock.json', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
 
 permissions:
@@ -22,25 +23,30 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
+      # One install for both apps and the shared suite (npm workspaces).
       - run: npm ci
       - run: npm test
-      - run: npm run build
+      - run: npm run build -w web
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+      - run: npm run build -w finance
+      - name: Put both apps on one site
+        run: |
+          mkdir site
+          cp -r web/dist/. site/
+          mkdir site/finance
+          cp -r finance/dist/. site/finance/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: web/dist
+          path: site
 
   deploy:
     needs: build

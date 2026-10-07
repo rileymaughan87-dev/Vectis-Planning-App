@@ -64,6 +64,31 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Finance web app (7 Oct 2026) — F0 done
+
+Riley approved: Finance lives alongside Planner in this repo (npm
+workspaces: `web/`, `finance/`, `suite/`), served at `/finance/`; shared
+design in `suite/`; Apple Pay logging skipped for now in favour of a quick
+two-tap "Log spending" (a Shortcuts link would open Safari, whose storage
+is separate from a home-screen web app).
+
+- **F0 (done):** workspaces; `suite/` holds the shared styles (split from
+  Planner's index.css — every rule kept, Planner-only rules stay in
+  `web/src/index.css`, loaded after), `AppShell`, `MonthGrid` (now used by
+  Long-Term and the journal calendar), `AppearanceEditor`, components,
+  dates, months, format, ids, decode helpers, storage (per-app prefix),
+  appearance and backups. Planner's old module paths are one-line
+  re-exports. Verified Planner unchanged by comparing computed styles of
+  every element on 8 screens at 375px and 1366px before/after (identical
+  apart from sub-pixel rounding). Finance: shell with Budget / Calendar /
+  Goals (honest "not built yet"), Settings with appearance and backups,
+  its own icon and manifest, data under `finance:`.
+- **Next:** F1 entries + Calendar (+ import iPhone `finance_events.json`),
+  F2 goals and payment schedules, F3 Budget page, F4 weekly pot and
+  spending log. Port the logic from `../Finance-App` (FinanceModels,
+  FinanceGoalModels, MonthSummary, SpendingStore) as pure functions with
+  tests first. Months are half-open (start ≤ date < end).
+
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
 
 Brief: an Apple Notes / Math Notes–style editor in Vectis's own style, as

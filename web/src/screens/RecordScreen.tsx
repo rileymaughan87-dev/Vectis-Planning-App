@@ -2,10 +2,11 @@
 // Journal / Notebooks / Jots / Lists & Notes under an underline selector,
 // each section swapping in fully rather than stacking on one long scroll.
 
-import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, List, PenSquare, Plus, Search, Target } from 'lucide-react'
+import { MonthGrid } from '@suite/ui/MonthGrid'
+import { BookOpen, CalendarDays, ChevronRight, List, PenSquare, Plus, Search, Target } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { addDays, addMonths, isSameDay, parseDate, startOfDay } from '../model/dates'
-import { monthGridDays, startOfMonth } from '../model/longTerm'
+import { addDays, isSameDay, parseDate, startOfDay } from '../model/dates'
+import { startOfMonth } from '../model/longTerm'
 import { journalEntryFor } from '../model/planning'
 import { journalDoc, notePlainText, type DocNode } from '../model/noteDoc'
 import type { JournalEntry, Note, NoteType, Notebook } from '../model/types'
@@ -141,19 +142,18 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
 
       {calendar ? (
         <div className="lt-month">
-          <div className="row spread month-head">
-            <button className="icon-button" onClick={() => setMonth(m => addMonths(m, -1))} aria-label="Previous month"><ChevronLeft size={20} /></button>
-            <span className="month-title">{month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
-            <button className="icon-button" onClick={() => setMonth(m => addMonths(m, 1))} aria-label="Next month"><ChevronRight size={20} /></button>
-          </div>
-          <div className="month-grid journal-grid">
-            {monthGridDays(month).map(({ date, inMonth }) => {
+          <MonthGrid
+            month={month}
+            onMonthChange={setMonth}
+            showWeekdays={false}
+            className="journal-grid"
+            renderDay={({ date, inMonth, isToday }) => {
               const entry = journalEntryFor(journal, date)
               const has = Boolean(entry?.text.trim())
               return (
                 <button
                   key={date.toISOString()}
-                  className={`day-cell ${inMonth ? '' : 'outside'} ${isSameDay(date, new Date()) ? 'today' : ''}`}
+                  className={`day-cell ${inMonth ? '' : 'outside'} ${isToday ? 'today' : ''}`}
                   disabled={!has}
                   onClick={() => setOpen(date)}
                   aria-label={`${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}${has ? ', has an entry' : ''}`}
@@ -162,8 +162,8 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
                   {has && <span className="journal-dot" style={{ background: colors.primary }} />}
                 </button>
               )
-            })}
-          </div>
+            }}
+          />
         </div>
       ) : entries.length === 0 ? (
         <div className="empty">

@@ -3,12 +3,13 @@
 // lets you add something that stays on this calendar (all-day by
 // default, and off the Daily grid unless you give it times).
 
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { MonthGrid } from '@suite/ui/MonthGrid'
+import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { addMonths, isSameDay, parseDate, weekday } from '../model/dates'
+import { parseDate } from '../model/dates'
 import { formatTime } from '../model/format'
 import { isTargetOverdue, milestonePercent } from '../model/goals'
-import { longTermItems, monthGridDays, startOfMonth, type LongTermItem } from '../model/longTerm'
+import { longTermItems, startOfMonth, type LongTermItem } from '../model/longTerm'
 import { useData } from '../store/data'
 import { Sheet, VButton, accentStyle } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
@@ -23,15 +24,7 @@ export function LongTermScreen({ colors }: { colors: ThemeColors }) {
   const [editor, setEditor] = useState<EventEditorTarget | null>(null)
 
   const data = { goals, events, categories }
-  const today = new Date()
-  const days = monthGridDays(month)
   const longTermGoals = goals.filter(g => g.kind === 'longTerm')
-  const weekdayLabels = days.slice(0, 7).map(d => ({
-    short: d.date.toLocaleDateString(undefined, { weekday: 'narrow' }),
-    long: d.date.toLocaleDateString(undefined, { weekday: 'short' }),
-    weekend: weekday(d.date) === 1 || weekday(d.date) === 7,
-  }))
-
   return (
     <div className="page longterm">
       {longTermGoals.length > 0 && (
@@ -54,25 +47,13 @@ export function LongTermScreen({ colors }: { colors: ThemeColors }) {
       )}
 
       <section className="lt-month" aria-label="Month">
-        <div className="row spread month-head">
-          <button className="icon-button" onClick={() => setMonth(m => addMonths(m, -1))} aria-label="Previous month"><ChevronLeft size={20} /></button>
-          <button className="month-title" onClick={() => setMonth(startOfMonth(new Date()))} title="Back to this month">
-            {month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-          </button>
-          <button className="icon-button" onClick={() => setMonth(m => addMonths(m, 1))} aria-label="Next month"><ChevronRight size={20} /></button>
-        </div>
-
-        <div className="month-grid" role="grid" aria-label={month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}>
-          {weekdayLabels.map((w, i) => (
-            <div key={i} className="weekday" role="columnheader" aria-label={w.long}>
-              <span className="narrow">{w.short}</span><span className="wide">{w.long}</span>
-            </div>
-          ))}
-          {days.map(({ date, inMonth }) => {
+        <MonthGrid
+          month={month}
+          onMonthChange={setMonth}
+          renderDay={({ date, inMonth, isToday }) => {
             const items = longTermItems(data, date, colors.secondary)
             const visible = items.slice(0, MAX_VISIBLE)
             const overflow = items.length - visible.length
-            const isToday = isSameDay(date, today)
             const label = `${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}${items.length ? `, ${items.length} item${items.length === 1 ? '' : 's'}` : ''}`
             return (
               <button
@@ -93,8 +74,8 @@ export function LongTermScreen({ colors }: { colors: ThemeColors }) {
                 {items.length > 0 && <span className="day-dots" aria-hidden="true">{items.slice(0, 4).map(i => <span key={i.id} style={{ background: i.colorHex }} />)}</span>}
               </button>
             )
-          })}
-        </div>
+          }}
+        />
       </section>
 
       {selected && !editor && (
