@@ -50,6 +50,12 @@ export interface CalendarEvent {
   repeatDays: number[]
   /** Per-day start time (minutes from midnight) for one moved occurrence. */
   timeOverrides: Record<string, number>
+  /** Per-day length in minutes: one occurrence made longer or shorter. */
+  durationOverrides: Record<string, number>
+  /** Logged actual length of single occurrences of a repeating event. */
+  occurrenceActuals: Record<string, number>
+  /** An occurrence's planned length, frozen the first time it's logged. */
+  occurrenceEstimates: Record<string, number>
   parts: EventPart[]
   /** The plan's duration, frozen the first time an actual is logged. */
   estimatedMinutes?: number

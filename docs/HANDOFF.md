@@ -53,9 +53,16 @@ Web port batches:
    goal, its other days and its tracking stay. Challenge restarts set
    `statsStartDate` on the habits: dots, totals, weekly counts and miss
    counts start there (`statsFirstDayKey`); ticks before it stay saved.
-3. Then: repeating-event "this day / all future days" split,
-   `durationOverrides`, per-occurrence actuals — needed before importing
-   iPhone data, since the web reader would otherwise drop those fields.
+3. **Done:** changing a repeating occurrence's times asks "This day only"
+   (per-day `timeOverrides` + new `durationOverrides`) or "This and all
+   future days" (`splitSeriesFrom` in `model/events.ts`: the series ends
+   the day before and a new series starts; overrides, logs and deleted
+   days split by date). "Log actual time" works on single occurrences
+   (`occurrenceActuals` / `occurrenceEstimates`). Fixed: logging on a
+   one-off then Save no longer restores the old end. Saved hours are
+   clamped on load. Riley had already imported iPhone data before this;
+   fields the web didn't know then may be missing — re-importing one file
+   (after a backup) restores them. Web port of the Mac work is complete.
 
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
 

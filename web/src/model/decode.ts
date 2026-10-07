@@ -85,6 +85,9 @@ export function decodeEvent(r: Raw): CalendarEvent | null {
     isFlexible: bool(r.isFlexible, false),
     repeatDays: nums(r.repeatDays, ALL_DAYS),
     timeOverrides: record(r.timeOverrides, x => optNum(x)),
+    durationOverrides: record(r.durationOverrides, x => optNum(x)),
+    occurrenceActuals: record(r.occurrenceActuals, x => optNum(x)),
+    occurrenceEstimates: record(r.occurrenceEstimates, x => optNum(x)),
     parts: list(r.parts, decodePart),
     estimatedMinutes: optNum(r.estimatedMinutes),
     actualMinutes: optNum(r.actualMinutes),
@@ -197,7 +200,11 @@ export function decodeNote(r: Raw): Note {
 
 export function decodeHours(v: unknown): CalendarHours {
   const r = isObj(v) ? v : {}
-  return { startHour: num(r.startHour, 6), endHour: num(r.endHour, 24) }
+  // Clamped: an end at or before the start would give the Daily grid a
+  // negative number of rows. Settings prevents it; older saves might not.
+  const startHour = Math.min(Math.max(Math.round(num(r.startHour, 6)), 0), 23)
+  const endHour = Math.min(Math.max(Math.round(num(r.endHour, 24)), startHour + 1), 24)
+  return { startHour, endHour }
 }
 
 export function decodeAppearance(v: unknown): AppearanceSettings {
