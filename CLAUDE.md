@@ -94,7 +94,11 @@ never the plain folder (opening the folder gives a scheme-less window).
    - ~~Planner name, blue theme, icon~~ — done on the web (batch 1,
      7 Oct 2026), along with no page titles (design-system.md).
    - ~~"Remove from [day]" and stats-fresh challenge restarts~~ — done on
-     the web (batch 2). Next: batch 3 (repeating-event changes).
+     the web (batch 2).
+   - ~~Repeating events: this day / all future days, per-day length,
+     per-occurrence time logging~~ — done on the web (batch 3). The Mac
+     work is fully ported. Next: plan the Finance web app (alongside
+     Planner in this repo; check the structure with Riley first).
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Oct 2026 audit (docs/AUDIT-2026-10.md) complete. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.

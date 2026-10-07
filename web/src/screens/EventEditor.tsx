@@ -29,7 +29,10 @@ const withTime = (d: Date, value: string) => {
 const minutesBetween = (a: Date, b: Date) => Math.round((b.getTime() - a.getTime()) / 60_000)
 
 export function EventEditor({ target, onClose }: { target: EventEditorTarget; onClose: () => void }) {
-  const { categories, goals, events, addEvent, updateEvent, deleteEvent, deleteOccurrence, setOccurrenceTime, resizeEvent } = useData()
+  const {
+    categories, goals, events, addEvent, updateEvent, deleteEvent, deleteOccurrence, setOccurrenceTime, resizeEvent,
+    setOccurrenceDuration, logOccurrenceActual, changeTimesFromOccurrence,
+  } = useData()
   const original = target.mode === 'edit' ? target.event : null
 
   const [page, setPage] = useState<Page>('main')
@@ -47,14 +50,36 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
   const [parts, setParts] = useState<EventPart[]>(original?.parts ?? [])
   const [linkedGoalID, setLinkedGoalID] = useState(original?.linkedGoalID)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [askScope, setAskScope] = useState(false)
   const [logging, setLogging] = useState(false)
-  const [loggedMinutes, setLoggedMinutes] = useState(original?.actualMinutes ?? Math.max(minutesBetween(start, end), 5))
+  const occurrenceKey = original ? dayKey(parseDate(original.startDate)) : ''
+  const [loggedMinutes, setLoggedMinutes] = useState(() =>
+    (original?.recurrence === 'none' ? original.actualMinutes : original?.occurrenceActuals[occurrenceKey])
+      ?? Math.max(minutesBetween(start, end), 5))
 
   const origin: EventOrigin = original?.origin ?? (target.mode === 'new' ? target.origin ?? 'daily' : 'daily')
   const accent = categories.find(c => c.id === categoryID)?.colorHex ?? 'var(--primary)'
   const spanDays = daysBetween(start, end) + 1
   // Repeating events have no per-occurrence duration yet, so nothing to log against.
-  const canLogActual = original !== null && !isAllDay && original.recurrence === 'none' && new Date() >= parseDate(original.startDate)
+  // Only once it has started; for a repeating event it logs the occurrence that was opened.
+  const canLogActual = original !== null && !isAllDay && new Date() >= parseDate(original.startDate)
+  // Read live, so a log made a moment ago shows straight away.
+  const live = original ? events.find(e => e.id === original.id) : undefined
+  const currentLogged = !original || !live ? undefined
+    : original.recurrence === 'none' ? live.actualMinutes : live.occurrenceActuals[occurrenceKey]
+
+  const logIt = () => {
+    if (!original) return
+    if (original.recurrence === 'none') {
+      const newEnd = new Date(parseDate(original.startDate).getTime() + loggedMinutes * 60_000)
+      resizeEvent(original.id, newEnd)
+      // Keep the editor's End in step, so Save afterwards can't put the old end back.
+      setEnd(newEnd)
+    } else {
+      logOccurrenceActual(original.id, parseDate(original.startDate), loggedMinutes)
+    }
+    setLogging(false)
+  }
   const partsTotal = parts.reduce((a, p) => a + p.estimatedMinutes, 0)
   const blockMinutes = Math.max(minutesBetween(start, end), 0)
 
@@ -71,7 +96,7 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
     setEnd(new Date(end.getFullYear(), end.getMonth(), end.getDate() + delta, end.getHours(), end.getMinutes()))
   }
 
-  const save = () => {
+  const save = (scope?: 'thisDay' | 'future') => {
     if (!categoryID) return
     const resolvedTitle = title.trim() || 'New event'
     let resolvedStart = start
@@ -89,13 +114,27 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
 
     if (original && original.recurrence !== 'none') {
       // The editor holds the occurrence's shifted times, not the series
-      // anchor. Edit the stored series, never its dates; a new start time
-      // becomes an override for this day only.
+      // anchor. Times are compared as time of day and length, so this
+      // works on any occurrence; changing them asks how far it reaches.
       const series = events.find(e => e.id === original.id)
       if (!series) return
+      const occurrenceDay = parseDate(original.startDate)
+      const oldStart = minutesFromMidnight(occurrenceDay)
+      const newStart = minutesFromMidnight(resolvedStart)
+      const oldLength = minutesBetween(occurrenceDay, parseDate(original.endDate))
+      const newLength = minutesBetween(resolvedStart, resolvedEnd)
+      const timesChanged = !isAllDay && (newStart !== oldStart || newLength !== oldLength)
+      if (timesChanged && !scope) {
+        setAskScope(true)
+        return
+      }
       updateEvent({ ...series, ...fields })
-      if (resolvedStart.getTime() !== parseDate(original.startDate).getTime()) {
-        setOccurrenceTime(original.id, parseDate(original.startDate), minutesFromMidnight(resolvedStart))
+      if (timesChanged && scope === 'future') {
+        changeTimesFromOccurrence(original.id, occurrenceDay, newStart, newLength)
+      } else if (timesChanged) {
+        // This day only: per-day overrides, the same as dragging one occurrence.
+        if (newStart !== oldStart) setOccurrenceTime(original.id, occurrenceDay, newStart)
+        if (newLength !== oldLength) setOccurrenceDuration(original.id, occurrenceDay, newLength)
       }
     } else if (original) {
       // Always a plain edit. Only "Log actual time" records an actual.
@@ -138,7 +177,7 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
                     <input type="date" value={dayKey(parseDate(recurrenceEndDate))} onChange={e => e.target.value && setRecurrenceEndDate(toISO(dayFromKey(e.target.value)))} />
                   </Field>
                 )}
-                <p className="help">Changing the start time of a repeating event moves only the occurrence you opened. Changing just the end time isn't tracked per occurrence yet.</p>
+                <p className="help">Changing the time of a repeating event asks whether it's for this day only or this and all future days. Earlier days keep the times they had.</p>
               </EditorBox>
             )}
           </>
@@ -191,7 +230,7 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
   }
 
   return (
-    <Sheet title={original ? 'Edit event' : 'New event'} onClose={onClose} right={{ label: original ? 'Save' : 'Add', onClick: save }}>
+    <Sheet title={original ? 'Edit event' : 'New event'} onClose={onClose} right={{ label: original ? 'Save' : 'Add', onClick: () => save() }}>
       <div className="editor-box" style={{ borderLeft: `4px solid ${accent}` }}>
         <span className="field-label">Title</span>
         <input autoFocus={!original} value={title} onChange={e => setTitle(e.target.value)} placeholder="New event" aria-label="Title" style={{ fontSize: 19 }} />
@@ -243,19 +282,29 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
             <>
               <Stepper label={formatDuration(loggedMinutes)} value={loggedMinutes} min={5} max={600} step={5} onChange={setLoggedMinutes} />
               <div className="button-row">
-                <VButton kind="primary" accent={accent} onClick={() => { resizeEvent(original.id, new Date(parseDate(original.startDate).getTime() + loggedMinutes * 60_000)); setLogging(false) }}>Log it</VButton>
+                <VButton kind="primary" accent={accent} onClick={logIt}>Log it</VButton>
                 <VButton accent={accent} onClick={() => setLogging(false)}>Cancel</VButton>
               </div>
             </>
           ) : (
             <>
-              <VButton accent={accent} onClick={() => setLogging(true)}>{original.actualMinutes !== undefined ? 'Update logged time' : 'Log actual time'}</VButton>
-              {events.find(e => e.id === original.id)?.actualMinutes !== undefined && (
-                <span className="caption2">Logged: {events.find(e => e.id === original.id)?.actualMinutes} min</span>
+              <VButton accent={accent} onClick={() => setLogging(true)}>{currentLogged !== undefined ? 'Update logged time' : 'Log actual time'}</VButton>
+              {currentLogged !== undefined && (
+                <span className="caption2">Logged: {currentLogged} min{original.recurrence !== 'none' ? ' for this day' : ''}</span>
               )}
             </>
           )}
         </EditorBox>
+      )}
+
+      {askScope && (
+        <div className="editor-box scope-box" style={accentStyle(accent)} role="group" aria-label="Which days to change">
+          <strong>This is a repeating event</strong>
+          <p className="help">Change the time for this day only, or for this and all future days? Earlier days keep the times they had.</p>
+          <VButton kind="primary" accent={accent} onClick={() => save('thisDay')}>This day only</VButton>
+          <VButton accent={accent} onClick={() => save('future')}>This and all future days</VButton>
+          <button className="text-button" onClick={() => setAskScope(false)}>Keep editing</button>
+        </div>
       )}
 
       {original && !confirmDelete && (

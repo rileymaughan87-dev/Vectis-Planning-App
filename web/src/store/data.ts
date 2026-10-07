@@ -11,7 +11,7 @@ import {
   decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview, decodeTask, list,
 } from '../model/decode'
 import * as challenges from '../model/challenges'
-import { moved, resized } from '../model/events'
+import { moved, resized, splitSeriesFrom, withOccurrenceActual, withOccurrenceDuration } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
 import { docToPlainText, wrapDoc, type DocNode } from '../model/noteDoc'
@@ -61,6 +61,12 @@ interface Actions {
   moveEvent(id: string, newStart: Date): void
   resizeEvent(id: string, newEnd: Date): void
   setOccurrenceTime(eventID: string, date: Date, startMinutes: number): void
+  /** One occurrence's length, leaving the series alone. */
+  setOccurrenceDuration(eventID: string, date: Date, minutes: number): void
+  /** Logs how long one occurrence of a repeating event actually took. */
+  logOccurrenceActual(eventID: string, date: Date, minutes: number): void
+  /** New times from one occurrence onward; earlier days keep theirs. */
+  changeTimesFromOccurrence(eventID: string, date: Date, startMinutes: number, durationMinutes: number): void
   deleteEvent(id: string): void
   deleteOccurrence(eventID: string, date: Date): void
   setCategories(categories: CalendarCategory[]): void
@@ -199,6 +205,13 @@ export const useData = create<DataState & Actions>()(set => ({
         timeOverrides: { ...e.timeOverrides, [dayKey(date)]: clampStart(startMinutes, 23 * 60 + 55) },
       })),
     })),
+
+  setOccurrenceDuration: (eventID, date, minutes) =>
+    set(s => ({ events: mapEvent(s.events, eventID, e => withOccurrenceDuration(e, date, minutes)) })),
+  logOccurrenceActual: (eventID, date, minutes) =>
+    set(s => ({ events: mapEvent(s.events, eventID, e => withOccurrenceActual(e, date, minutes)) })),
+  changeTimesFromOccurrence: (eventID, date, startMinutes, durationMinutes) =>
+    set(s => ({ events: splitSeriesFrom(s.events, eventID, date, startMinutes, durationMinutes, newID) })),
 
   deleteEvent: id => set(s => ({ events: s.events.filter(e => e.id !== id) })),
   deleteOccurrence: (eventID, date) =>

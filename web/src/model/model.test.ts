@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addDays, atMinutes, dayKey, startOfDay, toISO } from './dates'
 import { commitmentFraction, dayBlocks, layoutBlocks, minutesIntoDay } from './dayBlocks'
-import { decodeEvent, decodeGoal } from './decode'
+import { decodeEvent, decodeGoal, decodeHours } from './decode'
 import { makeEvent, occupies, resized, timesOn } from './events'
 import {
   applyScheduleChange, consecutiveMisses, isScheduled, liveSchedule, makeGoal, missNudge, recentHistory, scheduleOn,
@@ -309,5 +309,62 @@ describe('batch 2: removing one day, and restarts counting fresh', () => {
     const g = decodeGoal({ title: 'New', hiddenBlockDays: ['2026-10-07'], statsStartDate: '2026-10-01T00:00:00Z' })
     expect(g.hiddenBlockDays).toEqual(['2026-10-07'])
     expect(g.statsStartDate).toBe('2026-10-01T00:00:00Z')
+  })
+})
+
+describe('batch 3: single occurrences of repeating events', () => {
+  const series = () => makeEvent({
+    title: 'Class', categoryID: 'C', recurrence: 'weekly', flowsToDaily: true,
+    startDate: toISO(atMinutes(addDays(today, -14), 600)), endDate: toISO(atMinutes(addDays(today, -14), 660)),
+  })
+
+  it('gives one occurrence its own length', async () => {
+    const { withOccurrenceDuration } = await import('./events')
+    const e = withOccurrenceDuration(series(), today, 90)
+    expect(timesOn(e, today).end.getHours() * 60 + timesOn(e, today).end.getMinutes()).toBe(11 * 60 + 30)
+    expect(timesOn(e, addDays(today, 7)).end.getHours()).toBe(11)
+    expect(timesOn(e, addDays(today, 7)).end.getMinutes()).toBe(0)
+  })
+
+  it('logs an actual for one occurrence and freezes its estimate once', async () => {
+    const { withOccurrenceActual } = await import('./events')
+    let e = withOccurrenceActual(series(), today, 75)
+    e = withOccurrenceActual(e, today, 80)
+    expect(e.occurrenceEstimates[dayKey(today)]).toBe(60)
+    expect(e.occurrenceActuals[dayKey(today)]).toBe(80)
+    expect(timesOn(e, addDays(today, -7)).end.getMinutes()).toBe(0) // other days untouched
+  })
+
+  it('splits the series so earlier days keep their real times', async () => {
+    const { splitSeriesFrom, withOccurrenceActual } = await import('./events')
+    let original = series()
+    original = { ...original, excludedOccurrences: [dayKey(addDays(today, -7)), dayKey(addDays(today, 7))] }
+    original = withOccurrenceActual(original, addDays(today, -14), 50)
+    let n = 0
+    const [past, future] = splitSeriesFrom([original], original.id, today, 14 * 60, 45, () => `NEW${++n}`)
+    expect(dayKey(new Date(past.recurrenceEndDate!))).toBe(dayKey(addDays(today, -1)))
+    expect(occupies(past, today)).toBe(false)
+    expect(timesOn(past, addDays(today, -14)).start.getHours()).toBe(10)
+    expect(past.excludedOccurrences).toEqual([dayKey(addDays(today, -7))])
+    expect(past.occurrenceActuals[dayKey(addDays(today, -14))]).toBe(50)
+    expect(future.id).toBe('NEW1')
+    expect(timesOn(future, addDays(today, 7)).start.getHours()).toBe(14)
+    expect(future.excludedOccurrences).toEqual([dayKey(addDays(today, 7))])
+    expect(Object.keys(future.occurrenceActuals)).toEqual([])
+  })
+
+  it('changes the series in place when split from its first day', async () => {
+    const { splitSeriesFrom } = await import('./events')
+    const e = series()
+    const out = splitSeriesFrom([e], e.id, addDays(today, -14), 8 * 60, 30, () => 'X')
+    expect(out).toHaveLength(1)
+    expect(timesOn(out[0], today).start.getHours()).toBe(8)
+  })
+
+  it('reads the new iPhone fields, and clamps bad saved hours', () => {
+    const e = decodeEvent({ title: 'E', categoryID: 'C', startDate: '2026-10-07T09:00:00Z', endDate: '2026-10-07T10:00:00Z', durationOverrides: { '2026-10-07': 90 } })
+    expect(e?.durationOverrides).toEqual({ '2026-10-07': 90 })
+    expect(e?.occurrenceActuals).toEqual({})
+    expect(decodeHours({ startHour: 20, endHour: 8 })).toEqual({ startHour: 20, endHour: 21 })
   })
 })
