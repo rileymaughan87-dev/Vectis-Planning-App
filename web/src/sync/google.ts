@@ -195,7 +195,7 @@ export async function publishFile(token: string, fileID: string | undefined, nam
   const boundary = 'vectis' + Math.random().toString(36).slice(2)
   const multipart =
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-    JSON.stringify({ name, mimeType: 'application/json', description: 'Shared from Vectis for an accountability partner.' }) +
+    JSON.stringify({ name, mimeType: 'application/json', description: 'Shared from Planner for an accountability partner.' }) +
     `\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`
   const created = await driveFetch(
     'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',

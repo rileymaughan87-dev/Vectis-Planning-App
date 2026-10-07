@@ -17,6 +17,7 @@ import { useData } from './store/data'
 import { useShare } from './store/share'
 import { fileIDFromLink } from './sync/google'
 import { Sheet, VButton } from './ui/components'
+import { APP_NAME } from './ui/brand'
 import { themeColors, useApplyTheme } from './ui/theme'
 
 type Tab = 'home' | 'goals' | 'daily' | 'longTerm' | 'record'
@@ -127,7 +128,7 @@ export default function App() {
   return (
     <div className="app">
       <aside className="rail" aria-label="Navigation">
-        <div className="rail-head"><span className="wordmark">Vectis</span></div>
+        <div className="rail-head"><span className="wordmark">{APP_NAME}</span></div>
         <nav aria-label="Sections">
           {tabs.map(t => (
             <button key={t.id} className="rail-tab" aria-current={tab === t.id ? 'page' : undefined} onClick={() => setTab(t.id)}>
@@ -143,12 +144,13 @@ export default function App() {
       <div className="main">
         <header className="topbar">
           <div className="topbar-row">
-            <span className="wordmark">Vectis</span>
+            <span className="wordmark">{APP_NAME}</span>
             <button className="icon-button menu-button" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
               <Menu size={22} />
             </button>
           </div>
-          <h1>{title}</h1>
+          {/* Read by screen readers; not shown, per the design system. */}
+          <h1 className="visually-hidden">{title}</h1>
         </header>
 
         <main className={`content ${tab === 'daily' ? 'content-daily' : ''}`}>
@@ -175,7 +177,7 @@ export default function App() {
           <aside className="sidebar" aria-label="Menu">
             <div className="sidebar-head">
               <button className="icon-button" style={{ color: 'var(--text-2)' }} onClick={() => setSidebarOpen(false)} aria-label="Close menu"><X size={20} /></button>
-              <span className="wordmark">Vectis</span>
+              <span className="wordmark">{APP_NAME}</span>
             </div>
             <MenuItems onGo={go} onPartner={openPartner} />
           </aside>
@@ -189,7 +191,7 @@ export default function App() {
 
       {invite && (
         <Sheet title="Accountability partner" compact onClose={() => setInvite(null)}>
-          <p style={{ margin: 0 }}>Someone shared their Vectis with you. Follow them to see their goals and calendar, read-only.</p>
+          <p style={{ margin: 0 }}>Someone shared their Planner with you. Follow them to see their goals and calendar, read-only.</p>
           {inviteError && <div className="notice error">{inviteError}</div>}
           <VButton kind="primary" accent="var(--primary)" onClick={() => void acceptInvite()} disabled={inviteBusy}>
             {inviteBusy ? 'Loading…' : 'Follow'}

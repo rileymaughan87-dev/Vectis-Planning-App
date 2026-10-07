@@ -60,7 +60,7 @@ export function downloadBackup() {
 export async function restoreBackup(file: File) {
   const parsed = JSON.parse(await file.text())
   if (parsed?.format !== 'vectis-backup' || typeof parsed.entries !== 'object') {
-    throw new Error("That file isn't a Vectis backup.")
+    throw new Error("That file isn't a Planner backup.")
   }
   for (const [name, text] of Object.entries(parsed.entries as Record<string, string>)) {
     saveRaw(name, JSON.parse(text))
