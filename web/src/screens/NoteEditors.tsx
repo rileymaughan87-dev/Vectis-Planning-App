@@ -1,14 +1,15 @@
 // Note and notebook editors, ported from NoteSheets.swift and
 // NotebookViews.swift. Each works on a local copy until Save.
 
-import { CheckSquare, FileText, Trash2, Zap } from 'lucide-react'
-import { useState } from 'react'
+import { CheckSquare, FileText, Zap } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { toISO } from '../model/dates'
 import { newID } from '../model/ids'
+import { checklistToDoc, isDocEmpty, noteDoc, textToDoc, wrapDoc, type DocNode } from '../model/noteDoc'
 import type { Goal, Note, NoteType, Notebook } from '../model/types'
 import { useData } from '../store/data'
-import { CompletionMark, EditorBox, Field, Sheet, VButton } from '../ui/components'
-import { RichTextEditor } from '../ui/RichTextEditor'
+import { EditorBox, Field, Sheet, VButton } from '../ui/components'
+import { RichEditor } from '../ui/editor/LazyRichEditor'
 
 /** Any goal, grouped the way the iPhone picker groups them. */
 export function GoalSelect({ value, onChange }: { value?: string; onChange: (id: string | undefined) => void }) {
@@ -58,38 +59,31 @@ export function newNote(type: NoteType, notebookID?: string): Note {
     type,
     title: '',
     jotText: '',
-    checklistItems: type === 'list' ? [{ id: newID(), text: '', done: false }] : [],
+    checklistItems: [],
     notebookID,
+    // A list starts with a checkbox ready to type into; the others start blank.
+    body: wrapDoc(type === 'list' ? checklistToDoc([]) : textToDoc('')),
     updatedDate: toISO(new Date()),
   }
 }
 
+/**
+ * Every note type edits in the same rich editor. The type only decides
+ * how a new note starts (a jot has no title; a list opens on a checkbox).
+ */
 export function NoteEditor({ note: original, isNew, onClose }: { note: Note; isNew: boolean; onClose: () => void }) {
   const { notebooks, saveNote, deleteNote } = useData()
-  const [note, setNote] = useState(() =>
-    original.type === 'list' && original.checklistItems.length === 0
-      ? { ...original, checklistItems: [{ id: newID(), text: '', done: false }] }
-      : original,
-  )
+  const [note, setNote] = useState(original)
+  // Converted from whatever the note held before, once, on open.
+  const [initialDoc] = useState(() => noteDoc(original))
+  const docRef = useRef<DocNode>(initialDoc)
   const patch = (p: Partial<Note>) => setNote(n => ({ ...n, ...p }))
-  const setItem = (id: string, p: Partial<Note['checklistItems'][number]>) =>
-    patch({ checklistItems: note.checklistItems.map(i => (i.id === id ? { ...i, ...p } : i)) })
-  const addItem = (afterID?: string) => {
-    const item = { id: newID(), text: '', done: false }
-    const index = afterID ? note.checklistItems.findIndex(i => i.id === afterID) + 1 : note.checklistItems.length
-    const items = [...note.checklistItems]
-    items.splice(index, 0, item)
-    patch({ checklistItems: items })
-    // Focus the new row once it renders.
-    setTimeout(() => document.getElementById(`item-${item.id}`)?.focus(), 0)
-  }
 
   const save = () => {
-    saveNote({
-      ...note,
-      title: note.title.trim(),
-      checklistItems: note.checklistItems.filter(i => i.text.trim()),
-    })
+    const doc = docRef.current
+    // A brand-new note left completely empty isn't worth keeping.
+    if (isNew && !note.title.trim() && isDocEmpty(doc)) return onClose()
+    saveNote({ ...note, title: note.title.trim(), body: wrapDoc(doc) })
     onClose()
   }
 
@@ -97,53 +91,29 @@ export function NoteEditor({ note: original, isNew, onClose }: { note: Note; isN
   const sortedNotebooks = [...notebooks].sort((a, b) => b.createdDate.localeCompare(a.createdDate))
 
   return (
-    <Sheet title={`${isNew ? 'New' : 'Edit'} ${titles[note.type]}`} onClose={onClose} right={{ label: isNew ? 'Add' : 'Save', onClick: save }}>
-      {note.type === 'jot' && (
-        <div className="editor-box">
-          <textarea autoFocus rows={6} value={note.jotText} onChange={e => patch({ jotText: e.target.value })} aria-label="Jot" placeholder="Jot something down" style={{ resize: 'vertical' }} />
-        </div>
+    <Sheet fullscreen title={`${isNew ? 'New' : 'Edit'} ${titles[note.type]}`} onClose={onClose} right={{ label: isNew ? 'Add' : 'Save', onClick: save }}>
+      {note.type !== 'jot' && (
+        <input
+          className="note-title"
+          autoFocus={isNew}
+          value={note.title}
+          onChange={e => patch({ title: e.target.value })}
+          placeholder="Title"
+          aria-label="Title"
+        />
       )}
+
+      <RichEditor
+        initial={initialDoc}
+        onChange={doc => { docRef.current = doc }}
+        label={note.type === 'jot' ? 'Jot' : 'Note'}
+        placeholder={note.type === 'jot' ? 'Jot something down' : 'Start writing…'}
+        autofocus={isNew && note.type === 'jot'}
+      />
 
       {note.type !== 'jot' && (
-        <EditorBox title="Title">
-          <input autoFocus={isNew} value={note.title} onChange={e => patch({ title: e.target.value })} placeholder="Title" aria-label="Title" />
-        </EditorBox>
-      )}
-
-      {note.type === 'list' && (
-        <EditorBox title="Items">
-          {note.checklistItems.map(item => (
-            <div key={item.id} className="row">
-              <button onClick={() => setItem(item.id, { done: !item.done })} aria-label={item.done ? 'Mark not done' : 'Mark done'} aria-pressed={item.done}>
-                <CompletionMark on={item.done} />
-              </button>
-              <input
-                id={`item-${item.id}`}
-                value={item.text}
-                onChange={e => setItem(item.id, { text: e.target.value })}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addItem(item.id))}
-                placeholder="Item"
-                aria-label="Item"
-                className={item.done ? 'strike' : ''}
-              />
-              <button className="icon-button" aria-label="Remove item" style={{ color: 'var(--danger)' }} onClick={() => patch({ checklistItems: note.checklistItems.filter(i => i.id !== item.id) })}>
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-          <button className="text-button" style={{ textAlign: 'left' }} onClick={() => addItem()}>+ Add item</button>
-        </EditorBox>
-      )}
-
-      {note.type === 'classic' && (
-        <EditorBox title="Content">
-          <RichTextEditor label="Note content" value={note.richTextData} onChange={richTextData => patch({ richTextData })} />
-          <p className="help">Select some text first, then tap a style to apply it.</p>
-        </EditorBox>
-      )}
-
-      {note.type !== 'jot' && (
-        <EditorBox title="Links">
+        <details className="editor-box links-box">
+          <summary>Links{note.linkedGoalID || note.notebookID ? ' · set' : ''}</summary>
           <Field label="Goal (optional)"><GoalSelect value={note.linkedGoalID} onChange={linkedGoalID => patch({ linkedGoalID })} /></Field>
           <Field label="Notebook (optional)">
             <select value={note.notebookID ?? ''} onChange={e => patch({ notebookID: e.target.value || undefined })}>
@@ -151,7 +121,7 @@ export function NoteEditor({ note: original, isNew, onClose }: { note: Note; isN
               {sortedNotebooks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
             </select>
           </Field>
-        </EditorBox>
+        </details>
       )}
 
       {!isNew && <VButton kind="destructive" onClick={() => { deleteNote(note.id); onClose() }}>Delete note</VButton>}

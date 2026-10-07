@@ -79,6 +79,10 @@ never the plain folder (opening the folder gives a scheme-less window).
   buffer awareness and the partner view all use it.
 - The share file (`sync/shareFile.ts`) carries goals and calendar only;
   journal, notes and people never leave the device.
+- Notes and journal entries edit in one TipTap editor (`ui/editor/`);
+  their content is `body` (`model/noteDoc.ts`). Older fields (RTF,
+  `checklistItems`, `jotText`, journal `text`) are only read to convert
+  old or imported content — never write formatting back into them.
 
 ## Current priorities (in order)
 

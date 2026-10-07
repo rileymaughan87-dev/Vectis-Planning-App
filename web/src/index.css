@@ -453,13 +453,111 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
 .journal-grid .day-cell.outside { opacity: 0.4; }
 .journal-dot { width: 7px; height: 7px; border-radius: 50%; }
 
-.rich-editor { display: flex; flex-direction: column; gap: 6px; }
-.rich-toolbar { display: flex; gap: 4px; }
-.rich-toolbar button { width: 34px; height: 30px; border-radius: var(--radius-small); display: inline-flex; align-items: center; justify-content: center; background: var(--surface-2); }
-.rich-toolbar button:hover { background: var(--surface-3); }
-.rich-content { min-height: 180px; padding: 10px; background: var(--surface-2); border-radius: var(--radius-small); outline: none; line-height: 1.45; overflow-wrap: anywhere; }
-.rich-content:focus { box-shadow: inset 0 0 0 1px var(--primary); }
-.rich-content h3, .rich-content .h { font-size: 1.25em; font-weight: 700; margin: 0; }
+
+/* ---------- Note editor ---------- */
+
+.note-title {
+  font-size: 24px; font-weight: 700; background: transparent; border: 0; padding: 4px 2px; letter-spacing: -0.3px;
+}
+.note-title:focus { border: 0; box-shadow: none; }
+.links-box summary { cursor: pointer; font-weight: 500; }
+.links-box[open] summary { margin-bottom: 4px; }
+.rich-note { display: flex; flex-direction: column; gap: 8px; }
+.note-doc {
+  min-height: 220px; padding: 12px 14px; background: var(--surface); border-radius: var(--radius-card);
+  outline: none; line-height: 1.5; overflow-wrap: anywhere; font-size: 16px;
+}
+.note-doc:focus { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 50%, transparent); }
+.note-doc > * + * { margin-top: 6px; }
+.note-doc p { margin: 0; }
+.note-doc h1 { font-size: 26px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -0.3px; }
+.note-doc h2 { font-size: 20px; font-weight: 700; margin: 10px 0 0; }
+.note-doc h3 { font-size: 17px; font-weight: 600; margin: 8px 0 0; color: var(--text); }
+.note-doc pre {
+  margin: 0; padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius-small);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; white-space: pre-wrap;
+}
+.note-doc pre code { font: inherit; }
+.note-doc mark { background: color-mix(in srgb, var(--tertiary) 38%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.note-doc hr { border: 0; border-top: 1.5px solid var(--separator); margin: 14px 0; }
+.note-doc hr.ProseMirror-selectednode { border-top-color: var(--primary); }
+.note-doc ul, .note-doc ol { margin: 0; padding-left: 24px; }
+.note-doc li > p { margin: 0; }
+.note-doc ul[data-style='dash'] { list-style: none; padding-left: 20px; }
+.note-doc ul[data-style='dash'] > li { position: relative; }
+.note-doc ul[data-style='dash'] > li::before { content: '–'; position: absolute; left: -16px; color: var(--text-2); }
+.note-doc ul[data-type='taskList'] { list-style: none; padding-left: 2px; }
+.note-doc ul[data-type='taskList'] ul[data-type='taskList'] { padding-left: 0; margin-top: 2px; }
+/* Lists nested inside a dashed list keep the dashes, as in Apple Notes. */
+.note-doc ul[data-style='dash'] ul:not([data-type='taskList']) { list-style: none; padding-left: 20px; }
+.note-doc ul[data-style='dash'] ul:not([data-type='taskList']) > li { position: relative; }
+.note-doc ul[data-style='dash'] ul:not([data-type='taskList']) > li::before { content: '–'; position: absolute; left: -16px; color: var(--text-2); }
+.note-doc ul[data-type='taskList'] > li { display: flex; align-items: flex-start; gap: 8px; }
+.note-doc ul[data-type='taskList'] > li > label { flex: none; margin-top: 2px; user-select: none; }
+.note-doc ul[data-type='taskList'] > li > div { flex: 1; min-width: 0; }
+.note-doc ul[data-type='taskList'] > li input[type='checkbox'] {
+  appearance: none; -webkit-appearance: none; width: 19px; height: 19px; margin: 0; cursor: pointer;
+  border: 1.5px solid var(--text-3); border-radius: 50%; display: grid; place-content: center; background: var(--surface);
+}
+.note-doc ul[data-type='taskList'] > li input[type='checkbox']:checked { border-color: var(--primary); background: var(--primary); }
+.note-doc ul[data-type='taskList'] > li input[type='checkbox']:checked::after {
+  content: ''; width: 8px; height: 4px; border: solid var(--on-primary); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg);
+}
+.note-doc ul[data-type='taskList'] > li[data-checked='true'] > div { color: var(--text-2); text-decoration: line-through; }
+.note-doc p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); color: var(--text-3); float: left; height: 0; pointer-events: none;
+}
+.note-doc .is-folded-away { display: none; }
+.note-doc h1, .note-doc h2, .note-doc h3 { position: relative; }
+.fold-toggle {
+  position: absolute; left: -2px; top: 50%; transform: translate(-100%, -50%);
+  width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-3);
+}
+.fold-toggle::before { content: ''; width: 6px; height: 6px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+.fold-toggle.is-collapsed::before { transform: rotate(-45deg); }
+.fold-toggle:hover { color: var(--primary); }
+.note-doc { padding-left: 24px; }
+.is-collapsed-heading::after { content: ' …'; color: var(--text-3); font-weight: 400; }
+
+.editor-toolbar {
+  display: flex; align-items: center; gap: 2px; background: var(--surface);
+  border: 0.5px solid var(--separator); border-radius: var(--radius-card); padding: 4px;
+}
+.editor-toolbar.inline { position: sticky; top: 0; z-index: 2; }
+.editor-toolbar.docked {
+  position: fixed; left: 0; right: 0; z-index: 60; border-radius: 0; border-width: 0.5px 0 0;
+  padding: 5px 6px; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+.toolbar-scroll { flex: 1; min-width: 0; display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; gap: 2px; }
+.toolbar-scroll::-webkit-scrollbar { display: none; }
+.toolbar-group { display: flex; align-items: center; gap: 2px; flex: none; }
+.toolbar-fixed { display: flex; gap: 2px; flex: none; }
+.toolbar-fixed:first-child { padding-right: 4px; border-right: 0.5px solid var(--separator); }
+.toolbar-fixed:last-child { padding-left: 4px; border-left: 0.5px solid var(--separator); }
+.toolbar-sep { width: 1px; height: 22px; background: var(--separator); margin: 0 4px; flex: none; }
+.tool {
+  flex: none; min-width: 36px; height: 36px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-small); color: var(--text); background: transparent;
+}
+.tool.wide { padding: 0 9px; }
+.tool:hover:not(:disabled) { background: var(--fill); }
+.tool.is-active { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent); }
+.style-chip { font-size: 13px; white-space: nowrap; }
+.style-title { font-weight: 700; font-size: 15px; }
+.style-heading { font-weight: 700; }
+.style-subheading { font-weight: 600; }
+.style-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+
+/* A roomier writing window on wide screens. */
+@media (min-width: 700px) {
+  .sheet.fullscreen { max-width: 860px; height: 88%; }
+  .sheet.fullscreen .note-doc { min-height: 360px; }
+}
+/* Full-screen editing on phones, with room under the text for the docked toolbar. */
+@media (max-width: 699px) {
+  .sheet.fullscreen { height: 100%; max-height: 100%; border-radius: 0; }
+  .sheet.fullscreen .sheet-body { padding-bottom: 72px; }
+}
 
 /* ---------- Partner overlay ---------- */
 
@@ -535,3 +633,4 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
   .partner-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
   .partner-page > .notice, .partner-page > .empty { grid-column: 1 / -1; }
 }
+.editor-loading { color: var(--text-3); }

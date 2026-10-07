@@ -245,3 +245,39 @@ describe('challenges', () => {
     expect(unresolvedDays(goals, goals[0], today)).toHaveLength(0)
   })
 })
+
+describe('note documents', () => {
+  it('opens old notes of every type without losing content', async () => {
+    const { noteDoc, docToPlainText } = await import('./noteDoc')
+    const { base64FromRtf, paragraphsToRtf } = await import('./rtf')
+    const base = { id: 'N', title: '', jotText: '', checklistItems: [], updatedDate: toISO(today) }
+    const jot = noteDoc({ ...base, type: 'jot', jotText: 'line one\nline two' })
+    expect(docToPlainText(jot)).toBe('line one\nline two')
+
+    const list = noteDoc({ ...base, type: 'list', checklistItems: [{ id: 'a', text: 'Eggs', done: true }, { id: 'b', text: 'Milk', done: false }] })
+    expect(list.content?.[0].type).toBe('taskList')
+    expect(list.content?.[0].content?.map(i => i.attrs?.checked)).toEqual([true, false])
+    expect(docToPlainText(list)).toBe('Eggs\nMilk')
+
+    const rtf = base64FromRtf(paragraphsToRtf([
+      [{ text: 'Plan', bold: true, italic: false, heading: true }],
+      [{ text: 'Book ', bold: false, italic: false, heading: false }, { text: 'hotel', bold: true, italic: true, heading: false }],
+    ]))
+    const classic = noteDoc({ ...base, type: 'classic', richTextData: rtf })
+    expect(classic.content?.[0]).toMatchObject({ type: 'heading', attrs: { level: 2 } })
+    expect(classic.content?.[1].content?.[1]).toEqual({ type: 'text', text: 'hotel', marks: [{ type: 'bold' }, { type: 'italic' }] })
+    expect(docToPlainText(classic)).toBe('Plan\nBook hotel')
+  })
+
+  it('prefers the saved document, and journal text when the two disagree', async () => {
+    const { noteDoc, journalDoc, textToDoc, wrapDoc, docToPlainText, decodeDoc } = await import('./noteDoc')
+    const doc = textToDoc('Saved version')
+    expect(noteDoc({ id: 'N', type: 'jot', title: '', jotText: 'old', checklistItems: [], updatedDate: '', body: wrapDoc(doc) })).toBe(doc)
+    const entry = { id: 'J', date: toISO(today), text: 'Saved version', body: wrapDoc(doc) }
+    expect(journalDoc(entry)).toBe(doc)
+    // The evening review rewrote the text: the stale document is ignored.
+    expect(docToPlainText(journalDoc({ ...entry, text: 'From the review' }))).toBe('From the review')
+    expect(decodeDoc({ format: 'something-else', doc })).toBeUndefined()
+    expect(decodeDoc(JSON.parse(JSON.stringify(wrapDoc(doc))))?.doc).toEqual(doc)
+  })
+})
