@@ -187,6 +187,8 @@ export function Sheet(props: {
   leftLabel?: string
   right?: { label: string; onClick: () => void; disabled?: boolean }
   compact?: boolean
+  /** Fills the screen on a phone — for writing, where every line counts. */
+  fullscreen?: boolean
   children: ReactNode
 }) {
   const titleID = useId()
@@ -202,7 +204,7 @@ export function Sheet(props: {
 
   return (
     <div className="sheet-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <div className={`sheet ${props.compact ? 'compact' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleID} ref={ref} tabIndex={-1}>
+      <div className={`sheet ${props.compact ? 'compact' : ''} ${props.fullscreen ? 'fullscreen' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleID} ref={ref} tabIndex={-1}>
         <div className="sheet-head">
           <button className="left text-button" onClick={onClose}>
             {props.leftLabel ?? (props.right ? 'Cancel' : <X size={18} aria-label="Close" />)}

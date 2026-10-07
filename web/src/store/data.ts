@@ -14,6 +14,7 @@ import * as challenges from '../model/challenges'
 import { moved, resized } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
+import { docToPlainText, wrapDoc, type DocNode } from '../model/noteDoc'
 import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals, sampleNotes } from '../model/sample'
 import type {
   AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, Note, Notebook, PlanReviewSettings, VectisTask,
@@ -75,6 +76,8 @@ interface Actions {
   /** Attaches the review's prompt to the day's entry; never touches its text. */
   seedReflection(date: Date, prompt: string): void
   setJournalText(date: Date, text: string): void
+  /** Saves a formatted entry, keeping its plain text in step. */
+  setJournalDoc(date: Date, doc: DocNode): void
   deleteJournalEntry(id: string): void
   // Notes
   /** Adds or replaces a note, stamping it as just updated. */
@@ -227,6 +230,15 @@ export const useData = create<DataState & Actions>()(set => ({
       const existing = s.journal.find(e => isSameDay(parseDate(e.date), date))
       if (existing) return { journal: s.journal.map(e => (e === existing ? { ...e, text } : e)) }
       return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), text }] }
+    }),
+
+  setJournalDoc: (date, doc) =>
+    set(s => {
+      const text = docToPlainText(doc)
+      const body = wrapDoc(doc)
+      const existing = s.journal.find(e => isSameDay(parseDate(e.date), date))
+      if (existing) return { journal: s.journal.map(e => (e === existing ? { ...e, text, body } : e)) }
+      return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), text, body }] }
     }),
 
   deleteJournalEntry: id => set(s => ({ journal: s.journal.filter(e => e.id !== id) })),

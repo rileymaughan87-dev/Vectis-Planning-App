@@ -3,15 +3,16 @@
 // each section swapping in fully rather than stacking on one long scroll.
 
 import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, List, PenSquare, Plus, Search, Target } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { addDays, addMonths, isSameDay, parseDate, startOfDay } from '../model/dates'
 import { monthGridDays, startOfMonth } from '../model/longTerm'
 import { journalEntryFor } from '../model/planning'
-import { noteRichText } from '../model/rtf'
+import { journalDoc, notePlainText, type DocNode } from '../model/noteDoc'
 import type { JournalEntry, Note, NoteType, Notebook } from '../model/types'
 import { useData } from '../store/data'
 import { Sheet, VButton } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
+import { RichEditor } from '../ui/editor/LazyRichEditor'
 import { NoteEditor, NoteTypePicker, NotebookEditor, newNote, newNotebook } from './NoteEditors'
 
 type Section = 'journal' | 'notebooks' | 'jots' | 'notes'
@@ -197,14 +198,15 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
 }
 
 function JournalEntryEditor({ date, onClose }: { date: Date; onClose: () => void }) {
-  const { journal, setJournalText, deleteJournalEntry } = useData()
+  const { journal, setJournalDoc, deleteJournalEntry } = useData()
   const entry = journalEntryFor(journal, date)
-  const [text, setText] = useState(entry?.text ?? '')
+  const [initialDoc] = useState(() => journalDoc(entry))
+  const docRef = useRef<DocNode>(initialDoc)
 
   return (
-    <Sheet title={dayLabel(date, true)} onClose={onClose} leftLabel="Close" right={{ label: 'Save', onClick: () => { setJournalText(date, text); onClose() } }}>
+    <Sheet fullscreen title={dayLabel(date, true)} onClose={onClose} leftLabel="Close" right={{ label: 'Save', onClick: () => { setJournalDoc(date, docRef.current); onClose() } }}>
       {entry?.reflectionPrompt && <div className="muted" style={{ fontStyle: 'italic' }}>{entry.reflectionPrompt}</div>}
-      <textarea autoFocus rows={12} value={text} onChange={e => setText(e.target.value)} aria-label="Journal entry" style={{ resize: 'vertical', background: 'var(--surface)' }} />
+      <RichEditor initial={initialDoc} onChange={doc => { docRef.current = doc }} label="Journal entry" placeholder="Write about your day…" autofocus={!entry} />
       <p className="help">Answering the review's prompt starts the entry. Keep writing here anytime — same entry, one per day.</p>
       {entry && (
         <VButton kind="destructive" onClick={() => {
@@ -220,10 +222,9 @@ function JournalEntryEditor({ date, onClose }: { date: Date; onClose: () => void
 
 // MARK: - Notes
 
+/** One line of a note's text, whichever form it's saved in. */
 function notePreview(note: Note): string {
-  if (note.type === 'jot') return note.jotText
-  if (note.type === 'list') return note.checklistItems.map(i => i.text).join(', ')
-  return noteRichText(note.richTextData)
+  return notePlainText(note).split('\n').filter(l => l.trim()).join(' · ')
 }
 
 function GoalTag({ goalID, colors }: { goalID?: string; colors: ThemeColors }) {
@@ -236,7 +237,7 @@ function NoteRow({ note, colors, onSelect }: { note: Note; colors: ThemeColors; 
   return (
     <button className="list-item" onClick={() => onSelect(note)}>
       {note.type === 'jot' ? (
-        <div className="ellipsis">{note.jotText || 'Empty jot'}</div>
+        <div className="ellipsis">{notePreview(note) || 'Empty jot'}</div>
       ) : (
         <>
           <strong className="ellipsis">{note.title || 'Untitled'}</strong>

@@ -3,6 +3,8 @@
 // `.iso8601` strategy), weekday sets are arrays of 1 = Sunday … 7 =
 // Saturday, and day keys are "yyyy-MM-dd" in local time.
 
+import type { NoteDoc } from './noteDoc'
+
 export type ID = string
 export type ISODate = string
 
@@ -142,7 +144,10 @@ export interface JournalEntry {
   date: ISODate
   /** Set only if the evening review's prompt started it. */
   reflectionPrompt?: string
+  /** Plain text — what Home, search and the evening review read. */
   text: string
+  /** The formatted entry from the shared editor; see model/noteDoc.ts. */
+  body?: NoteDoc
 }
 
 export type NoteType = 'jot' | 'list' | 'classic'
@@ -171,6 +176,12 @@ export interface Note {
   richTextData?: string
   /** Lists only. */
   checklistItems: ChecklistItem[]
+  /**
+   * The formatted note from the shared editor (model/noteDoc.ts). When
+   * set it's the note's content; the fields above are only read for
+   * notes saved before it existed, such as iPhone imports.
+   */
+  body?: NoteDoc
   linkedGoalID?: ID
   /** Unset means it sits loose in its type's section. */
   notebookID?: ID

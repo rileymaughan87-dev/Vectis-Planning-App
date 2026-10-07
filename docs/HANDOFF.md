@@ -33,7 +33,40 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
-## Latest session (6 Oct 2026) — hosting, Long-Term, wide screens
+## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
+
+Brief: an Apple Notes / Math Notes–style editor in Vectis's own style, as
+one component for notes and journal entries, built in stages with Riley
+testing on their phone between each. Built on the **web** (Riley will
+retire the Swift app once their data is off it, so web-only formats are
+fine; iPhone *import* must keep working). Riley chose TipTap
+(ProseMirror). `docs/design-system.md` from the brief isn't on this
+machine — styling follows `web/src/index.css`.
+
+- **Stage 1 (done): formatting.** `ui/editor/RichEditor.tsx` (lazy-loaded
+  via `LazyRichEditor.tsx`, ~128 KB gz on first open), `ui/editor/extensions.ts`.
+  Title / Heading / Subheading / Body / Monospaced; bold, italic,
+  underline, strikethrough, highlight; bulleted, dashed ("- ") and
+  numbered lists with indent/outdent (Tab / Shift-Tab or toolbar);
+  checklists with inline checkboxes ("[ ] "); divider; headings fold
+  their section (state saved as a `collapsed` heading attr, kept out of
+  undo). Adaptive toolbar: selection → text styles first, list → list
+  tools, heading → styles + fold; undo/redo pinned left; on touch it
+  docks above the keyboard (visualViewport) with a hide-keyboard button,
+  on wide screens it sits at the top of the editor.
+- **Storage:** `body` (`model/noteDoc.ts`: `{format:'vectis-doc', version,
+  doc}`) on notes and journal entries, read through `decode.ts`. Old
+  content converts on open (RTF → headings/bold/italic, lists →
+  checklist, jots/journal text → paragraphs) and is only replaced on
+  save. Journal keeps plain `text` in step; if the evening review later
+  rewrites `text`, the stale `body` is ignored (formatting lost for that
+  entry — acceptable edge). The old `ui/RichTextEditor.tsx` is gone;
+  `model/rtf.ts` stays for importing iPhone notes.
+- **Next: Stage 2 (math)** — own safe parser, variables, unit table,
+  per-note toggle. Then Stage 3 (attachments in IndexedDB). Ask Riley
+  before graphs, currency, tables, audio.
+
+## Session 6 Oct 2026 — hosting, Long-Term, wide screens
 
 - Hosted on GitHub Pages: https://rileymaughan87-dev.github.io/Vectis-Planning-App/
   (repo made public; `.github/workflows/deploy-web.yml` deploys on push to
