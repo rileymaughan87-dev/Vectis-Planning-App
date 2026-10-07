@@ -187,9 +187,12 @@ Still to verify on device (carried over plus new):
 | Web: plan and review (capture, drag tray, evening review → journal) | Built (6 Oct 2026), browser-tested |
 | Web: Record (journal, notebooks, jots, lists & notes with RTF) | Built (6 Oct 2026), browser-tested |
 | Web: challenges (restart keeps history) | Built (6 Oct 2026), browser-tested |
-| Web: People, Linked apps | Not ported — need a web design (no contacts or app-launching on the web) |
+| Web: People, Linked apps | Left out of the web app by Riley's decision (6 Oct 2026). Saved person/app links on goals and events are kept untouched, just not shown. |
 
 ## Decided against (don't reopen without a reason)
+
+- **People and Linked apps on the web** — left out (6 Oct 2026). They rely
+  on phone contacts and launching other apps. The Swift app keeps them.
 
 - **Temptation bundling** — weak effect without enforcement; Riley won't use it.
 - **Limit goals** ("one soda a week") — superseded by rest days.

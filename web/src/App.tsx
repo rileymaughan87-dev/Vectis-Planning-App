@@ -3,7 +3,7 @@
 // together in a permanent sidebar instead. A partner's view is laid over
 // the top when one is open.
 
-import { CalendarClock, CalendarDays, Hammer, Home, Menu, NotebookText, Settings, Target, Users, UsersRound, X } from 'lucide-react'
+import { CalendarClock, CalendarDays, Home, Menu, NotebookText, Settings, Target, UsersRound, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { AccountabilityScreen } from './screens/AccountabilityScreen'
 import { DailyScreen } from './screens/DailyScreen'
@@ -20,7 +20,7 @@ import { Sheet, VButton } from './ui/components'
 import { themeColors, useApplyTheme } from './ui/theme'
 
 type Tab = 'home' | 'goals' | 'daily' | 'longTerm' | 'record'
-type SidebarDestination = 'accountability' | 'people' | 'settings'
+type SidebarDestination = 'accountability' | 'settings'
 
 const tabs: { id: Tab; title: string; icon: (size: number) => ReactNode }[] = [
   { id: 'home', title: 'Home', icon: s => <Home size={s} /> },
@@ -30,17 +30,7 @@ const tabs: { id: Tab; title: string; icon: (size: number) => ReactNode }[] = [
   { id: 'record', title: 'Record', icon: s => <NotebookText size={s} /> },
 ]
 
-function ComingSoon({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="empty">
-      <Hammer size={32} />
-      <strong style={{ color: 'var(--text)' }}>{title}</strong>
-      <span className="caption">{detail}</span>
-    </div>
-  )
-}
-
-/** Accountability (with partners under it), People, then Settings set apart. */
+/** Accountability (with partners under it), then Settings set apart. */
 function MenuItems(props: { onGo: (d: SidebarDestination) => void; onPartner: (id: string) => void }) {
   const share = useShare()
   return (
@@ -58,13 +48,6 @@ function MenuItems(props: { onGo: (d: SidebarDestination) => void; onPartner: (i
           <span className="title">{p.name}</span>
         </button>
       ))}
-      <button className="sidebar-row" onClick={() => props.onGo('people')}>
-        <Users size={22} color="var(--primary)" />
-        <span>
-          <div className="title">People</div>
-          <div className="subtitle">Contacts, birthdays, quick actions</div>
-        </span>
-      </button>
       <div className="sidebar-spacer" />
       <hr className="divider" />
       <button className="sidebar-row" style={{ marginBottom: 8 }} onClick={() => props.onGo('settings')}>
@@ -202,11 +185,6 @@ export default function App() {
       {destination === 'settings' && <SettingsScreen onClose={() => setDestination(null)} />}
       {destination === 'accountability' && (
         <AccountabilityScreen onClose={() => setDestination(null)} onOpenPartner={id => { setDestination(null); setPartnerID(id) }} />
-      )}
-      {destination === 'people' && (
-        <Sheet title="People" onClose={() => setDestination(null)}>
-          <ComingSoon title="People" detail="Contacts on the web work differently from the iPhone. This page is planned after Record." />
-        </Sheet>
       )}
 
       {invite && (
