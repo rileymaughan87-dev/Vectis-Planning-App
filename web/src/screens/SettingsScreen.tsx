@@ -130,7 +130,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
       <EditorBox title="Your data">
         <p className="help">
-          Bring your iPhone data across: in Xcode, open Window › Devices and Simulators, select Vectis under Installed Apps, choose
+          Bring your iPhone data across: in Xcode, open Window › Devices and Simulators, select the app (Planner, or Vectis on older builds) under Installed Apps, choose
           "Download Container…", then pick the .json files from its AppData/Documents folder here. Each file replaces that part of the
           data here (goals, events, categories, tasks, journal, notes, notebooks, settings).
         </p>

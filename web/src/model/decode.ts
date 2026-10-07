@@ -204,7 +204,7 @@ export function decodeAppearance(v: unknown): AppearanceSettings {
     mode: oneOf(r.mode, ['light', 'dark', 'system'] as const, 'system'),
     selectedPresetID: str(r.selectedPresetID, 'tealCoral'),
     isCustom: bool(r.isCustom, false),
-    customPrimaryHex: str(r.customPrimaryHex, '1C8C82'),
+    customPrimaryHex: str(r.customPrimaryHex, '0068B5'),
     customSecondaryHex: str(r.customSecondaryHex, 'D2574A'),
     customTertiaryHex: str(r.customTertiaryHex, 'C9922E'),
   }

@@ -11,6 +11,7 @@ import { formatDayHeading, formatShortDate, formatTime, relativeTime } from '../
 import { isDoneOn, isScheduled } from '../model/goals'
 import { useShare } from '../store/share'
 import type { ShareSnapshot } from '../sync/shareFile'
+import { APP_NAME } from '../ui/brand'
 import { CompletionMark, SectionBox } from '../ui/components'
 import { LongTermGoalCard, ShortTermGoalRow } from '../ui/goalCards'
 import type { ThemeColors } from '../ui/theme'
@@ -44,7 +45,7 @@ export function PartnerView({ partnerID, colors, onBack }: { partnerID: string; 
   return (
     <div className="partner-overlay">
       <header className="partner-banner">
-        <button className="back" onClick={onBack}><ArrowLeft size={16} /> My Vectis</button>
+        <button className="back" onClick={onBack}><ArrowLeft size={16} /> My {APP_NAME}</button>
         <div className="grow">
           <div className="who">Viewing</div>
           <h1 className="ellipsis">{partner.name}</h1>

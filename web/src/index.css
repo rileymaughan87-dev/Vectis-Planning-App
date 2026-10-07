@@ -3,7 +3,7 @@
    from Appearance settings. Warning colours stay fixed on purpose. */
 
 :root {
-  --primary: #1c8c82;
+  --primary: #0068b5;
   --secondary: #d2574a;
   --tertiary: #c9922e;
   --on-primary: #fff;
@@ -114,11 +114,11 @@ input[type='checkbox'] { width: auto; }
 .topbar {
   background: var(--surface);
   border-bottom: 0.5px solid var(--separator);
-  padding: calc(10px + env(safe-area-inset-top)) 16px 14px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
 }
 .topbar-row { display: flex; align-items: center; justify-content: space-between; }
 .wordmark { font-family: var(--font-serif); font-style: italic; font-weight: 500; color: var(--primary); font-size: 15px; }
-.topbar h1 { margin: 2px 0 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+.topbar .wordmark { font-size: 21px; }
 .icon-button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; color: var(--primary); border-radius: var(--radius-small); }
 .icon-button:hover { background: var(--fill); }
 
@@ -598,9 +598,8 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
   .rail .sidebar-row.partner-row { padding: 6px 12px 6px 46px; }
 
   .main { max-width: none; margin: 0; }
-  .topbar { padding: 22px 32px 16px; }
-  .topbar-row, .tabbar { display: none; }
-  .topbar h1 { margin: 0; }
+  /* The sidebar carries the wordmark, so no top bar at all. */
+  .topbar, .tabbar { display: none; }
   .content { padding-top: 20px; }
   .page { padding: 0 32px 32px; max-width: 1180px; margin: 0 auto; width: 100%; }
 

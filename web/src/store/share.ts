@@ -82,7 +82,7 @@ function loadPartners(): Partner[] {
 }
 
 function fileName(owner: string) {
-  return `Vectis share — ${owner.trim() || 'me'}.json`
+  return `Planner share — ${owner.trim() || 'me'}.json`
 }
 
 export const useShare = create<ShareState>()((set, get) => {

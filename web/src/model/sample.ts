@@ -24,11 +24,13 @@ export interface PalettePreset {
 }
 
 export const PALETTE_PRESETS: PalettePreset[] = [
-  { id: 'tealCoral', name: 'Teal and coral', theory: 'Complementary — blue-green paired with its warm opposite', primaryHex: '1C8C82', secondaryHex: 'D2574A', tertiaryHex: 'C9922E' },
+  // The ids are what gets saved, so they keep their original names even
+  // though the colours are now blue — renaming them would reset saved choices.
+  { id: 'tealCoral', name: 'Blue and coral', theory: 'Complementary — blue paired with its warm opposite', primaryHex: '0068B5', secondaryHex: 'D2574A', tertiaryHex: 'C9922E' },
   { id: 'indigoAmber', name: 'Indigo and amber', theory: 'Classic professional pairing, cool and warm balance', primaryHex: '3F51B5', secondaryHex: 'F2A93B', tertiaryHex: '6B7FD7' },
   { id: 'forestClay', name: 'Forest and clay', theory: 'Analogous earth tones, calm and grounded', primaryHex: '3F6B4E', secondaryHex: 'C97B4A', tertiaryHex: '8FA679' },
   { id: 'plumSage', name: 'Plum and sage', theory: 'Muted complementary, sophisticated and quiet', primaryHex: '6B4C7A', secondaryHex: '7C9473', tertiaryHex: 'C99A6B' },
-  { id: 'monoTeal', name: 'Monochrome teal', theory: "Single hue at three depths — minimal, can't clash", primaryHex: '1C8C82', secondaryHex: '5FADA5', tertiaryHex: '0F5F58' },
+  { id: 'monoTeal', name: 'Monochrome blue', theory: "Single hue at three depths — minimal, can't clash", primaryHex: '0068B5', secondaryHex: '66A4D3', tertiaryHex: '004679' },
 ]
 
 export function sampleGoals(): Goal[] {

@@ -46,7 +46,7 @@ export function buildSnapshot(data: DataState, ownerName: string): ShareSnapshot
 /** Reads a share file, or throws with a message worth showing. */
 export function parseSnapshot(raw: unknown): ShareSnapshot {
   if (typeof raw !== 'object' || raw === null || (raw as { format?: unknown }).format !== SHARE_FORMAT) {
-    throw new Error("That file isn't a Vectis share file.")
+    throw new Error("That file isn't a Planner share file.")
   }
   const r = raw as Record<string, unknown>
   return {

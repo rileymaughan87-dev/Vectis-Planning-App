@@ -10,6 +10,7 @@ import { useShare } from '../store/share'
 import { downloadJSON } from '../sync/backup'
 import { driveLink, fileIDFromLink, googleConfig, isConfiguredFromBuild, saveGoogleConfig, signOut } from '../sync/google'
 import { buildSnapshot } from '../sync/shareFile'
+import { APP_NAME } from '../ui/brand'
 import { EditorBox, Field, Sheet, Toggle, VButton } from '../ui/components'
 
 /** The link a partner taps: opens their own Vectis and offers to add you. */
@@ -44,7 +45,7 @@ export function AccountabilityScreen({ onClose, onOpenPartner }: { onClose: () =
     if (!link) return
     const name = share.ownerName.trim() || 'me'
     try {
-      await navigator.share({ title: 'Vectis', text: `Follow ${name}'s goals on Vectis`, url: link })
+      await navigator.share({ title: APP_NAME, text: `Follow ${name}'s goals on ${APP_NAME}`, url: link })
     } catch {
       // Cancelled, or sharing isn't supported; the copy button still works.
     }
@@ -53,7 +54,7 @@ export function AccountabilityScreen({ onClose, onOpenPartner }: { onClose: () =
   const addFromLink = async () => {
     const id = fileIDFromLink(pasted)
     if (!id) {
-      setPartnerError("That doesn't look like a Vectis or Google Drive link.")
+      setPartnerError(`That doesn't look like a ${APP_NAME} or Google Drive link.`)
       return
     }
     setAdding(true)
@@ -106,7 +107,7 @@ export function AccountabilityScreen({ onClose, onOpenPartner }: { onClose: () =
               {'share' in navigator && <VButton onClick={shareLink}><Share2 size={15} /> Share…</VButton>}
             </div>
             <p className="help">
-              It opens their Vectis and adds you as a partner. The file itself is <a href={driveLink(share.fileID)} target="_blank" rel="noreferrer">in your Google Drive</a>;
+              It opens their {APP_NAME} and adds you as a partner. The file itself is <a href={driveLink(share.fileID)} target="_blank" rel="noreferrer">in your Google Drive</a>;
               deleting it there stops sharing.
             </p>
             <button className="text-button" style={{ color: 'var(--danger)', textAlign: 'left' }} onClick={() => {
