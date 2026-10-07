@@ -33,7 +33,127 @@ Research that shaped the design:
 - Evidence on morning vs evening planning timing is weak — keep timing a
   neutral preference.
 
-## Last session (3 Oct 2026, second Claude Code session)
+## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
+
+Brief: an Apple Notes / Math Notes–style editor in Vectis's own style, as
+one component for notes and journal entries, built in stages with Riley
+testing on their phone between each. Built on the **web** (Riley will
+retire the Swift app once their data is off it, so web-only formats are
+fine; iPhone *import* must keep working). Riley chose TipTap
+(ProseMirror). `docs/design-system.md` from the brief isn't on this
+machine — styling follows `web/src/index.css`.
+
+- **Stage 1 (done): formatting.** `ui/editor/RichEditor.tsx` (lazy-loaded
+  via `LazyRichEditor.tsx`, ~128 KB gz on first open), `ui/editor/extensions.ts`.
+  Title / Heading / Subheading / Body / Monospaced; bold, italic,
+  underline, strikethrough, highlight; bulleted, dashed ("- ") and
+  numbered lists with indent/outdent (Tab / Shift-Tab or toolbar);
+  checklists with inline checkboxes ("[ ] "); divider; headings fold
+  their section (state saved as a `collapsed` heading attr, kept out of
+  undo). Adaptive toolbar: selection → text styles first, list → list
+  tools, heading → styles + fold; undo/redo pinned left; on touch it
+  docks above the keyboard (visualViewport) with a hide-keyboard button,
+  on wide screens it sits at the top of the editor.
+- **Storage:** `body` (`model/noteDoc.ts`: `{format:'vectis-doc', version,
+  doc}`) on notes and journal entries, read through `decode.ts`. Old
+  content converts on open (RTF → headings/bold/italic, lists →
+  checklist, jots/journal text → paragraphs) and is only replaced on
+  save. Journal keeps plain `text` in step; if the evening review later
+  rewrites `text`, the stale `body` is ignored (formatting lost for that
+  entry — acceptable edge). The old `ui/RichTextEditor.tsx` is gone;
+  `model/rtf.ts` stays for importing iPhone notes.
+- **Next: Stage 2 (math)** — own safe parser, variables, unit table,
+  per-note toggle. Then Stage 3 (attachments in IndexedDB). Ask Riley
+  before graphs, currency, tables, audio.
+
+## Session 6 Oct 2026 — hosting, Long-Term, wide screens
+
+- Hosted on GitHub Pages: https://rileymaughan87-dev.github.io/Vectis-Planning-App/
+  (repo made public; `.github/workflows/deploy-web.yml` deploys on push to
+  master touching `web/`; Google keys come from repo secrets). Riley
+  confirmed the partner link works phone-to-phone.
+- **Long-Term tab ported** (`screens/LongTermScreen.tsx`, `model/longTerm.ts`):
+  goals progress summary, month grid (events with `origin: longTerm` plus
+  dated milestones, 3 per cell then "+N more"; dots on very narrow phones),
+  tap a day → list, add (all-day, off the Daily grid by default), edit.
+- **Wide screens:** from 900px wide a permanent left sidebar holds the tabs
+  and side-menu items; Home, Goals, Long-Term and the partner view go
+  two-column; Daily is capped at 960px. Mouse users drag blocks directly
+  (long-press stays for touch). Hover states added.
+- **Plan and review ported** (on in Settings): "Daily planning" and "Review"
+  buttons above the Daily grid. Planning = 3-step capture popup (fixed
+  events → big items → small items, empty steps skipped, each step's items
+  fixed on open) → drag tray with the commitment bar. Tray: pull a chip
+  down onto the grid (sideways swipes scroll the tray; mouse drags
+  directly), dashed drop preview, auto-scroll near edges, tap a chip to
+  type a time instead. Review = prompt sheet → done goals (tickable) →
+  repeated misses → one prompt that seeds that day's journal entry
+  (`journal_entries.json`, same format as iPhone). Home shows the review
+  card after the evening time until answered. Logic in `model/planning.ts`.
+- **Record tab ported** (`screens/RecordScreen.tsx`, `NoteEditors.tsx`):
+  Journal (month-grouped list, search, calendar jump, one entry per day,
+  delete), Notebooks (goal link; deleting keeps the notes), Jots, Lists &
+  Notes (search). Classic notes stay RTF in `richTextData` (base64) so
+  they open on the iPhone; `model/rtf.ts` converts RTF ↔ paragraphs
+  (bold, italic, heading — the iPhone editor's three styles) and
+  `ui/RichTextEditor.tsx` edits them as HTML. Tested with Cocoa-style RTF.
+  The wifi-password sample jot was dropped from the web samples.
+- **Challenges ported** (`model/challenges.ts`, `screens/ChallengeSheets.tsx`,
+  catalog = the iPhone's Challenges.json copied to `web/src/model/`):
+  browse 8 templates, choose tasks, start date, strict mode; catch-up for
+  unconfirmed days (offered once per visit); strict-mode miss → restart.
+  **Riley decided restarts keep habit history** (audit item 8): the
+  challenge counts from the new day 1, earlier ticks stay.
+- **Regional:** weeks start on the region's first day (`firstWeekday()` via
+  `Intl.Locale` week info) in the month grid, weekday picker and "times per
+  week" counts.
+
+## Session 5 Oct 2026 — web port begun
+
+Riley is on Windows now and decided to move Vectis to a web app, keeping the
+Swift project untouched as a fallback. New in `web/` (React + TS + Vite):
+
+- **Model ported** (`web/src/model/`): types that match the iPhone JSON
+  exactly, defaults-tolerant decoding, goal schedule versioning, per-day
+  overrides, consistency/miss-nudge logic, recurrence, estimate-lock, overlap
+  layout, buffer awareness. 13 vitest tests cover the "don't break these"
+  mechanisms.
+- **Screens:** shell + side menu, Home, Goals (add/edit short- and long-term,
+  milestones, habits), Daily (tap to create, long-press-drag to move, swipe
+  days, zoom buttons, goal chips, task blocks), event editor (repeats, parts,
+  goal link, log actual time, delete one/all), Settings (plan & review
+  toggles, appearance, categories, hours, iPhone import, backup/restore).
+- **Audit fixes folded into the port:** blocks crossing midnight (item 4),
+  one shared `dayBlocks()` (item 7), times follow the device's 12/24h setting
+  (item 9), icon buttons have labels (item 10).
+- **Accountability (new, sidebar):** you publish a share file to your Google
+  Drive (`drive.file` scope, link-readable). The share link is the app URL
+  with `#partner=<file id>`; opening it offers to follow you. Partners are
+  listed in the sidebar; their view is read-only, built from the same model
+  code, with "‹ My Vectis" to go back. Auto-publishes ~4s after changes
+  while the Google token is fresh, else shows a dot + "Publish now". Also
+  works with a plain share file (no Google) for testing. Setup:
+  `docs/GOOGLE-SETUP.md`.
+- **Importing iPhone data:** Settings → Your data → pick the JSON files from
+  an Xcode container download. Needs a Mac once.
+
+Verified in the browser (mobile size): Home ticking/tasks, Goals, Daily
+layout, event create + weekly repeat, long-press drag writing a per-day
+override without touching the anchor, partner view and back. Google Cloud
+set up 6 Oct (keys in git-ignored `web/.env.local`, localhost origin only):
+sign-in and publishing to Drive confirmed working; the API key reads Drive.
+**Not yet verified:** following a partner on a second device (needs
+hosting), touch drag on an actual phone, iPhone import with real files.
+
+Deliberate differences from Swift: drag snaps to 15 min (was 30); zoom is
++/- buttons (no pinch); the Daily planning/review buttons and Long-Term,
+Record, People, Linked apps, Challenges are not ported yet.
+
+Next: host on GitHub Pages (needed for partners on other devices; add the
+Pages URL to the OAuth origins and API key referrers), then Long-Term, then
+planning capture + tray, evening review, Record.
+
+## Previous session (3 Oct 2026, second Claude Code session)
 
 Done:
 - Deleted the unused `tab*.imageset` assets and loose `tab_*.png` files
@@ -127,8 +247,18 @@ Still to verify on device (carried over plus new):
 | Share my day | Not built |
 | Estimate calibration (2.5) | Waiting — needs 5+ logged actuals |
 | Monthly review / recalibration (2.10, 2.11) | Waiting — needs a month of data |
+| Web app (`web/`): model, Home, Goals, Daily, event editor, Settings | Built (Oct 2026), browser-tested |
+| Accountability sharing via Google Drive + partner view (web) | Built (Oct 2026); publishing confirmed 6 Oct; cross-device needs hosting |
+| Web: Long-Term tab, wide-screen layout, GitHub Pages hosting | Built (6 Oct 2026) |
+| Web: plan and review (capture, drag tray, evening review → journal) | Built (6 Oct 2026), browser-tested |
+| Web: Record (journal, notebooks, jots, lists & notes with RTF) | Built (6 Oct 2026), browser-tested |
+| Web: challenges (restart keeps history) | Built (6 Oct 2026), browser-tested |
+| Web: People, Linked apps | Left out of the web app by Riley's decision (6 Oct 2026). Saved person/app links on goals and events are kept untouched, just not shown. |
 
 ## Decided against (don't reopen without a reason)
+
+- **People and Linked apps on the web** — left out (6 Oct 2026). They rely
+  on phone contacts and launching other apps. The Swift app keeps them.
 
 - **Temptation bundling** — weak effect without enforcement; Riley won't use it.
 - **Limit goals** ("one soda a week") — superseded by rest days.

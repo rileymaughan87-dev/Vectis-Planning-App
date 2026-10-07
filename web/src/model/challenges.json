@@ -1,0 +1,108 @@
+[
+  {
+    "id": "75hard",
+    "name": "75 Hard",
+    "tagline": "Mental toughness program: diet, two workouts, water, reading, daily photo.",
+    "description": "Created by Andy Frisella, 75 Hard is framed as a mental toughness program rather than a fitness plan. You commit to five non-negotiable tasks every single day for 75 consecutive days. There are no cheat days, no modifications, and no substitutions \u2014 missing any task on any day means starting over from Day 1.",
+    "durationDays": 75,
+    "supportsStrictMode": true,
+    "strictModeDisclaimer": "The original 75 Hard rule is: miss a single task on a single day and you restart from Day 1. Turning this on means Vectis will ask you to confirm each day and will reset your progress if you report a miss. Leave it off to track the challenge without the restart penalty.",
+    "tasks": [
+      { "title": "Follow your diet (no cheat meals, no alcohol)", "suggestedTime": null },
+      { "title": "Workout 1 (45 min)", "suggestedTime": null },
+      { "title": "Workout 2 (45 min, outdoors)", "suggestedTime": null },
+      { "title": "Drink a gallon of water", "suggestedTime": null },
+      { "title": "Read 10 pages of nonfiction", "suggestedTime": null },
+      { "title": "Take a progress photo", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "75soft",
+    "name": "75 Soft",
+    "tagline": "A more flexible version of 75 Hard, with a weekly rest day.",
+    "description": "75 Soft keeps the spirit of 75 Hard \u2014 building daily discipline over a 75-day stretch \u2014 but relaxes the rules so it's more sustainable. Alcohol is allowed on social occasions, one rest day per week is built in, and there's no restart-on-miss rule, making it a gentler entry point into structured daily challenges.",
+    "durationDays": 75,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "Eat healthy (alcohol only on social occasions)", "suggestedTime": null },
+      { "title": "Train for 45 minutes", "suggestedTime": null },
+      { "title": "Drink 3 liters of water", "suggestedTime": null },
+      { "title": "Read 10 pages", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "whole30",
+    "name": "Whole30",
+    "tagline": "Strict 30-day whole-foods diet reset.",
+    "description": "A 30-day elimination diet designed to reset eating habits. You cut out added sugar, alcohol, grains, legumes, and dairy entirely for the full 30 days, then reintroduce food groups one at a time afterward to see how your body reacts.",
+    "durationDays": 30,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "Eat Whole30-compliant meals only", "suggestedTime": null },
+      { "title": "No sugar, alcohol, grains, or dairy", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "dryjan",
+    "name": "Dry January",
+    "tagline": "A full month completely alcohol-free.",
+    "description": "A month-long break from alcohol, traditionally done in January after the holiday season. The goal is simply consistency \u2014 no drinks for the full 31 days.",
+    "durationDays": 31,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "No alcohol today", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "c25k",
+    "name": "Couch to 5K",
+    "tagline": "Structured run/walk plan building up to a 5K.",
+    "description": "A gradual training plan that alternates walking and running in increasing intervals over roughly 8 weeks, designed to take a beginner from little to no running experience to comfortably completing a 5K.",
+    "durationDays": 56,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "Follow today's run/walk session", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "100doc",
+    "name": "100 Days of Code",
+    "tagline": "Code for at least an hour, every day.",
+    "description": "A community coding challenge: commit to writing code for at least one hour a day for 100 consecutive days, tracking progress publicly to build a consistent habit.",
+    "durationDays": 100,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "Code for at least 1 hour", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "miracle",
+    "name": "The Miracle Morning",
+    "tagline": "A structured early-morning routine, every day.",
+    "description": "Based on Hal Elrod's book, this challenge is about starting each day with a deliberate routine before the day's demands take over \u2014 traditionally summarized as the SAVERS: Silence, Affirmations, Visualization, Exercise, Reading, and Scribing (journaling).",
+    "durationDays": 30,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "Wake up early", "suggestedTime": null },
+      { "title": "Morning routine (silence, affirmations, visualization, exercise, reading, scribing)", "suggestedTime": null }
+    ]
+  },
+  {
+    "id": "nospend",
+    "name": "No-Spend Challenge",
+    "tagline": "30 days avoiding all non-essential purchases.",
+    "description": "A month of spending only on essentials \u2014 rent, bills, groceries \u2014 while cutting out discretionary purchases entirely. Often used as a reset for spending habits or to jump-start savings.",
+    "durationDays": 30,
+    "supportsStrictMode": false,
+    "strictModeDisclaimer": null,
+    "tasks": [
+      { "title": "No non-essential spending today", "suggestedTime": null }
+    ]
+  }
+]
