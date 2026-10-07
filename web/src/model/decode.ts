@@ -5,45 +5,16 @@
 // An item missing something it genuinely can't do without (an event with
 // no start time) is dropped on its own rather than failing the whole file.
 
+import { bool, isObj, list, num, nums, oneOf, optNum, optStr, record, str, strs, type Raw } from '@suite/decode'
 import { ALL_DAYS, DISTANT_PAST, toISO } from './dates'
 import { newID } from './ids'
 import { decodeDoc } from './noteDoc'
 import type {
-  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, EventPart,
+  CalendarCategory, CalendarEvent, CalendarHours, EventPart,
   ChecklistItem, Goal, GoalNote, JournalEntry, Milestone, Note, Notebook, PlanReviewSettings, ScheduleVersion, VectisTask,
 } from './types'
 
-type Raw = Record<string, unknown>
-
-const isObj = (v: unknown): v is Raw => typeof v === 'object' && v !== null && !Array.isArray(v)
-const str = (v: unknown, d: string) => (typeof v === 'string' ? v : d)
-const optStr = (v: unknown) => (typeof v === 'string' ? v : undefined)
-const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d)
-const optNum = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
-const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
-const nums = (v: unknown, d: number[]) => (Array.isArray(v) ? v.filter(x => typeof x === 'number') : d)
-const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
-const oneOf = <T extends string>(v: unknown, options: readonly T[], d: T): T =>
-  (typeof v === 'string' && (options as readonly string[]).includes(v) ? (v as T) : d)
-
-function record<T>(v: unknown, pick: (x: unknown) => T | undefined): Record<string, T> {
-  const out: Record<string, T> = {}
-  if (!isObj(v)) return out
-  for (const [k, x] of Object.entries(v)) {
-    const value = pick(x)
-    if (value !== undefined) out[k] = value
-  }
-  return out
-}
-
-export function list<T>(v: unknown, decode: (x: Raw) => T | null): T[] {
-  if (!Array.isArray(v)) return []
-  return v.flatMap(x => {
-    if (!isObj(x)) return []
-    const item = decode(x)
-    return item ? [item] : []
-  })
-}
+export { list }
 
 const now = () => toISO(new Date())
 
@@ -207,17 +178,7 @@ export function decodeHours(v: unknown): CalendarHours {
   return { startHour, endHour }
 }
 
-export function decodeAppearance(v: unknown): AppearanceSettings {
-  const r = isObj(v) ? v : {}
-  return {
-    mode: oneOf(r.mode, ['light', 'dark', 'system'] as const, 'system'),
-    selectedPresetID: str(r.selectedPresetID, 'tealCoral'),
-    isCustom: bool(r.isCustom, false),
-    customPrimaryHex: str(r.customPrimaryHex, '0068B5'),
-    customSecondaryHex: str(r.customSecondaryHex, 'D2574A'),
-    customTertiaryHex: str(r.customTertiaryHex, 'C9922E'),
-  }
-}
+export { decodeAppearance } from '@suite/appearance'
 
 export function decodePlanReview(v: unknown): PlanReviewSettings {
   const r = isObj(v) ? v : {}

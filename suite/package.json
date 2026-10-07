@@ -1,0 +1,11 @@
+{
+  "name": "@vectis/suite",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Design, components and helpers shared by Planner and Finance.",
+  "dependencies": {
+    "lucide-react": "^1.52.0",
+    "react": "^19.2.8"
+  }
+}

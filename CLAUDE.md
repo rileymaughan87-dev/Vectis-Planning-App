@@ -11,6 +11,22 @@ Full history and status: `docs/HANDOFF.md` (read this at the start of any
 non-trivial task). Design rationale with research: `docs/Vectis-spec.md` — the
 status table in HANDOFF.md supersedes the spec where they disagree.
 
+## Repo layout (Oct 2026)
+
+npm workspaces — run `npm install` once at the repo root, then
+`npm test`, `npm run build`, or `npm run dev -w web` / `-w finance`.
+
+- `web/` — **Planner** web app (see below).
+- `finance/` — **Finance** web app, being ported in batches from the Swift
+  app at `rileymaughan87-dev/Finance-App` (cloned at `../Finance-App`).
+  Live at `…/Vectis-Planning-App/finance/`. Saves under `finance:` keys in
+  the iPhone app's file names.
+- `suite/` — shared design and helpers both apps import as `@suite/...`
+  (styles, `AppShell`, `MonthGrid`, components, dates, decode, storage,
+  appearance, backups). Change shared pieces here, never in one app
+  (`suite/README.md`).
+- One GitHub Pages deploy builds both (`.github/workflows/deploy-web.yml`).
+
 ## Two codebases (Oct 2026)
 
 - **`web/` — the active app.** React + TypeScript + Vite, being ported from
@@ -97,8 +113,10 @@ never the plain folder (opening the folder gives a scheme-less window).
      the web (batch 2).
    - ~~Repeating events: this day / all future days, per-day length,
      per-occurrence time logging~~ — done on the web (batch 3). The Mac
-     work is fully ported. Next: plan the Finance web app (alongside
-     Planner in this repo; check the structure with Riley first).
+     work is fully ported.
+   - Finance web app: F0 (structure, shared suite, empty app) done.
+     Next F1 entries + Calendar, F2 goals, F3 Budget, F4 weekly pot and
+     spending log. Plan in HANDOFF.md.
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Oct 2026 audit (docs/AUDIT-2026-10.md) complete. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.

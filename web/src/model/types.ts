@@ -206,16 +206,7 @@ export interface CalendarHours {
   endHour: number
 }
 
-export type ColorSchemeMode = 'light' | 'dark' | 'system'
-
-export interface AppearanceSettings {
-  mode: ColorSchemeMode
-  selectedPresetID: string
-  isCustom: boolean
-  customPrimaryHex: string
-  customSecondaryHex: string
-  customTertiaryHex: string
-}
+export type { AppearanceSettings, ColorSchemeMode } from '@suite/appearance'
 
 export interface PlanReviewSettings {
   isEnabled: boolean

@@ -6,11 +6,15 @@ The web version of Vectis (React + TypeScript + Vite). The Swift app in
 ## Run it
 
 ```
-npm install
-npm run dev        # http://localhost:5173
-npm test           # model tests (vitest)
-npm run build      # type-check + production build into dist/
+npm install            # once, from the repo root (npm workspaces)
+npm run dev -w web     # http://localhost:5173
+npm test               # all tests, from the repo root
+npm run build -w web   # type-check + production build into web/dist/
 ```
+
+Shared design and helpers live in `../suite` and are imported as
+`@suite/...`; files like `src/model/dates.ts` and `src/ui/components.tsx`
+are thin pointers to them.
 
 On a phone, open the hosted URL in Safari → Share → **Add to Home Screen**; it
 then opens full-screen like an app.

@@ -1,14 +1,13 @@
 // Settings, ported from SettingsView.swift, plus moving data in and out.
 
-import { Check, Trash2 } from 'lucide-react'
+import { AppearanceEditor } from '@suite/ui/AppearanceEditor'
+import { Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { formatMinutes } from '../model/format'
 import { newID } from '../model/ids'
-import { PALETTE_PRESETS } from '../model/sample'
-import type { ColorSchemeMode } from '../model/types'
 import { useData } from '../store/data'
 import { downloadBackup, importSwiftFiles, restoreBackup, type ImportResult } from '../sync/backup'
-import { EditorBox, Field, Segmented, Sheet, Toggle, VButton } from '../ui/components'
+import { EditorBox, Field, Sheet, Toggle, VButton } from '../ui/components'
 
 const toTime = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
@@ -52,47 +51,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
         </p>
       </EditorBox>
 
-      <EditorBox title="Display mode">
-        <Segmented<ColorSchemeMode>
-          label="Display mode"
-          value={appearance.mode}
-          onChange={mode => setAppearance({ mode })}
-          options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'System' }]}
-        />
-        <p className="help">System follows your device's own light/dark setting.</p>
-      </EditorBox>
-
-      <EditorBox title="Colour scheme">
-        {PALETTE_PRESETS.map(p => {
-          const selected = !appearance.isCustom && appearance.selectedPresetID === p.id
-          return (
-            <button key={p.id} className="row" style={{ textAlign: 'left', gap: 12 }} onClick={() => setAppearance({ selectedPresetID: p.id, isCustom: false })} aria-pressed={selected}>
-              <span className="row" style={{ gap: 4 }}>
-                {[p.primaryHex, p.secondaryHex, p.tertiaryHex].map(h => <span key={h} className="swatch" style={{ width: 18, height: 18, background: `#${h}` }} />)}
-              </span>
-              <span className="grow">
-                <div style={{ fontWeight: 500, fontSize: 14 }}>{p.name}</div>
-                <div className="caption2">{p.theory}</div>
-              </span>
-              {selected && <Check size={18} color="var(--primary)" />}
-            </button>
-          )
-        })}
-        <button className="row" style={{ gap: 12 }} onClick={() => setAppearance({ isCustom: true })} aria-pressed={appearance.isCustom}>
-          <span className="grow" style={{ textAlign: 'left', paddingLeft: 66 }}>Custom</span>
-          {appearance.isCustom && <Check size={18} color="var(--primary)" />}
-        </button>
-        {appearance.isCustom && (
-          <div className="inline-fields">
-            {([['Primary', 'customPrimaryHex'], ['Secondary', 'customSecondaryHex'], ['Tertiary', 'customTertiaryHex']] as const).map(([label, k]) => (
-              <Field key={k} label={label}>
-                <input type="color" value={`#${appearance[k].replace('#', '')}`} onChange={e => setAppearance({ [k]: e.target.value.slice(1).toUpperCase() })} style={{ height: 36, padding: 2 }} />
-              </Field>
-            ))}
-          </div>
-        )}
-        <p className="help">Warning colours (overdue, unconfirmed) always stay the same, for clarity.</p>
-      </EditorBox>
+      <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 
       <EditorBox title="Categories">
         {categories.map(c => (

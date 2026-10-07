@@ -3,7 +3,7 @@
 // Events made on the Long-Term screen (by `origin`, not `flowsToDaily` —
 // those answer different questions), plus every milestone with a date.
 
-import { addDays, isSameDay, parseDate, startOfDay, startOfWeek } from './dates'
+import { isSameDay, parseDate } from './dates'
 import { eventsOn } from './events'
 import type { CalendarCategory, CalendarEvent, Goal, Milestone } from './types'
 
@@ -42,22 +42,4 @@ export function longTermItems(
   return items
 }
 
-/**
- * The days to draw for a month: whole weeks, starting on the region's
- * first weekday, with `inMonth` false for the spill-over days.
- */
-export function monthGridDays(month: Date): { date: Date; inMonth: boolean }[] {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1)
-  const last = new Date(month.getFullYear(), month.getMonth() + 1, 0)
-  const days: { date: Date; inMonth: boolean }[] = []
-  let cursor = startOfWeek(first)
-  while (cursor <= last || days.length % 7 !== 0) {
-    days.push({ date: cursor, inMonth: cursor.getMonth() === month.getMonth() })
-    cursor = addDays(cursor, 1)
-  }
-  return days
-}
-
-export function startOfMonth(date: Date): Date {
-  return startOfDay(new Date(date.getFullYear(), date.getMonth(), 1))
-}
+export { monthGridDays, startOfMonth } from '@suite/months'
