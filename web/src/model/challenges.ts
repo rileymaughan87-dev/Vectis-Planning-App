@@ -64,7 +64,8 @@ export function startChallenge(template: ChallengeTemplate, tasks: ChallengeTask
 /**
  * Starts the challenge again from `today` and bumps the attempt count.
  * The habits keep every tick from earlier attempts — the record stays
- * truthful; only the challenge's own day count starts over.
+ * truthful — but their statistics (dots, totals, misses) count from the
+ * restart, the same as the iPhone app.
  */
 export function restartChallenge(goals: Goal[], goalID: string, today: Date = new Date()): Goal[] {
   const goal = goals.find(g => g.id === goalID)
@@ -82,7 +83,8 @@ export function restartChallenge(goals: Goal[], goalID: string, today: Date = ne
         milestones: g.milestones.map(m => ({ ...m, done: false, date: end })),
       }
     }
-    if (g.linkedToGoalID === goalID) return { ...g, endDate: end }
+    // A restart is day one for the statistics; the earlier ticks stay.
+    if (g.linkedToGoalID === goalID) return { ...g, endDate: end, statsStartDate: toISO(start) }
     return g
   })
 }

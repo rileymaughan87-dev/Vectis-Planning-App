@@ -47,8 +47,12 @@ Web port batches:
 1. **Done:** Planner name everywhere people see it (`ui/brand.ts`), blue
    `#0068B5` theme (preset ids kept), new icon (`public/icon-1024.png`,
    `favicon.svg`), no page title (wide screens drop the top bar).
-2. Next: "Remove from [day]" (`hiddenBlockDays`) + challenge stats start
-   fresh after a restart (`statsStartDate`, matching the Mac).
+2. **Done:** "Remove from [day]" — tapping a goal block opens its editor
+   with the tapped day (passed together with the goal), offering "Remove
+   from <day>" instead of Delete; adds the day to `hiddenBlockDays`; the
+   goal, its other days and its tracking stay. Challenge restarts set
+   `statsStartDate` on the habits: dots, totals, weekly counts and miss
+   counts start there (`statsFirstDayKey`); ticks before it stay saved.
 3. Then: repeating-event "this day / all future days" split,
    `durationOverrides`, per-occurrence actuals — needed before importing
    iPhone data, since the web reader would otherwise drop those fields.

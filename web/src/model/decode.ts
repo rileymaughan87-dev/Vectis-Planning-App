@@ -150,6 +150,8 @@ export function decodeGoal(r: Raw): Goal {
     scheduledTimeOverrides: record(r.scheduledTimeOverrides, x => optNum(x)),
     scheduleVersions: list(r.scheduleVersions, decodeScheduleVersion),
     currentScheduleEffectiveFrom: str(r.currentScheduleEffectiveFrom, DISTANT_PAST),
+    statsStartDate: optStr(r.statsStartDate),
+    hiddenBlockDays: strs(r.hiddenBlockDays),
   }
 }
 

@@ -48,7 +48,9 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const [dayOffset, setDayOffset] = useState(0)
   const [slot, setSlot] = useState(() => Number(localStorage.getItem('vectis:ui:slot')) || 24)
   const [editor, setEditor] = useState<EventEditorTarget | null>(null)
-  const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  // The goal and the day it was tapped on travel together, so the editor
+  // can never pair a goal with a stale day.
+  const [editingGoal, setEditingGoal] = useState<{ goal: Goal; day: Date } | null>(null)
   const [taskActionID, setTaskActionID] = useState<string | null>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -202,7 +204,10 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const openBlock = (block: DayBlock) => {
     // Opening rather than ticking: a stray tap while scrolling shouldn't
     // silently complete something. The chips above handle ticking.
-    if (block.kind === 'goal') setEditingGoal(goals.find(g => g.id === block.goalID) ?? null)
+    if (block.kind === 'goal') {
+      const goal = goals.find(g => g.id === block.goalID)
+      if (goal) setEditingGoal({ goal, day: date })
+    }
     else if (block.kind === 'task') setTaskActionID(block.taskID ?? null)
     else if (block.event) setEditor({ mode: 'edit', event: block.event })
   }
@@ -385,7 +390,7 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
         </Sheet>
       )}
       {reviewing && <EveningReview colors={colors} onClose={() => setReviewing(false)} />}
-      {editingGoal && <ShortTermGoalEditor goal={editingGoal} onClose={() => setEditingGoal(null)} />}
+      {editingGoal && <ShortTermGoalEditor goal={editingGoal.goal} openedFromDay={editingGoal.day} onClose={() => setEditingGoal(null)} />}
       {taskForAction && (
         <Sheet title="Task" compact onClose={() => setTaskActionID(null)}>
           <div style={{ textAlign: 'center', fontWeight: 600, fontSize: 17 }}>{taskForAction.text}</div>

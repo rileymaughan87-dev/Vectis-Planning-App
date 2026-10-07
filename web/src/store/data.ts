@@ -46,6 +46,8 @@ interface Actions {
   toggleMilestone(goalID: string, milestoneID: string): void
   scheduleGoalOnCalendar(goalID: string, startMinutes: number, durationMinutes: number): void
   setGoalTimeOverride(goalID: string, date: Date, startMinutes: number): void
+  /** Takes one day's block off the Daily planner; the goal and its other days stay. */
+  removeGoalBlock(goalID: string, date: Date): void
   /** A goal's length before it's on the calendar — nothing to version yet. */
   setGoalDuration(goalID: string, minutes: number): void
   // Challenges
@@ -170,6 +172,11 @@ export const useData = create<DataState & Actions>()(set => ({
         ...g,
         scheduledTimeOverrides: { ...g.scheduledTimeOverrides, [dayKey(date)]: clampStart(startMinutes, 23 * 60 + 30) },
       })),
+    })),
+
+  removeGoalBlock: (goalID, date) =>
+    set(s => ({
+      goals: mapGoal(s.goals, goalID, g => ({ ...g, hiddenBlockDays: [...new Set([...g.hiddenBlockDays, dayKey(date)])] })),
     })),
 
   setGoalDuration: (goalID, minutes) =>

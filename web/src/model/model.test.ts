@@ -240,8 +240,9 @@ describe('challenges', () => {
     goals = restartChallenge(goals, goalID, today)
     expect(goals[0].challengeAttempt).toBe(2)
     expect(dayKey(new Date(goals[0].challengeStartDate!))).toBe(dayKey(today))
-    // The earlier attempt's tick is still there.
+    // The earlier attempt's tick is still there, but statistics start fresh.
     expect(goals[1].completions[dayKey(addDays(today, -3))]).toBe(true)
+    expect(goals[1].statsStartDate).toBeDefined()
     expect(unresolvedDays(goals, goals[0], today)).toHaveLength(0)
   })
 })
@@ -279,5 +280,34 @@ describe('note documents', () => {
     expect(docToPlainText(journalDoc({ ...entry, text: 'From the review' }))).toBe('From the review')
     expect(decodeDoc({ format: 'something-else', doc })).toBeUndefined()
     expect(decodeDoc(JSON.parse(JSON.stringify(wrapDoc(doc))))?.doc).toEqual(doc)
+  })
+})
+
+describe('batch 2: removing one day, and restarts counting fresh', () => {
+  it('removes one day\'s block without touching the goal or other days', async () => {
+    const { goalBlockTimes } = await import('./goals')
+    const goal = makeGoal('Read', { createdDate: toISO(addDays(today, -5)), scheduledOnCalendar: true, hiddenBlockDays: [dayKey(today)] })
+    expect(goalBlockTimes(goal, today)).toBeNull()
+    expect(goalBlockTimes(goal, addDays(today, 1))).not.toBeNull()
+    expect(isScheduled(goal, today)).toBe(true)
+  })
+
+  it('counts statistics from a restart while keeping earlier ticks', async () => {
+    const { totalCompletions, recentRate } = await import('./goals')
+    const goal = makeGoal('Habit', { createdDate: toISO(addDays(today, -10)) })
+    for (let i = 1; i <= 6; i++) goal.completions[dayKey(addDays(today, -i))] = true
+    expect(totalCompletions(goal)).toBe(6)
+    goal.statsStartDate = toISO(addDays(today, -2))
+    expect(totalCompletions(goal)).toBe(2)
+    expect(recentRate(goal, 14, today)).toEqual({ done: 2, scheduled: 2 })
+    expect(recentHistory(goal, 14, today).filter(s => s === 'notScheduled')).toHaveLength(11)
+    expect(goal.completions[dayKey(addDays(today, -6))]).toBe(true)
+  })
+
+  it('reads the new iPhone fields, defaulting when missing', () => {
+    expect(decodeGoal({ title: 'Old' }).hiddenBlockDays).toEqual([])
+    const g = decodeGoal({ title: 'New', hiddenBlockDays: ['2026-10-07'], statsStartDate: '2026-10-01T00:00:00Z' })
+    expect(g.hiddenBlockDays).toEqual(['2026-10-07'])
+    expect(g.statsStartDate).toBe('2026-10-01T00:00:00Z')
   })
 })
