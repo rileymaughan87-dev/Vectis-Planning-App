@@ -93,9 +93,8 @@ never the plain folder (opening the folder gives a scheme-less window).
    work (Oct 2026) is now merged; port it to the web app:
    - ~~Planner name, blue theme, icon~~ — done on the web (batch 1,
      7 Oct 2026), along with no page titles (design-system.md).
-   - Daily: tapping a goal block offers "Remove from [day]" — hides that
-     day's block only (`hiddenBlockDays` on the goal); deleting a goal only
-     from the Goals page.
+   - ~~"Remove from [day]" and stats-fresh challenge restarts~~ — done on
+     the web (batch 2). Next: batch 3 (repeating-event changes).
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Oct 2026 audit (docs/AUDIT-2026-10.md) complete. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.

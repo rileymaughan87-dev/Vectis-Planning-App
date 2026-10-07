@@ -81,9 +81,15 @@ const fromTimeInput = (value: string) => {
   return h * 60 + m
 }
 
-export function ShortTermGoalEditor({ goal: original, onClose }: { goal: Goal; onClose: () => void }) {
+/**
+ * `openedFromDay` is set when a block on the Daily grid was tapped: the
+ * editor then offers removing that day's block instead of deleting the
+ * goal — deleting belongs on the Goals page.
+ */
+export function ShortTermGoalEditor({ goal: original, openedFromDay, onClose }: { goal: Goal; openedFromDay?: Date; onClose: () => void }) {
   const update = useData(s => s.updateGoal)
   const remove = useData(s => s.deleteGoal)
+  const removeBlock = useData(s => s.removeGoalBlock)
   const [goal, setGoal] = useState(original)
   const patch = (p: Partial<Goal>) => setGoal(g => ({ ...g, ...p }))
 
@@ -157,7 +163,16 @@ export function ShortTermGoalEditor({ goal: original, onClose }: { goal: Goal; o
         )}
       </EditorBox>
 
-      <VButton kind="destructive" onClick={() => { remove(goal.id); onClose() }}>Delete goal</VButton>
+      {openedFromDay ? (
+        <>
+          <VButton kind="destructive" onClick={() => { removeBlock(goal.id, openedFromDay); onClose() }}>
+            Remove from {openedFromDay.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+          </VButton>
+          <p className="help">Takes it off the calendar for this day only. The goal and its other days stay — delete the goal from the Goals page.</p>
+        </>
+      ) : (
+        <VButton kind="destructive" onClick={() => { remove(goal.id); onClose() }}>Delete goal</VButton>
+      )}
     </Sheet>
   )
 }

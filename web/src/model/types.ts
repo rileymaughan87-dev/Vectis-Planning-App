@@ -122,6 +122,13 @@ export interface Goal {
   scheduleVersions: ScheduleVersion[]
   /** When the live schedule took effect. */
   currentScheduleEffectiveFrom: ISODate
+  /**
+   * Set when a challenge restarts: statistics count from here. Earlier
+   * ticks stay in `completions`, they just aren't counted.
+   */
+  statsStartDate?: ISODate
+  /** Day keys whose calendar block was removed ("Remove from [day]"). */
+  hiddenBlockDays: string[]
 }
 
 export interface VectisTask {

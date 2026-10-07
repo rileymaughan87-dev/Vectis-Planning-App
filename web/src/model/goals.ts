@@ -40,6 +40,7 @@ export function makeGoal(title: string, overrides: Partial<Goal> = {}): Goal {
     scheduledTimeOverrides: {},
     scheduleVersions: [],
     currentScheduleEffectiveFrom: DISTANT_PAST,
+    hiddenBlockDays: [],
     ...overrides,
   }
 }
@@ -122,6 +123,18 @@ export function firstDayKey(goal: Goal): string {
   return earliest
 }
 
+/**
+ * The first day statistics count from: the goal's first day, or a
+ * challenge restart if there's been one since. A restart is a clean
+ * slate for the numbers while the record itself stays.
+ */
+export function statsFirstDayKey(goal: Goal): string {
+  const first = firstDayKey(goal)
+  if (!goal.statsStartDate) return first
+  const restart = dayKey(parseDate(goal.statsStartDate))
+  return restart > first ? restart : first
+}
+
 /** Whether the goal is due on a date. Days before it began never count. */
 export function isScheduled(goal: Goal, date: Date): boolean {
   if (dayKey(date) < firstDayKey(goal)) return false
@@ -152,8 +165,12 @@ export function isDoneOn(goal: Goal, date: Date): boolean {
 export function weeklyCompletionCount(goal: Goal, asOf: Date = new Date()): number {
   // The week starts on the region's first day, like the iPhone's Calendar.current.
   const start = startOfWeek(asOf)
+  const from = statsFirstDayKey(goal)
   let count = 0
-  for (let i = 0; i < 7; i++) if (goal.completions[dayKey(addDays(start, i))] === true) count++
+  for (let i = 0; i < 7; i++) {
+    const key = dayKey(addDays(start, i))
+    if (key >= from && goal.completions[key] === true) count++
+  }
   return count
 }
 
@@ -165,8 +182,10 @@ export function recentDates(days = 14, today: Date = new Date()): Date[] {
 
 /** Fourteen days rather than seven: one miss in seven reads as dramatic when it isn't. */
 export function recentHistory(goal: Goal, days = 14, today: Date = new Date()): GoalDayState[] {
+  const from = statsFirstDayKey(goal)
   return recentDates(days, today).map((day, i) => {
-    if (!isScheduled(goal, day)) return 'notScheduled'
+    // Before a challenge restart counts as a clean slate.
+    if (dayKey(day) < from || !isScheduled(goal, day)) return 'notScheduled'
     if (goal.completions[dayKey(day)] === true) return 'done'
     return i === days - 1 ? 'pending' : 'missed'
   })
@@ -182,18 +201,22 @@ export function recentRate(goal: Goal, days = 14, today: Date = new Date()) {
 
 /** Every time it's ever been done. Only goes up — the number a streak destroys. */
 export function totalCompletions(goal: Goal): number {
+  const from = statsFirstDayKey(goal)
   if (goal.frequencyType === 'timesPerDay') {
-    return Object.values(goal.completionCounts).reduce((a, b) => a + b, 0)
+    return Object.entries(goal.completionCounts).reduce((sum, [key, n]) => (key >= from ? sum + n : sum), 0)
   }
-  return Object.values(goal.completions).filter(Boolean).length
+  return Object.entries(goal.completions).filter(([key, done]) => key >= from && done).length
 }
 
 /** Scheduled days missed in a row, counting back from yesterday. */
 export function consecutiveMisses(goal: Goal, today: Date = new Date()): number {
   const t = startOfDay(today)
+  const from = statsFirstDayKey(goal)
   let count = 0
   for (let offset = 1; offset <= 60; offset++) {
     const day = addDays(t, -offset)
+    // A challenge restart is a clean slate: stop counting there.
+    if (dayKey(day) < from) break
     if (!isScheduled(goal, day)) continue
     if (goal.completions[dayKey(day)] === true) break
     count++
@@ -235,6 +258,8 @@ export function challengeDay(goal: Goal, date: Date = new Date()): number | null
 /** The start and end of this goal's calendar block on a day, if it has one. */
 export function goalBlockTimes(goal: Goal, date: Date): { start: Date; end: Date } | null {
   if (!goal.scheduledOnCalendar || !isScheduled(goal, date)) return null
+  // Removed from this one day; the goal and its other days are untouched.
+  if (goal.hiddenBlockDays.includes(dayKey(date))) return null
   const resolved = scheduleOn(goal, date)
   const startMinutes = goal.scheduledTimeOverrides[dayKey(date)] ?? resolved.startMinutes
   const start = atMinutes(date, startMinutes)
