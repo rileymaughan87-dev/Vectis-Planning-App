@@ -1,9 +1,12 @@
 // Moving data in and out: importing the iPhone app's save files, and a
-// one-file backup of everything stored here.
+// one-file backup of everything stored here — note pictures included
+// (they live in IndexedDB, so they're added as base64).
 
 import {
   decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview, decodeTask, list,
 } from '../model/decode'
+import { attachmentIDs } from '../model/noteDoc'
+import { exportAttachments, importAttachments, removeUnused } from '../store/attachments'
 import { useData, type DataState } from '../store/data'
 import { Filename, allEntries, saveRaw } from '../store/persist'
 
@@ -51,8 +54,14 @@ export async function importSwiftFiles(files: File[]): Promise<ImportResult> {
   return result
 }
 
-export function downloadBackup() {
-  const body = JSON.stringify({ format: 'vectis-backup', version: 1, savedAt: new Date().toISOString(), entries: allEntries() }, null, 2)
+export async function downloadBackup() {
+  let attachments = {}
+  try {
+    attachments = await exportAttachments()
+  } catch {
+    // No picture store in this browser; the rest still backs up.
+  }
+  const body = JSON.stringify({ format: 'vectis-backup', version: 1, savedAt: new Date().toISOString(), entries: allEntries(), attachments }, null, 2)
   downloadJSON(body, `vectis-backup-${new Date().toISOString().slice(0, 10)}.json`)
 }
 
@@ -65,7 +74,23 @@ export async function restoreBackup(file: File) {
   for (const [name, text] of Object.entries(parsed.entries as Record<string, string>)) {
     saveRaw(name, JSON.parse(text))
   }
+  // Older backups have no pictures; newer ones bring them back.
+  if (parsed.attachments && typeof parsed.attachments === 'object') await importAttachments(parsed.attachments)
   location.reload()
+}
+
+/** Every picture a note or journal entry still uses. */
+export function attachmentsInUse(): Set<string> {
+  const { notes, journal } = useData.getState()
+  const ids = new Set<string>()
+  for (const n of notes) if (n.body) for (const id of attachmentIDs(n.body.doc)) ids.add(id)
+  for (const j of journal) if (j.body) for (const id of attachmentIDs(j.body.doc)) ids.add(id)
+  return ids
+}
+
+/** Clears out pictures nothing uses any more; run quietly a little after start-up. */
+export function tidyAttachments() {
+  removeUnused(attachmentsInUse()).catch(() => {})
 }
 
 export function downloadJSON(text: string, name: string) {

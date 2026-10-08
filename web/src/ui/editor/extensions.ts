@@ -12,6 +12,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { evaluateLines } from '../../model/math'
+import { Attachment } from './attachment'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -200,6 +201,7 @@ export function editorExtensions(placeholder: string, math = true) {
     Placeholder.configure({ placeholder }),
     FoldableSections,
     MathResults.configure({ enabled: math }),
+    Attachment,
   ]
 }
 

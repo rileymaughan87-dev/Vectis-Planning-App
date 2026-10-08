@@ -176,6 +176,51 @@
 
 .note-doc p { margin: 0; }
 
+/* ---------- Pictures in notes ---------- */
+.note-attachment { position: relative; margin: 8px 0; border-radius: var(--radius-small); }
+
+.note-attachment img { display: block; max-width: 100%; max-height: 70vh; width: auto; height: auto; border-radius: var(--radius-small); background: var(--fill); }
+
+.note-attachment.is-drawing img { background: #FFFFFF; border: 0.5px solid var(--separator); }
+
+.note-attachment.is-selected img { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+.attachment-actions { display: none; position: absolute; top: 8px; right: 8px; gap: 6px; }
+
+.note-attachment.is-selected .attachment-actions { display: flex; }
+
+.attachment-actions button {
+  background: var(--surface); color: var(--primary); font-size: 13px; font-weight: 600;
+  padding: 6px 10px; border-radius: var(--radius-small); box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.attachment-actions button:last-child { color: var(--danger); }
+
+.attachment-missing { padding: 16px; font-size: 13px; color: var(--text-2); background: var(--fill); border-radius: var(--radius-small); }
+
+.scan-box { position: relative; width: 100%; max-height: 60vh; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.scan-box img, .scan-box svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.scan-box polygon { fill: color-mix(in srgb, var(--primary) 18%, transparent); stroke: var(--primary); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+
+.scan-handle {
+  position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 35%, transparent); border: 2px solid var(--primary); touch-action: none;
+}
+
+.draw-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.draw-tools .pen, .draw-tools .pen-size { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--radius-small); }
+
+.draw-tools .pen span { width: 20px; height: 20px; border-radius: 50%; }
+
+.draw-tools .pen-size span { border-radius: 50%; background: var(--text); }
+
+.draw-tools [aria-pressed='true'] { background: var(--fill); box-shadow: inset 0 0 0 1.5px var(--primary); }
+
+.draw-canvas { width: 100%; height: auto; max-height: 65vh; object-fit: contain; touch-action: none; border-radius: var(--radius-small); border: 0.5px solid var(--separator); background: #FFFFFF; }
+
 /* A maths answer after "=": the accent colour on a soft tint, so it reads as the app's, not typed text. */
 .has-math-result::after {
   content: attr(data-math-result);
