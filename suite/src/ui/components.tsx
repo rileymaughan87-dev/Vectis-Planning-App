@@ -193,13 +193,25 @@ export function Sheet(props: {
   const titleID = useId()
   const ref = useRef<HTMLDivElement>(null)
   const { onClose } = props
+  // Read through a ref so the effect below runs once, on opening. Callers
+  // often pass a fresh `() => ...` each render; re-running on that pulled
+  // focus out of whatever box you were typing in after every keystroke.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      // Only the sheet on top closes, when one opens over another.
+      const sheets = document.querySelectorAll('.sheet')
+      if (sheets[sheets.length - 1] === ref.current) onCloseRef.current()
+    }
     document.addEventListener('keydown', onKey)
     ref.current?.focus()
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [])
 
   return (
     <div className="sheet-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>

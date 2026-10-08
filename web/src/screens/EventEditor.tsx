@@ -298,13 +298,13 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
       )}
 
       {askScope && (
-        <div className="editor-box scope-box" style={accentStyle(accent)} role="group" aria-label="Which days to change">
-          <strong>This is a repeating event</strong>
-          <p className="help">Change the time for this day only, or for this and all future days? Earlier days keep the times they had.</p>
+        // Pops up over the editor rather than appearing at the bottom of
+        // it, where it was easy to miss after tapping Save.
+        <Sheet title="Repeating event" compact onClose={() => setAskScope(false)} leftLabel="Back">
+          <p className="help" style={{ textAlign: 'center' }}>Change the time for this day only, or for this and all future days? Earlier days keep the times they had.</p>
           <VButton kind="primary" accent={accent} onClick={() => save('thisDay')}>This day only</VButton>
           <VButton accent={accent} onClick={() => save('future')}>This and all future days</VButton>
-          <button className="text-button" onClick={() => setAskScope(false)}>Keep editing</button>
-        </div>
+        </Sheet>
       )}
 
       {original && !confirmDelete && (
