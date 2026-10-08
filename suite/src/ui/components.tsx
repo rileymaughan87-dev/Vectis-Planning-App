@@ -209,7 +209,8 @@ export function Sheet(props: {
       if (sheets[sheets.length - 1] === ref.current) onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
-    ref.current?.focus()
+    // Move focus into the sheet, unless a box in it already took it with autoFocus.
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
