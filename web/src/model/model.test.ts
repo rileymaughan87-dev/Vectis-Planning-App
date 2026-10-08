@@ -251,7 +251,7 @@ describe('note documents', () => {
   it('opens old notes of every type without losing content', async () => {
     const { noteDoc, docToPlainText } = await import('./noteDoc')
     const { base64FromRtf, paragraphsToRtf } = await import('./rtf')
-    const base = { id: 'N', title: '', jotText: '', checklistItems: [], updatedDate: toISO(today) }
+    const base = { id: 'N', title: '', jotText: '', checklistItems: [], mathResults: true, updatedDate: toISO(today) }
     const jot = noteDoc({ ...base, type: 'jot', jotText: 'line one\nline two' })
     expect(docToPlainText(jot)).toBe('line one\nline two')
 
@@ -273,7 +273,7 @@ describe('note documents', () => {
   it('prefers the saved document, and journal text when the two disagree', async () => {
     const { noteDoc, journalDoc, textToDoc, wrapDoc, docToPlainText, decodeDoc } = await import('./noteDoc')
     const doc = textToDoc('Saved version')
-    expect(noteDoc({ id: 'N', type: 'jot', title: '', jotText: 'old', checklistItems: [], updatedDate: '', body: wrapDoc(doc) })).toBe(doc)
+    expect(noteDoc({ id: 'N', type: 'jot', title: '', jotText: 'old', checklistItems: [], mathResults: true, updatedDate: '', body: wrapDoc(doc) })).toBe(doc)
     const entry = { id: 'J', date: toISO(today), text: 'Saved version', body: wrapDoc(doc) }
     expect(journalDoc(entry)).toBe(doc)
     // The evening review rewrote the text: the stale document is ignored.

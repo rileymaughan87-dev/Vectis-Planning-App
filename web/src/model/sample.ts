@@ -72,7 +72,7 @@ export function sampleEvents(categories: CalendarCategory[]): CalendarEvent[] {
 export function sampleNotes(): Note[] {
   const now = toISO(new Date())
   const note = (fields: Partial<Note> & Pick<Note, 'type'>): Note => ({
-    id: newID(), title: '', jotText: '', checklistItems: [], updatedDate: now, ...fields,
+    id: newID(), title: '', jotText: '', checklistItems: [], mathResults: true, updatedDate: now, ...fields,
   })
   const body = (text: string, style: { bold?: boolean; italic?: boolean } = {}) =>
     ({ text, bold: Boolean(style.bold), italic: Boolean(style.italic), heading: false })

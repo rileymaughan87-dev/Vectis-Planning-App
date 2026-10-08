@@ -139,7 +139,7 @@ is separate from a home-screen web app).
   the quick route. 7 more tests (33 Finance).
 - **The Finance port is complete (F0–F4).** Riley re-enters data by hand.
 
-## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
+## Note editor upgrade (7 Oct 2026) — Stages 1 and 2 of 3 done
 
 Brief: an Apple Notes / Math Notes–style editor in Vectis's own style, as
 one component for notes and journal entries, built in stages with Riley
@@ -168,9 +168,25 @@ machine — styling follows `web/src/index.css`.
   rewrites `text`, the stale `body` is ignored (formatting lost for that
   entry — acceptable edge). The old `ui/RichTextEditor.tsx` is gone;
   `model/rtf.ts` stays for importing iPhone notes.
-- **Next: Stage 2 (math)** — own safe parser, variables, unit table,
-  per-note toggle. Then Stage 3 (attachments in IndexedDB). Ask Riley
-  before graphs, currency, tables, audio.
+- **Stage 2 (done, 8 Oct): maths.** `model/math.ts` — a hand-written
+  tokenizer + recursive-descent evaluator (never throws, never runs user
+  text; caps: 300 chars, 120 tokens, depth 30, finite results). A line
+  ending in "=" shows its answer (the longest maths at the end of the
+  line, so "Total: rent * 12 =" works; a bare number doesn't count);
+  "name = expr" sets a variable (case-insensitive) for the lines below;
+  `+ − × ÷ ^ %` ("80 + 10%", "20% of 50"), brackets, sqrt/abs/round/
+  floor/ceil, pi; units with "in/to/as" (length, mass, volume incl. US
+  and "uk" pints/gallons, time, speed, temperature, data, area; no bare
+  "k"/"b" so "5k" isn't kelvin); £ $ € kept on answers but never
+  converted (live rates — ask Riley first). Shown by the editor's
+  `MathResults` extension as a **node decoration + CSS ::after**
+  (`data-math-result`) — a widget element next to the cursor made Chrome
+  insert a real hardBreak into the doc. Answers are never saved; code
+  blocks are skipped. Per-note `mathResults` (default true, decoded with a
+  default) toggled under "Links and options" (jots get "Options"); journal
+  entries always have maths on. 10 tests.
+- **Next: Stage 3 (attachments in IndexedDB).** Ask Riley before graphs,
+  currency, tables, audio.
 
 ## Session 6 Oct 2026 — hosting, Long-Term, wide screens
 
