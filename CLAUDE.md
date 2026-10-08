@@ -98,6 +98,9 @@ never the plain folder (opening the folder gives a scheme-less window).
   missing field (same rule as the Swift hand-written Codable).
 - `dayBlocks()` is the single answer to "what's on a day" — Daily, Home,
   buffer awareness and the partner view all use it.
+- Sync between devices (Firebase, opt-in in Settings) mirrors `useData`
+  slices as per-item records (`sync/records.ts`, `sync/engine.ts`); the
+  engine is lazy-loaded. New synced data must be added to `SYNCED`.
 - The share file (`sync/shareFile.ts`) carries goals and calendar only;
   journal, notes and people never leave the device.
 - Notes and journal entries edit in one TipTap editor (`ui/editor/`);

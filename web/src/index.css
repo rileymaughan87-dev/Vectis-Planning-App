@@ -396,3 +396,13 @@
 }
 
 .editor-loading { color: var(--text-3); }
+
+/* ---------- Sync ---------- */
+.sync-choice { display: grid; gap: 8px; }
+
+.sync-choice button {
+  display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px;
+  border-radius: var(--radius-small); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); background: var(--surface);
+}
+
+.sync-choice button:hover { background: var(--surface-3); }
