@@ -64,6 +64,42 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Sync between devices (8 Oct 2026) — Stage 1 of 3 built, awaiting Riley's first sign-in
+
+Riley chose Firebase (over a Drive sync file, whose hourly GIS token
+would mean re-signing in on the phone). Project `planner-sync`,
+Firestore in London (europe-west2), Google sign-in on, rules restrict
+`users/{uid}/**` to that signed-in user. Config: one JSON line
+`VITE_FIREBASE_CONFIG` in `web/.env.local` and the same GitHub secret
+(passed to the web build). `rileymaughan87-dev.github.io` must be in
+Authentication → Settings → Authorized domains for the live site.
+
+- **Stage 1 (built): Planner data.** `sync/records.ts` (pure, 8 tests):
+  every goal/event/category/task/journal entry/note/notebook is one
+  record `users/{uid}/planner/{file__id}` `{file, id, index, json,
+  deleted, device, updatedAt}`; hours/appearance/plan-review are one
+  record each. JSON-as-text so any shape fits; tombstones for deletes;
+  `index` keeps list order. `sync/engine.ts` (lazy chunk, ~190 KB gz,
+  only loaded once signed in): `initializeAuth` with IndexedDB
+  persistence (stays signed in), `signInWithPopup` → redirect fallback;
+  Firestore persistent cache (offline writes queue). On a device's
+  first sync: cloud empty → upload; this device empty → take cloud;
+  both have data → Settings asks which to keep and sets the other aside
+  in localStorage (`vectis:before-sync` / `vectis:cloud-before-sync`).
+  Then live: local changes push 600 ms after they stop (diff against
+  what the cloud is known to hold), remote changes pull via onSnapshot
+  and go through the normal decoders into `useData.replace`. A device
+  already syncing (`vectis:sync:user`) reconnects on open; slices edited
+  before the engine attached (`vectis:sync:pending`) win over the cloud.
+  UI: "Sync between devices" at the top of Settings (status, sign-in,
+  first-time choice, stop syncing). Same item edited on two devices at
+  once: last save wins. **Not yet tested with a real sign-in** — no
+  Java here for the Firebase emulators, and the first sign-in should be
+  on the device with Riley's real data.
+- **Next:** Stage 2 Finance data (finance needs the config too), Stage 3
+  note pictures (Firestore docs; Firebase Storage may need a card).
+  Accountability partners/share settings aren't synced.
+
 ## Finance web app (7 Oct 2026) — F0 done
 
 Riley approved: Finance lives alongside Planner in this repo (npm
