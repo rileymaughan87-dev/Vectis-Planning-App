@@ -18,8 +18,18 @@ import { EveningReview } from './EveningReview'
 export function useNow(intervalMs = 30_000) {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs)
-    return () => clearInterval(id)
+    const tick = () => setNow(new Date())
+    const id = setInterval(tick, intervalMs)
+    // A phone pauses timers while the app is in the background, so catch
+    // up the moment it comes back (otherwise "Today" can be yesterday).
+    const onVisible = () => document.visibilityState === 'visible' && tick()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('pageshow', tick)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('pageshow', tick)
+    }
   }, [intervalMs])
   return now
 }

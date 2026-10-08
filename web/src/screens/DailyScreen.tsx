@@ -6,7 +6,7 @@
 // grid to change day.
 
 import { CheckCircle2, ChevronLeft, ChevronRight, Circle, Minus, Plus, Target } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
 import { addDays, addMinutes, dayKey, isSameDay, startOfDay } from '../model/dates'
 import { dayBlocks, layoutBlocks, minutesIntoDay, type DayBlock } from '../model/dayBlocks'
 import { contrastingText, darkened, formatDayHeading, formatMinutes, formatTime, withAlpha } from '../model/format'
@@ -63,7 +63,8 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const [reviewing, setReviewing] = useState(false)
   const [preview, setPreview] = useState<DropPreview | null>(null)
 
-  const date = useMemo(() => addDays(startOfDay(new Date()), dayOffset), [dayOffset])
+  // Follows the clock, so a grid left open overnight moves on to the new day.
+  const date = addDays(startOfDay(now), dayOffset)
   const startMin = hours.startHour * 60
   const endMin = hours.endHour * 60
   const totalSlots = Math.max((hours.endHour - hours.startHour) * 2, 1)
@@ -93,6 +94,18 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const laidOut = layoutBlocks(blocks)
   const stripGoals = goals.filter(g => g.kind === 'shortTerm' && !g.linkedToGoalID && isScheduled(g, date))
   const key = dayKey(date)
+
+  // Open each day where it matters: the current time today, otherwise the
+  // first thing on the day, with a little room above. Only when the day
+  // changes, so it never fights you while you scroll.
+  const openAt = isSameDay(now, date) ? minutesIntoDay(now, date) : blocks.length ? minutesIntoDay(blocks[0].start, date) : null
+  const openAtTop = openAt === null ? null : Math.max(((openAt - 60 - startMin) / 30) * slot, 0)
+  const scrolledFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (scrolledFor.current === key || !scrollRef.current) return
+    scrolledFor.current = key
+    if (openAtTop !== null) scrollRef.current.scrollTop = openAtTop
+  }, [key, openAtTop])
 
   const minutesFromY = (clientY: number) => {
     const rect = gridRef.current!.getBoundingClientRect()
@@ -139,6 +152,8 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
         // Pointer already gone.
       }
       updateDrag({ ...dragRef.current, armed: true })
+      // This touch is a drag now, never a swipe to another day.
+      swipeRef.current = null
       navigator.vibrate?.(10)
     }, LONG_PRESS_MS)
     updateDrag(state)
@@ -226,7 +241,7 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const onTouchEnd = (e: ReactTouchEvent) => {
     const s = swipeRef.current
     swipeRef.current = null
-    if (!s || dragRef.current?.armed) return
+    if (!s || e.touches.length > 0 || dragRef.current?.armed) return
     const dx = e.changedTouches[0].clientX - s.x
     const dy = e.changedTouches[0].clientY - s.y
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) setDayOffset(o => o + (dx < 0 ? 1 : -1))
