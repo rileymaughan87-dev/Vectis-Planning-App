@@ -139,7 +139,7 @@ is separate from a home-screen web app).
   the quick route. 7 more tests (33 Finance).
 - **The Finance port is complete (F0–F4).** Riley re-enters data by hand.
 
-## Note editor upgrade (7 Oct 2026) — Stages 1 and 2 of 3 done
+## Note editor upgrade (7–8 Oct 2026) — all three stages done
 
 Brief: an Apple Notes / Math Notes–style editor in Vectis's own style, as
 one component for notes and journal entries, built in stages with Riley
@@ -185,7 +185,29 @@ machine — styling follows `web/src/index.css`.
   blocks are skipped. Per-note `mathResults` (default true, decoded with a
   default) toggled under "Links and options" (jots get "Options"); journal
   entries always have maths on. 10 tests.
-- **Next: Stage 3 (attachments in IndexedDB).** Ask Riley before graphs,
+- **Stage 3 (done, 8 Oct): pictures.** Toolbar insert group: Photo from
+  library, Take a photo (`capture="environment"`), Scan a page, Drawing.
+  `ui/editor/attachment.ts`: an atom block node `attachment {id, kind:
+  photo|scan|drawing, width, height}`; the blob lives in IndexedDB
+  (`store/attachments.ts`, db `vectis-attachments`), shown via cached
+  object URLs; selected → "Mark up" / "Remove". Photos are decoded the
+  right way up (`imageOrientation: 'from-image'`), shrunk to 2000px and
+  saved as JPEG 0.85 (`ui/editor/images.ts`). **Scan** (Riley chose
+  "photo + clean-up"): drag four corners, `model/scan.ts` solves the
+  homography and flattens with bilinear sampling; looks: black & white
+  (Bradley adaptive threshold — copes with shadows), greyscale
+  (auto-levels), colour; turn 90°. **Drawing** pad (`DrawingSheet`):
+  pens (black, blue, red, highlighter) × three sizes, undo stroke,
+  clear; on a white page (PNG) or over a picture for markup (JPEG,
+  replaces the picture's id). Backups now include pictures as base64
+  (`attachments` key; restore puts them back; older backups still
+  restore). `tidyAttachments()` (8s after start) deletes blobs no note or
+  journal entry references, keeping anything under a day old so undo
+  still works. Asks the browser for persistent storage on first save.
+  Known edge: if the evening review rewrites a journal entry's text, its
+  stale body (and pictures) is ignored, and the pictures are tidied a day
+  later. 5 scan tests.
+- **The brief's three stages are done.** Ask Riley before graphs,
   currency, tables, audio.
 
 ## Session 6 Oct 2026 — hosting, Long-Term, wide screens

@@ -128,10 +128,21 @@ export function docToPlainText(doc: DocNode): string {
 
 export function isDocEmpty(doc: DocNode): boolean {
   if (docToPlainText(doc).trim()) return false
-  // A lone checkbox or divider still counts as something.
+  // A lone checkbox, divider or picture still counts as something.
   const hasStructure = (n: DocNode): boolean =>
-    n.type === 'horizontalRule' || n.type === 'taskItem' || (n.content ?? []).some(hasStructure)
+    n.type === 'horizontalRule' || n.type === 'taskItem' || n.type === 'attachment' || (n.content ?? []).some(hasStructure)
   return !hasStructure(doc)
+}
+
+/** The pictures a document uses (their ids in store/attachments). */
+export function attachmentIDs(doc: DocNode): string[] {
+  const ids: string[] = []
+  const walk = (n: DocNode) => {
+    if (n.type === 'attachment' && typeof n.attrs?.id === 'string') ids.push(n.attrs.id)
+    for (const child of n.content ?? []) walk(child)
+  }
+  walk(doc)
+  return ids
 }
 
 /** Plain text of a note, whichever form its content is in. */

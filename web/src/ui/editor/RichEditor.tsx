@@ -3,14 +3,24 @@
 //
 // On a phone the toolbar rides just above the on-screen keyboard while
 // you're typing. On a computer it sits at the top of the editor.
+//
+// Pictures: a photo from the library or camera, a scanned page, or a
+// drawing, each kept on the device (store/attachments.ts) with only its
+// id in the note.
 
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import {
-  Bold, ChevronsDownUp, ChevronsUpDown, Highlighter, Italic, KeyboardOff, List, ListChecks, ListIndentDecrease,
-  ListIndentIncrease, ListOrdered, Redo2, SeparatorHorizontal, Strikethrough, Underline, Undo2,
+  Bold, Camera, ChevronsDownUp, ChevronsUpDown, Highlighter, Image as ImageIcon, Italic, KeyboardOff, List, ListChecks, ListIndentDecrease,
+  ListIndentIncrease, ListOrdered, Pencil, Redo2, ScanLine, SeparatorHorizontal, Strikethrough, Underline, Undo2,
 } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react'
+import { newID } from '../../model/ids'
 import type { DocNode } from '../../model/noteDoc'
+import { loadAttachment, saveAttachment } from '../../store/attachments'
+import { MARKUP_EVENT, type AttachmentAttrs, type AttachmentKind, type MarkupDetail } from './attachment'
+import { DrawingSheet } from './DrawingSheet'
+import { decode, preparePhoto, type Picture } from './images'
+import { ScanSheet } from './ScanSheet'
 import { PARAGRAPH_STYLES, applyStyle, canIndent, currentStyle, editorExtensions, indent, mathKey } from './extensions'
 
 export function RichEditor(props: {
@@ -34,18 +44,128 @@ export function RichEditor(props: {
     onUpdate: ({ editor }) => onChange(editor.getJSON() as DocNode),
   })
 
+  const rootRef = useRef<HTMLDivElement>(null)
+  const pictures = usePictures(editor, rootRef)
+
   // Turning maths on or off redraws the answers without touching the text or the undo history.
   useEffect(() => {
-    if (mathKey.getState(editor.state)?.enabled === math) return
+    if (!editor.isInitialized || mathKey.getState(editor.state)?.enabled === math) return
     editor.view.dispatch(editor.state.tr.setMeta(mathKey, math).setMeta('addToHistory', false))
   }, [editor, math])
 
   return (
-    <div className="rich-note">
-      <EditorToolbar editor={editor} />
+    <div className="rich-note" ref={rootRef}>
+      <EditorToolbar editor={editor} pictures={pictures} />
       <EditorContent editor={editor} />
+      {pictures.elements}
     </div>
   )
+}
+
+// MARK: - Pictures
+
+type Pictures = ReturnType<typeof usePictures>
+
+function usePictures(editor: Editor, rootRef: RefObject<HTMLDivElement | null>) {
+  const libraryRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const scanRef = useRef<HTMLInputElement>(null)
+  // Where to put it: the cursor when the button was pressed (choosing a file takes focus away).
+  const insertAt = useRef(0)
+  const [scanning, setScanning] = useState<ImageBitmap | null>(null)
+  const [drawing, setDrawing] = useState<{ background?: ImageBitmap; markup?: MarkupDetail } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const remember = () => { insertAt.current = editor.state.selection.to }
+
+  const insert = async (picture: Picture, kind: AttachmentKind) => {
+    const id = newID()
+    await saveAttachment(id, picture.blob)
+    const attrs: AttachmentAttrs = { id, kind, width: picture.width, height: picture.height }
+    const at = Math.min(insertAt.current, editor.state.doc.content.size)
+    editor.chain().focus().insertContentAt(at, { type: 'attachment', attrs }).run()
+    // Always somewhere to keep typing after a picture at the very end.
+    if (editor.state.doc.lastChild?.type.name === 'attachment') {
+      editor.chain().insertContentAt(editor.state.doc.content.size, { type: 'paragraph' }).run()
+    }
+    insertAt.current = editor.state.selection.to
+  }
+
+  const guard = async (f: () => Promise<void>) => {
+    setError(null)
+    try {
+      await f()
+    } catch {
+      setError("That picture couldn't be added. Try another, or a smaller one.")
+    }
+  }
+
+  // "Mark up" on a picture in the note opens the drawing pad over it. Listened
+  // for on our own wrapper: the editor's view may not be mounted yet here.
+  useEffect(() => {
+    const dom = rootRef.current
+    if (!dom) return
+    const onMarkup = (e: Event) => {
+      const detail = (e as CustomEvent<MarkupDetail>).detail
+      void guard(async () => {
+        const stored = await loadAttachment(detail.attrs.id)
+        if (!stored) throw new Error('missing')
+        setDrawing({ background: await decode(stored.blob), markup: detail })
+      })
+    }
+    dom.addEventListener(MARKUP_EVENT, onMarkup)
+    return () => dom.removeEventListener(MARKUP_EVENT, onMarkup)
+  }, [rootRef])
+
+  const finishDrawing = (picture: Picture) => {
+    const markup = drawing?.markup
+    setDrawing(null)
+    void guard(async () => {
+      if (!markup) return insert(picture, 'drawing')
+      // Marked up: the picture is replaced by the marked-up copy (the original is tidied away later).
+      const id = newID()
+      await saveAttachment(id, picture.blob)
+      const node = editor.state.doc.nodeAt(markup.pos)
+      if (node?.type.name !== 'attachment') return insert(picture, markup.attrs.kind)
+      editor.view.dispatch(editor.state.tr.setNodeMarkup(markup.pos, undefined, { ...node.attrs, id, width: picture.width, height: picture.height }))
+    })
+  }
+
+  const files = (e: ChangeEvent<HTMLInputElement>, onFile: (f: File) => Promise<void>) => {
+    const list = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    void guard(async () => {
+      for (const f of list) await onFile(f)
+    })
+  }
+
+  const elements = (
+    <>
+      <input ref={libraryRef} type="file" accept="image/*" multiple className="visually-hidden" tabIndex={-1} aria-hidden="true"
+        onChange={e => files(e, async f => insert(await preparePhoto(f), 'photo'))} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="visually-hidden" tabIndex={-1} aria-hidden="true"
+        onChange={e => files(e, async f => insert(await preparePhoto(f), 'photo'))} />
+      <input ref={scanRef} type="file" accept="image/*" capture="environment" className="visually-hidden" tabIndex={-1} aria-hidden="true"
+        onChange={e => files(e, async f => setScanning(await decode(f)))} />
+      {error && <div className="notice error" role="alert">{error}</div>}
+      {scanning && (
+        <ScanSheet
+          photo={scanning}
+          onClose={() => setScanning(null)}
+          onDone={p => { setScanning(null); void guard(() => insert(p, 'scan')) }}
+        />
+      )}
+      {drawing && <DrawingSheet background={drawing.background} onClose={() => setDrawing(null)} onDone={finishDrawing} />}
+    </>
+  )
+
+  return {
+    elements,
+    pickPhoto: () => { remember(); libraryRef.current?.click() },
+    takePhoto: () => { remember(); cameraRef.current?.click() },
+    scan: () => { remember(); scanRef.current?.click() },
+    draw: () => { remember(); setDrawing({}) },
+  }
 }
 
 // MARK: - Toolbar
@@ -75,7 +195,7 @@ function useKeyboardInset(active: boolean) {
   return inset
 }
 
-function EditorToolbar({ editor }: { editor: Editor }) {
+function EditorToolbar({ editor, pictures }: { editor: Editor; pictures: Pictures }) {
   const touch = useIsTouch()
   const s = useEditorState({
     editor,
@@ -162,7 +282,14 @@ function EditorToolbar({ editor }: { editor: Editor }) {
       </Tool>
     ),
     insert: (
-      <Tool label="Divider" onPress={run(() => chain().setHorizontalRule().run())}><SeparatorHorizontal size={17} /></Tool>
+      <>
+        {/* These open the photo picker or camera, which needs a real tap (click), not mousedown. */}
+        <Tool label="Photo from library" click onPress={() => pictures.pickPhoto()}><ImageIcon size={17} /></Tool>
+        <Tool label="Take a photo" click onPress={() => pictures.takePhoto()}><Camera size={17} /></Tool>
+        <Tool label="Scan a page" click onPress={() => pictures.scan()}><ScanLine size={17} /></Tool>
+        <Tool label="Drawing" click onPress={() => pictures.draw()}><Pencil size={17} /></Tool>
+        <Tool label="Divider" onPress={run(() => chain().setHorizontalRule().run())}><SeparatorHorizontal size={17} /></Tool>
+      </>
     ),
   }
 
@@ -201,6 +328,8 @@ function Tool(props: {
   active?: boolean
   disabled?: boolean
   wide?: boolean
+  /** Act on click rather than mousedown (for buttons that open a picker). */
+  click?: boolean
   onPress: (e: { preventDefault: () => void }) => void
   children: ReactNode
 }) {
@@ -214,7 +343,8 @@ function Tool(props: {
       disabled={props.disabled}
       // mousedown, not click: a click would take focus from the editor
       // first, and on a phone that drops the keyboard.
-      onMouseDown={props.onPress}
+      onMouseDown={props.click ? e => e.preventDefault() : props.onPress}
+      onClick={props.click ? props.onPress : undefined}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && props.onPress(e)}
     >
       {props.children}

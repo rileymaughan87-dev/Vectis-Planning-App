@@ -109,7 +109,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
           </div>
         )}
         <div className="button-row">
-          <VButton onClick={downloadBackup}>Download backup</VButton>
+          <VButton onClick={() => void downloadBackup()}>Download backup</VButton>
           <VButton onClick={() => restoreRef.current?.click()}>Restore backup…</VButton>
         </div>
         <input
@@ -127,7 +127,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
           }}
         />
         {error && <div className="notice error">{error}</div>}
-        <p className="help">Your data lives in this browser on this device. A backup is the way to move it to another device or keep a copy.</p>
+        <p className="help">Your data lives in this browser on this device. A backup is the way to move it to another device or keep a copy; it includes the pictures in your notes, so it can be large.</p>
       </EditorBox>
     </Sheet>
   )
