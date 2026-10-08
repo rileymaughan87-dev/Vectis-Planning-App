@@ -13,6 +13,13 @@
 import { dayKey } from '@suite/dates'
 import { lineItemsInMonth, occurrencesInMonth, type FinanceEvent } from './entries'
 import { goalPaymentsInMonth, type FinanceGoal } from './goals'
+import { flexibleForMonth, type SpendingEntry, type SpendingPot } from './spending'
+
+/** Logged spending and the weekly pot, when there are any. */
+export interface Spending {
+  entries: SpendingEntry[]
+  pot: SpendingPot
+}
 
 export interface MonthSummary {
   month: Date
@@ -24,6 +31,8 @@ export interface MonthSummary {
   goalSavings: number
   /** How much of this month is still an unconfirmed estimate. */
   estimated: number
+  /** The weekly pot's share of days still to come — part of `flexible`, but a plan. */
+  flexiblePlanned: number
   spending: number
   /** Income minus spending: the most this month could put towards saving. */
   leftOver: number
@@ -31,14 +40,16 @@ export interface MonthSummary {
   stillFree: number
 }
 
-export function monthSummary(events: FinanceEvent[], goals: FinanceGoal[], month: Date): MonthSummary {
+export function monthSummary(events: FinanceEvent[], goals: FinanceGoal[], month: Date, logged?: Spending, today: Date = new Date()): MonthSummary {
   const items = lineItemsInMonth(events, month)
   const sum = (f: (i: (typeof items)[number]) => boolean) => items.filter(f).reduce((a, i) => a + i.amount, 0)
   const payments = goalPaymentsInMonth(goals, month)
   const income = sum(i => i.event.entryType === 'income')
   const fixed = sum(i => i.event.entryType === 'expense' && i.event.expenseCategory === 'fixed')
   // Anything not marked fixed counts as flexible, so totals always add up.
-  const flexible = sum(i => i.event.entryType === 'expense') - fixed
+  // Plus spending actually logged, and the pot's plan for days still to come.
+  const pot = logged ? flexibleForMonth(logged.entries, logged.pot, month, today) : { spent: 0, planned: 0 }
+  const flexible = sum(i => i.event.entryType === 'expense') - fixed + pot.spent + pot.planned
   const debtPayments = payments.filter(p => p.kind === 'debt').reduce((a, p) => a + p.amount, 0)
   const goalSavings = payments.filter(p => p.kind !== 'debt').reduce((a, p) => a + p.amount, 0)
   const spending = fixed + flexible + debtPayments
@@ -46,6 +57,7 @@ export function monthSummary(events: FinanceEvent[], goals: FinanceGoal[], month
     month: new Date(month.getFullYear(), month.getMonth(), 1),
     income, fixed, flexible, debtPayments, goalSavings, spending,
     estimated: sum(i => !i.confirmed),
+    flexiblePlanned: pot.planned,
     leftOver: income - spending,
     stillFree: income - spending - goalSavings,
   }
@@ -53,7 +65,7 @@ export function monthSummary(events: FinanceEvent[], goals: FinanceGoal[], month
 
 // MARK: - Lines
 
-export type LineSource = { kind: 'entry'; event: FinanceEvent } | { kind: 'goal'; goal: FinanceGoal }
+export type LineSource = { kind: 'entry'; event: FinanceEvent } | { kind: 'goal'; goal: FinanceGoal } | { kind: 'pot' }
 
 export interface BudgetLine {
   id: string
@@ -87,7 +99,7 @@ function detail(frequency: string, dates: Date[], skipped = 0): string {
 }
 
 /** The month line by line, sorted into sections, largest first in each. */
-export function monthBudget(events: FinanceEvent[], goals: FinanceGoal[], month: Date): MonthBudget {
+export function monthBudget(events: FinanceEvent[], goals: FinanceGoal[], month: Date, logged?: Spending, money?: (n: number) => string, today: Date = new Date()): MonthBudget {
   const budget: MonthBudget = { income: [], fixed: [], flexible: [], debts: [], savings: [] }
 
   for (const event of events) {
@@ -104,6 +116,22 @@ export function monthBudget(events: FinanceEvent[], goals: FinanceGoal[], month:
     if (event.entryType === 'income') budget.income.push(line)
     else if (event.expenseCategory === 'fixed') budget.fixed.push(line)
     else budget.flexible.push(line)
+  }
+
+  // Logged spending and the pot, as one line.
+  if (logged) {
+    const pot = flexibleForMonth(logged.entries, logged.pot, month, today)
+    if (pot.spent > 0 || pot.planned > 0) {
+      const fmt = money ?? ((n: number) => n.toFixed(2))
+      budget.flexible.push({
+        id: 'pot',
+        title: logged.pot.isActive ? 'Weekly pot' : 'Logged spending',
+        detail: [`${fmt(pot.spent)} spent`, ...(pot.planned > 0 ? [`about ${fmt(Math.round(pot.planned))} still to come`] : [])].join(' · '),
+        amount: pot.spent + pot.planned,
+        isEstimate: false,
+        source: { kind: 'pot' },
+      })
+    }
   }
 
   const payments = goalPaymentsInMonth(goals, month)
@@ -139,9 +167,10 @@ export interface TypicalMonth {
 /**
  * Repeating entries and goal plans still running in `month`, spread to an
  * average month (weekly × 52 ÷ 12, every 2 weeks × 26 ÷ 12). One-offs are
- * left out — they're exactly what a typical month doesn't have.
+ * left out — they're exactly what a typical month doesn't have. A
+ * running weekly pot counts as its weekly amount spread the same way.
  */
-export function typicalMonth(events: FinanceEvent[], goals: FinanceGoal[], month: Date): TypicalMonth {
+export function typicalMonth(events: FinanceEvent[], goals: FinanceGoal[], month: Date, pot?: SpendingPot): TypicalMonth {
   let income = 0
   let spending = 0
   for (const e of events) {
@@ -150,6 +179,7 @@ export function typicalMonth(events: FinanceEvent[], goals: FinanceGoal[], month
     if (e.entryType === 'income') income += amount
     else spending += amount
   }
+  if (pot?.isActive) spending += pot.weeklyAmount * PER_MONTH.weekly
   // Debt payments still running this month count as spending.
   for (const debt of goals.filter(g => g.kind === 'debt' && g.paymentAmount > 0)) {
     if (goalPaymentsInMonth([debt], month).length > 0) spending += debt.paymentAmount * PER_MONTH[debt.frequency]

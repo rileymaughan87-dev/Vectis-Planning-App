@@ -20,6 +20,7 @@ import { amountText, formatMoney, formatMoneyWhole, formatSigned, parseAmount } 
 import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
 import { useCurrency } from '../store/settings'
+import { useLogged } from '../store/spending'
 import { EXPENSE, INCOME, UNCONFIRMED } from '../ui/semantic'
 import { EntryEditor, type EntryEditorTarget } from './EntryEditor'
 import { GoalPaymentSheet, type PaymentTarget } from './GoalSheets'
@@ -40,6 +41,7 @@ const rowColor = (r: Row) => r.kind === 'entry'
 export function CalendarScreen() {
   const events = useEntries(s => s.events)
   const goals = useGoals(s => s.goals)
+  const logged = useLogged()
   const currency = useCurrency()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
@@ -55,7 +57,7 @@ export function CalendarScreen() {
 
   const rows = rowsIn(month)
   // The same figures as the Budget tab (model/budget.ts), so they always agree.
-  const summary = monthSummary(events, goals, month)
+  const summary = monthSummary(events, goals, month, logged)
   const saving = summary.goalSavings
   const left = summary.leftOver
   const today = new Date()

@@ -122,10 +122,22 @@ is separate from a home-screen web app).
   Saving and set-asides, each line opening its editor and each section
   able to add (the entry editor takes a starting type/category). The
   Calendar tab's totals now come from `monthSummary` too. 4 more tests.
-- **Next:** F4 weekly pot and spending log (SpendingModels, SpendingStore,
-  WeeklyPotBox, SpendingSheets in `../Finance-App`). `monthSummary` will
-  need the pot's spent + planned added to flexible, as in the Swift
-  MonthSummary. Months are half-open (start ≤ date < end).
+- **F4 (done, 8 Oct):** `model/spending.ts` (`spending_entries.json`,
+  `spending_pot.json`): logged spending is the record; the pot adds a
+  plan of weekly ÷ 7 per day from tomorrow (`flexibleForMonth`), which
+  `monthSummary` / `monthBudget` (a "Weekly pot" / "Logged spending"
+  line) / `typicalMonth` now include. WeeklyPotBox at the top of Budget
+  (left this week, bar, Log spending, the week's list, set up / change
+  pot); Log spending sheet; pot setup that ends running repeating
+  flexible entries from today (`endRepeatingFlexible`) so nothing counts
+  twice. New vs the iPhone app: "about X a day for the rest of the
+  week"; step back through earlier weeks (weeks before the pot started
+  say so); recent notes as one-tap chips; the day can't be in the
+  future; `?log` opens the app straight on Log spending (manifest
+  shortcut on Android). Apple Pay / Shortcuts logging isn't possible
+  from a home-screen web app (Safari storage is separate) — `?log` is
+  the quick route. 7 more tests (33 Finance).
+- **The Finance port is complete (F0–F4).** Riley re-enters data by hand.
 
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
 

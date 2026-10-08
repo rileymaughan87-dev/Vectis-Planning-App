@@ -66,6 +66,11 @@
 
 .trend-table tr.selected td { font-weight: 600; background: var(--fill); }
 
+/* ---------- Weekly pot ---------- */
+.week-switch { margin: -6px 0 -4px; }
+
+.pot-summary { display: flex; flex-direction: column; gap: 4px; }
+
 /* Wide screens: the month and its list side by side; goal sections and budget in columns. */
 @media (min-width: 900px) {
   .budget-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; }

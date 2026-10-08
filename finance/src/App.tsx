@@ -1,5 +1,7 @@
 // Finance's top level: the suite's shared shell with three tabs — Budget
 // (where it opens), Calendar and Goals — and Settings in the side menu.
+// Opening the app with "?log" goes straight to logging spending (the
+// home-screen shortcut on Android, or a bookmark anywhere).
 
 import { useApplyTheme } from '@suite/appearance'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
@@ -10,6 +12,7 @@ import { BudgetScreen } from './screens/BudgetScreen'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { LogSpendingSheet } from './screens/SpendingSheets'
 import { useSettings } from './store/settings'
 
 type Tab = 'budget' | 'calendar' | 'goals'
@@ -25,6 +28,12 @@ export default function App() {
   useApplyTheme(appearance)
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab) || 'budget')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [quickLog, setQuickLog] = useState(() => new URLSearchParams(location.search).has('log'))
+  const closeQuickLog = () => {
+    setQuickLog(false)
+    // Drop "?log" so a reload doesn't open it again.
+    history.replaceState(null, '', location.pathname)
+  }
 
   const choose = (t: Tab) => {
     setTab(t)
@@ -54,7 +63,10 @@ export default function App() {
           />
         </>
       )}
-      overlays={settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
+      overlays={<>
+        {settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
+        {quickLog && <LogSpendingSheet onClose={closeQuickLog} />}
+      </>}
     >
       {tab === 'budget' && <BudgetScreen />}
       {tab === 'calendar' && <CalendarScreen />}
