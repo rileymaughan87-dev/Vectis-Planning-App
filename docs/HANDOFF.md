@@ -191,7 +191,9 @@ Swift project untouched as a fallback. New in `web/` (React + TS + Vite):
   works with a plain share file (no Google) for testing. Setup:
   `docs/GOOGLE-SETUP.md`.
 - **Importing iPhone data:** Settings → Your data → pick the JSON files from
-  an Xcode container download. Needs a Mac once.
+  an Xcode container download. Needs a Mac once. (Riley no longer has a
+  Mac as of 8 Oct 2026 — Finance's iPhone data, not yet imported, needs a
+  Windows route such as iMazing reading an iPhone backup, or re-entry.)
 
 Verified in the browser (mobile size): Home ticking/tasks, Goals, Daily
 layout, event create + weekly repeat, long-press drag writing a per-day

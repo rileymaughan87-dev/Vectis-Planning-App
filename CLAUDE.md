@@ -42,7 +42,9 @@ npm workspaces — run `npm install` once at the repo root, then
   https://rileymaughan87-dev.github.io/Vectis-Planning-App/ (deploys on
   push to master). Layout must work from 360px phones to wide desktops.
 - **`Vectis Planning/` — the Swift app, kept as a fallback.** Don't delete or
-  restructure it. It needs a Mac to build.
+  restructure it. It needs a Mac to build, and Riley no longer has one
+  (8 Oct 2026): treat it as read-only reference — never suggest Mac/Xcode
+  steps. Same for `../Finance-App`.
 
 ## Build (Swift, Mac only)
 
