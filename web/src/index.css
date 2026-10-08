@@ -51,7 +51,9 @@
 .block {
   position: absolute; overflow: hidden; border-radius: var(--radius-small);
   padding: 3px 5px; font-size: 11px; font-weight: 600; text-align: left;
-  border: 1px solid; touch-action: none;
+  /* pan-y: a finger landing on a block can still scroll the day. Once a
+     long press picks the block up, Daily blocks the scroll in code. */
+  border: 1px solid; touch-action: pan-y;
   transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, opacity 0.2s;
 }
 
