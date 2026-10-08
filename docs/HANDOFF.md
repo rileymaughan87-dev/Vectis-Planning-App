@@ -111,9 +111,21 @@ is separate from a home-screen web app).
   payment's weekday; correct or remove a recorded payment; "a little
   behind your date — X would get there" (suggestion counts only payments
   still to come); "Needed by" wording for set-asides. 10 more tests.
-- **Next:** F3 Budget page, F4 weekly pot and spending log. Port the logic
-  from `../Finance-App` (MonthSummary/MonthBudget, SpendingStore) as pure
-  functions with tests first. Months are half-open (start ≤ date < end).
+- **F3 (done, 8 Oct):** `model/budget.ts` (`monthSummary`, `monthBudget`
+  — MonthSummary.swift's rules — plus new `typicalMonth`); the Budget tab
+  (opens first): month switcher, In and out (difference, bars, breakdown,
+  estimates noted), A typical month (new — weekly ×52÷12, fortnightly
+  ×26÷12, one-offs and saving left out, says how this month compares),
+  Room to save, Left over each month (SVG bars ±zero, hover tip, tap to
+  pick a month, table of numbers; colours validated, direction is the
+  main cue), and sections Money in / Fixed / Flexible / Debt payments /
+  Saving and set-asides, each line opening its editor and each section
+  able to add (the entry editor takes a starting type/category). The
+  Calendar tab's totals now come from `monthSummary` too. 4 more tests.
+- **Next:** F4 weekly pot and spending log (SpendingModels, SpendingStore,
+  WeeklyPotBox, SpendingSheets in `../Finance-App`). `monthSummary` will
+  need the pot's spent + planned added to flexible, as in the Swift
+  MonthSummary. Months are half-open (start ≤ date < end).
 
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
 
