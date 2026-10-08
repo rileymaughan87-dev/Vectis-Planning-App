@@ -163,6 +163,7 @@ export function decodeNote(r: Raw): Note {
     richTextData: optStr(r.richTextData),
     checklistItems: list(r.checklistItems, decodeChecklistItem),
     body: decodeDoc(r.body),
+    mathResults: bool(r.mathResults, true),
     linkedGoalID: optStr(r.linkedGoalID),
     notebookID: optStr(r.notebookID),
     updatedDate: str(r.updatedDate, now()),

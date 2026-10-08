@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { DocNode } from '../../model/noteDoc'
-import { PARAGRAPH_STYLES, applyStyle, canIndent, currentStyle, editorExtensions, indent } from './extensions'
+import { PARAGRAPH_STYLES, applyStyle, canIndent, currentStyle, editorExtensions, indent, mathKey } from './extensions'
 
 export function RichEditor(props: {
   initial: DocNode
@@ -19,10 +19,13 @@ export function RichEditor(props: {
   label: string
   placeholder?: string
   autofocus?: boolean
+  /** Show answers after lines ending in "=" (on unless the note turned it off). */
+  math?: boolean
 }) {
   const { onChange } = props
+  const math = props.math ?? true
   const editor = useEditor({
-    extensions: editorExtensions(props.placeholder ?? 'Start writing…'),
+    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math),
     content: props.initial,
     autofocus: props.autofocus ? 'end' : false,
     editorProps: {
@@ -30,6 +33,12 @@ export function RichEditor(props: {
     },
     onUpdate: ({ editor }) => onChange(editor.getJSON() as DocNode),
   })
+
+  // Turning maths on or off redraws the answers without touching the text or the undo history.
+  useEffect(() => {
+    if (mathKey.getState(editor.state)?.enabled === math) return
+    editor.view.dispatch(editor.state.tr.setMeta(mathKey, math).setMeta('addToHistory', false))
+  }, [editor, math])
 
   return (
     <div className="rich-note">

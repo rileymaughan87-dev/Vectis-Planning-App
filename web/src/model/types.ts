@@ -195,6 +195,8 @@ export interface Note {
    * notes saved before it existed, such as iPhone imports.
    */
   body?: NoteDoc
+  /** Answers after lines ending in "=" (web only; on unless turned off for this note). */
+  mathResults: boolean
   linkedGoalID?: ID
   /** Unset means it sits loose in its type's section. */
   notebookID?: ID

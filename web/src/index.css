@@ -176,6 +176,14 @@
 
 .note-doc p { margin: 0; }
 
+/* A maths answer after "=": the accent colour on a soft tint, so it reads as the app's, not typed text. */
+.has-math-result::after {
+  content: attr(data-math-result);
+  margin-left: 0.3em; padding: 0 5px; border-radius: var(--radius-small);
+  color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent);
+  font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; user-select: none;
+}
+
 .note-doc h1 { font-size: 26px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -0.3px; }
 
 .note-doc h2 { font-size: 20px; font-weight: 700; margin: 10px 0 0; }

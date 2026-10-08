@@ -1,6 +1,7 @@
 // The editor's building blocks: TipTap's starter kit plus the pieces
-// Vectis adds — dashed lists, checklists, highlight, and headings whose
-// sections fold away (and stay folded when the note is reopened).
+// Vectis adds — dashed lists, checklists, highlight, headings whose
+// sections fold away (and stay folded when the note is reopened), and
+// maths answers after lines ending in "=".
 
 import { Extension, wrappingInputRule, type Editor } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
@@ -10,6 +11,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import type { Node as PMNode } from '@tiptap/pm/model'
+import { evaluateLines } from '../../model/math'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -133,7 +135,56 @@ const FoldableSections = Extension.create({
   },
 })
 
-export function editorExtensions(placeholder: string) {
+// MARK: - Maths
+
+export const mathKey = new PluginKey<{ enabled: boolean; decorations: DecorationSet }>('vectis-math')
+
+/**
+ * Answers shown after lines ending in "=", worked out from the top of
+ * the note on every edit (so changing a variable updates everything
+ * below). They're decorations, not text: nothing is saved into the note,
+ * and turning maths off for the note simply stops drawing them.
+ * Monospaced blocks are left alone, for writing code or raw text.
+ */
+function buildMath(doc: PMNode, enabled: boolean): DecorationSet {
+  if (!enabled) return DecorationSet.empty
+  const blocks: { text: string; from: number; to: number }[] = []
+  doc.descendants((node, pos) => {
+    if (!node.isTextblock) return true
+    if (node.type.name !== 'codeBlock') blocks.push({ text: node.textContent, from: pos, to: pos + node.nodeSize })
+    return false
+  })
+  const results = evaluateLines(blocks.map(b => b.text))
+  // An attribute on the line, drawn by CSS (::after), rather than an
+  // element inside the text: Chrome slipped a real line break into the
+  // note when an uneditable element sat right beside the cursor.
+  const decorations = results.flatMap((r, i) =>
+    r ? [Decoration.node(blocks[i].from, blocks[i].to, { 'data-math-result': r.text, class: 'has-math-result' })] : [])
+  return DecorationSet.create(doc, decorations)
+}
+
+const MathResults = Extension.create<{ enabled: boolean }>({
+  name: 'mathResults',
+  addOptions: () => ({ enabled: true }),
+  addProseMirrorPlugins() {
+    const initial = this.options.enabled
+    return [new Plugin({
+      key: mathKey,
+      state: {
+        init: (_, state) => ({ enabled: initial, decorations: buildMath(state.doc, initial) }),
+        apply: (tr, old) => {
+          const toggled = tr.getMeta(mathKey) as boolean | undefined
+          const enabled = toggled ?? old.enabled
+          if (toggled === undefined && !tr.docChanged) return old
+          return { enabled, decorations: buildMath(tr.doc, enabled) }
+        },
+      },
+      props: { decorations: state => mathKey.getState(state)?.decorations },
+    })]
+  },
+})
+
+export function editorExtensions(placeholder: string, math = true) {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
@@ -148,6 +199,7 @@ export function editorExtensions(placeholder: string) {
     Highlight,
     Placeholder.configure({ placeholder }),
     FoldableSections,
+    MathResults.configure({ enabled: math }),
   ]
 }
 

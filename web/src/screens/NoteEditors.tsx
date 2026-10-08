@@ -8,7 +8,7 @@ import { newID } from '../model/ids'
 import { checklistToDoc, isDocEmpty, noteDoc, textToDoc, wrapDoc, type DocNode } from '../model/noteDoc'
 import type { Goal, Note, NoteType, Notebook } from '../model/types'
 import { useData } from '../store/data'
-import { EditorBox, Field, Sheet, VButton } from '../ui/components'
+import { EditorBox, Field, Sheet, Toggle, VButton } from '../ui/components'
 import { RichEditor } from '../ui/editor/LazyRichEditor'
 
 /** Any goal, grouped the way the iPhone picker groups them. */
@@ -63,6 +63,7 @@ export function newNote(type: NoteType, notebookID?: string): Note {
     notebookID,
     // A list starts with a checkbox ready to type into; the others start blank.
     body: wrapDoc(type === 'list' ? checklistToDoc([]) : textToDoc('')),
+    mathResults: true,
     updatedDate: toISO(new Date()),
   }
 }
@@ -109,20 +110,31 @@ export function NoteEditor({ note: original, isNew, onClose }: { note: Note; isN
         label={note.type === 'jot' ? 'Jot' : 'Note'}
         placeholder={note.type === 'jot' ? 'Jot something down' : 'Start writing…'}
         autofocus={isNew && note.type === 'jot'}
+        math={note.mathResults}
       />
 
-      {note.type !== 'jot' && (
-        <details className="editor-box links-box">
-          <summary>Links{note.linkedGoalID || note.notebookID ? ' · set' : ''}</summary>
-          <Field label="Goal (optional)"><GoalSelect value={note.linkedGoalID} onChange={linkedGoalID => patch({ linkedGoalID })} /></Field>
-          <Field label="Notebook (optional)">
-            <select value={note.notebookID ?? ''} onChange={e => patch({ notebookID: e.target.value || undefined })}>
-              <option value="">None</option>
-              {sortedNotebooks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
-            </select>
-          </Field>
-        </details>
-      )}
+      <details className="editor-box links-box">
+        <summary>
+          {note.type === 'jot' ? 'Options' : 'Links and options'}
+          {note.linkedGoalID || note.notebookID ? ' · linked' : ''}{note.mathResults ? '' : ' · maths off'}
+        </summary>
+        {note.type !== 'jot' && (
+          <>
+            <Field label="Goal (optional)"><GoalSelect value={note.linkedGoalID} onChange={linkedGoalID => patch({ linkedGoalID })} /></Field>
+            <Field label="Notebook (optional)">
+              <select value={note.notebookID ?? ''} onChange={e => patch({ notebookID: e.target.value || undefined })}>
+                <option value="">None</option>
+                {sortedNotebooks.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+              </select>
+            </Field>
+          </>
+        )}
+        <Toggle label="Maths answers" checked={note.mathResults} onChange={mathResults => patch({ mathResults })} />
+        <p className="help">
+          End a line with = to see its answer: "rent * 12 =". Set a value with "rent = 650" and use it below.
+          Converts units too: "5 miles in km =".
+        </p>
+      </details>
 
       {!isNew && <VButton kind="destructive" onClick={() => { deleteNote(note.id); onClose() }}>Delete note</VButton>}
     </Sheet>
