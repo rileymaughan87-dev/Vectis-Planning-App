@@ -10,6 +10,8 @@ export const Filename = {
   financeGoals: 'finance_goals.json',
   spendingEntries: 'spending_entries.json',
   spendingPot: 'spending_pot.json',
+  /** Web-only: currency choice. */
+  preferences: 'preferences.json',
 } as const
 
 export const storage = createStorage('finance:', 'Finance')

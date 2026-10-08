@@ -6,6 +6,7 @@ import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
 import { CalendarDays, ChartColumn, Hammer, Settings, Target } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
+import { CalendarScreen } from './screens/CalendarScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { useSettings } from './store/settings'
 
@@ -65,7 +66,7 @@ export default function App() {
       overlays={settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
     >
       {tab === 'budget' && <NotBuiltYet title="Budget" detail="This week, in and out, sections and room to save — being built after the Calendar and Goals." />}
-      {tab === 'calendar' && <NotBuiltYet title="Calendar" detail="Your entries on a month grid, with confirmations — the next update." />}
+      {tab === 'calendar' && <CalendarScreen />}
       {tab === 'goals' && <NotBuiltYet title="Goals" detail="Saving, set-asides and debts broken into payments — coming after the Calendar." />}
     </AppShell>
   )

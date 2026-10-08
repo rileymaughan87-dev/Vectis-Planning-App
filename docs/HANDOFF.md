@@ -83,10 +83,25 @@ is separate from a home-screen web app).
   apart from sub-pixel rounding). Finance: shell with Budget / Calendar /
   Goals (honest "not built yet"), Settings with appearance and backups,
   its own icon and manifest, data under `finance:`.
-- **Next:** F1 entries + Calendar (+ import iPhone `finance_events.json`),
-  F2 goals and payment schedules, F3 Budget page, F4 weekly pot and
-  spending log. Port the logic from `../Finance-App` (FinanceModels,
-  FinanceGoalModels, MonthSummary, SpendingStore) as pure functions with
+- **8 Oct 2026:** Riley no longer has a Mac and will **re-enter** their
+  finances by hand (no iPhone import). Riley wasn't fully happy with the
+  iPhone app and asked for improvements, not a strict port — add things
+  that help, and list them in the PR.
+- **F1 (done, 8 Oct):** entries (`model/entries.ts`, saved as
+  `finance_events.json` in the iPhone shape) and the Calendar tab. Month
+  grid (green in / red out / amber estimate), day sheet, month totals
+  (In / Out / Left over) and the month's full list, "N amounts to confirm"
+  notice, quick confirm sheet (and "back to the estimate"). New vs the
+  iPhone app: **every 2 weeks** (`frequency: 'fortnightly'`); weekly
+  entries repeat on the first date's weekday (no separate picker);
+  **change from a date on** (`splitFrom`: old entry ends, a copy starts,
+  confirmations after the date move across) so past months keep old
+  amounts; **stop from a date** instead of only delete-everything;
+  currency setting (defaults to the region; `preferences.json`);
+  forgiving amount entry ("1,234.50", "12,5"). 12 Finance model tests.
+- **Next:** F2 goals and payment schedules, F3 Budget page, F4 weekly pot
+  and spending log. Port the logic from `../Finance-App`
+  (FinanceGoalModels, MonthSummary, SpendingStore) as pure functions with
   tests first. Months are half-open (start ≤ date < end).
 
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done

@@ -1,2 +1,22 @@
-/* Finance-only styles. The shared design comes first, from
-   suite/src/styles.css (imported in main.tsx). */
+/* Finance-only styles. Shared design lives in suite/src/styles.css. */
+
+.finance-month { display: flex; flex-direction: column; gap: 10px; }
+
+.totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+.total { background: var(--surface); border-radius: var(--radius-small); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.total strong { font-size: 17px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.confirm-notice {
+  display: flex; flex-direction: column; gap: 2px; text-align: left;
+  background: color-mix(in srgb, #D6862C 14%, var(--surface));
+  border-left: 3px solid #D6862C;
+}
+
+.entry-row { padding: 10px 14px; }
+
+/* Wide screens: the month and its list side by side. */
+@media (min-width: 900px) {
+  .finance-calendar { display: grid; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); align-items: start; gap: 24px; }
+}

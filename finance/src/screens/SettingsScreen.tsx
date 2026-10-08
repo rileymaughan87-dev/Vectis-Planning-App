@@ -1,14 +1,14 @@
-// Finance settings: appearance and your data. More arrives as the app
-// grows (importing the iPhone app's files comes with the next update).
+// Finance settings: appearance, currency and your data.
 
 import { AppearanceEditor } from '@suite/ui/AppearanceEditor'
 import { EditorBox, Sheet, VButton } from '@suite/ui/components'
 import { useRef, useState } from 'react'
+import { CURRENCIES, regionCurrency } from '../model/money'
 import { backups } from '../store/persist'
 import { useSettings } from '../store/settings'
 
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
-  const { appearance, setAppearance } = useSettings()
+  const { appearance, setAppearance, currencyOverride, setCurrency } = useSettings()
   const restoreRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,10 +16,16 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
       <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 
+      <EditorBox title="Currency">
+        <select value={currencyOverride ?? ''} onChange={e => setCurrency(e.target.value || undefined)} aria-label="Currency">
+          <option value="">Follow my region ({regionCurrency()})</option>
+          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </EditorBox>
+
       <EditorBox title="Your data">
         <p className="help">
           Your money data stays in this browser on this device. A backup is how to keep a copy or move it to another device.
-          Importing the iPhone app's files arrives with the next update, together with the Calendar.
         </p>
         <div className="button-row">
           <VButton onClick={backups.download}>Download backup</VButton>

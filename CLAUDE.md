@@ -116,9 +116,10 @@ never the plain folder (opening the folder gives a scheme-less window).
    - ~~Repeating events: this day / all future days, per-day length,
      per-occurrence time logging~~ — done on the web (batch 3). The Mac
      work is fully ported.
-   - Finance web app: F0 (structure, shared suite, empty app) done.
-     Next F1 entries + Calendar, F2 goals, F3 Budget, F4 weekly pot and
-     spending log. Plan in HANDOFF.md.
+   - Finance web app: F0 (structure, shared suite, empty app) and F1
+     (entries + Calendar) done. Next F2 goals, F3 Budget, F4 weekly pot
+     and spending log. Plan in HANDOFF.md. Riley re-enters data by hand
+     (no iPhone import) and wants improvements over the iPhone app.
 
 1. **Buffer awareness** (spec 2.8) — built Oct 2026, awaiting device test. Oct 2026 audit (docs/AUDIT-2026-10.md) complete. Shows "% of day committed" during planning,
    amber above 80%, never enforced. See HANDOFF.md for the design.
