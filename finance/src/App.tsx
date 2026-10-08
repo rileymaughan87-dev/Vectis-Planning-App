@@ -3,9 +3,10 @@
 
 import { useApplyTheme } from '@suite/appearance'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
-import { CalendarDays, ChartColumn, Hammer, Settings, Target } from 'lucide-react'
+import { CalendarDays, ChartColumn, Settings, Target } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
+import { BudgetScreen } from './screens/BudgetScreen'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
@@ -18,17 +19,6 @@ const tabs: ShellTab<Tab>[] = [
   { id: 'calendar', title: 'Calendar', icon: s => <CalendarDays size={s} /> },
   { id: 'goals', title: 'Goals', icon: s => <Target size={s} /> },
 ]
-
-/** Honest about what isn't built yet, per the suite rules. */
-function NotBuiltYet({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="empty">
-      <Hammer size={32} />
-      <strong style={{ color: 'var(--text)' }}>{title}</strong>
-      <span className="caption">{detail}</span>
-    </div>
-  )
-}
 
 export default function App() {
   const appearance = useSettings(s => s.appearance)
@@ -66,7 +56,7 @@ export default function App() {
       )}
       overlays={settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
     >
-      {tab === 'budget' && <NotBuiltYet title="Budget" detail="This week, in and out, sections and room to save — being built after the Calendar and Goals." />}
+      {tab === 'budget' && <BudgetScreen />}
       {tab === 'calendar' && <CalendarScreen />}
       {tab === 'goals' && <GoalsScreen />}
     </AppShell>

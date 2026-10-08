@@ -20,8 +20,55 @@
 
 .due-row { border-top: 0.5px solid var(--separator); padding-top: 6px; }
 
-/* Wide screens: the month and its list side by side; goal sections in columns. */
+/* ---------- Budget ---------- */
+.num { font-variant-numeric: tabular-nums; }
+
+.budget-columns, .budget-col { display: flex; flex-direction: column; gap: 14px; }
+
+.headline-number { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.comparison { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+
+.comparison-track { height: 8px; background: var(--fill); border-radius: var(--radius-small); overflow: hidden; }
+
+.comparison-track > div { height: 100%; border-radius: var(--radius-small); }
+
+.typical-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 2px; }
+
+.budget-line { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 4px 0; font-size: 14px; }
+
+.budget-line + .budget-line { border-top: 0.5px solid var(--separator); padding-top: 8px; }
+
+.trend { display: flex; flex-direction: column; gap: 8px; }
+
+.trend-chart { position: relative; max-width: 480px; }
+
+.trend-chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+.trend-axis { font-size: 9px; fill: var(--text-2); }
+
+.trend-axis.selected { fill: var(--text); font-weight: 700; }
+
+.trend-tip {
+  position: absolute; top: -6px; transform: translate(-50%, -100%); pointer-events: none;
+  background: var(--surface); border: 0.5px solid var(--separator); border-radius: var(--radius-small);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15); padding: 4px 8px; font-size: 12px; white-space: nowrap;
+  display: flex; flex-direction: column;
+}
+
+.trend-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.trend-table th { font-size: 10px; font-weight: 600; color: var(--text-2); text-align: right; padding: 0 8px 4px; }
+
+.trend-table td { text-align: right; padding: 6px 8px; cursor: pointer; }
+
+.trend-table th:first-child, .trend-table td:first-child { text-align: left; }
+
+.trend-table tr.selected td { font-weight: 600; background: var(--fill); }
+
+/* Wide screens: the month and its list side by side; goal sections and budget in columns. */
 @media (min-width: 900px) {
+  .budget-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; }
   .finance-calendar { display: grid; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); align-items: start; gap: 24px; }
   .finance-goals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 }

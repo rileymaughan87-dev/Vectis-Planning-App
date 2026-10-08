@@ -12,7 +12,7 @@ import { amountText, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
 
 export type EntryEditorTarget =
-  | { mode: 'new'; date: Date }
+  | { mode: 'new'; date: Date; entryType?: EntryType; category?: ExpenseCategory }
   /** `occurrence` is the day it was opened from, for "from this date on". */
   | { mode: 'edit'; event: FinanceEvent; occurrence?: Date }
 
@@ -26,8 +26,9 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
   const occurrence = target.mode === 'edit' ? target.occurrence : undefined
 
   const [title, setTitle] = useState(original?.title ?? '')
-  const [entryType, setEntryType] = useState<EntryType>(original?.entryType ?? 'expense')
-  const [category, setCategory] = useState<ExpenseCategory>(original?.expenseCategory ?? 'fixed')
+  const asked = target.mode === 'new' ? target : undefined
+  const [entryType, setEntryType] = useState<EntryType>(original?.entryType ?? asked?.entryType ?? 'expense')
+  const [category, setCategory] = useState<ExpenseCategory>(original?.expenseCategory ?? asked?.category ?? 'fixed')
   const [amount, setAmount] = useState(original ? amountText(original.amount) : '')
   const [date, setDate] = useState(dayKey(original ? parseDate(original.date) : target.mode === 'new' ? target.date : new Date()))
   const [repeat, setRepeat] = useState<Repeat>(!original?.repeats || original.frequency === 'none' ? 'once' : original.frequency)

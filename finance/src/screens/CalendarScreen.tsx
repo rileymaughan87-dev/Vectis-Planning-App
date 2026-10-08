@@ -13,7 +13,8 @@ import { MonthGrid } from '@suite/ui/MonthGrid'
 import { startOfMonth } from '@suite/months'
 import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { lineItemsInMonth, monthTotals, repeatText, type LineItem } from '../model/entries'
+import { monthSummary } from '../model/budget'
+import { lineItemsInMonth, repeatText, type LineItem } from '../model/entries'
 import { goalPaymentsInMonth, isDue, kindInfo, type GoalPayment } from '../model/goals'
 import { amountText, formatMoney, formatMoneyWhole, formatSigned, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
@@ -53,14 +54,10 @@ export function CalendarScreen() {
   const rowsOn = (d: Date) => rowsIn(d).filter(r => isSameDay(rowDate(r), d))
 
   const rows = rowsIn(month)
-  const totals = monthTotals(events, month)
-  const goalPayments = rows.flatMap(r => (r.kind === 'goal' ? [r.payment] : []))
-  // Debt payments leave the account; saving and set-asides stay in it, so
-  // they come out of what's left over rather than counting as spending.
-  const debt = goalPayments.filter(p => p.kind === 'debt').reduce((a, p) => a + p.amount, 0)
-  const saving = goalPayments.filter(p => p.kind !== 'debt').reduce((a, p) => a + p.amount, 0)
-  const out = totals.expenses + debt
-  const left = totals.income - out
+  // The same figures as the Budget tab (model/budget.ts), so they always agree.
+  const summary = monthSummary(events, goals, month)
+  const saving = summary.goalSavings
+  const left = summary.leftOver
   const today = new Date()
   const waiting = rows.filter(r => (r.kind === 'entry' ? !r.item.confirmed && r.item.date <= today : isDue(r.payment, today)))
 
@@ -108,8 +105,8 @@ export function CalendarScreen() {
         )}
 
         <div className="totals">
-          <Total label="In" value={formatMoneyWhole(totals.income, currency)} color={INCOME} />
-          <Total label="Out" value={formatMoneyWhole(out, currency)} color={EXPENSE} />
+          <Total label="In" value={formatMoneyWhole(summary.income, currency)} color={INCOME} />
+          <Total label="Out" value={formatMoneyWhole(summary.spending, currency)} color={EXPENSE} />
           <Total label={left < 0 ? 'Short by' : 'Left over'} value={formatMoneyWhole(Math.abs(left), currency)} color={left < 0 ? EXPENSE : undefined} />
         </div>
         {saving > 0 && (

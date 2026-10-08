@@ -117,7 +117,7 @@ never the plain folder (opening the folder gives a scheme-less window).
      per-occurrence time logging~~ — done on the web (batch 3). The Mac
      work is fully ported.
    - Finance web app: F0 (structure, shared suite, empty app), F1
-     (entries + Calendar) and F2 (goals) done. Next F3 Budget, F4 weekly
+     (entries + Calendar), F2 (goals) and F3 (Budget) done. Next F4 weekly
      pot and spending log. Plan in HANDOFF.md. Riley re-enters data by hand
      (no iPhone import) and wants improvements over the iPhone app.
 
