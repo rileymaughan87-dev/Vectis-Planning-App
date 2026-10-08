@@ -163,6 +163,25 @@ export function splitFrom(events: FinanceEvent[], id: string, from: Date, change
 /** Whether `day` is a later occurrence than the first one. */
 export const isLaterOccurrence = (event: FinanceEvent, day: Date) => event.repeats && startOfDay(day) > startOfDay(parseDate(event.date))
 
+// MARK: - Weekly pot hand-over
+
+/**
+ * Repeating flexible entries still running — what the weekly pot replaces.
+ * One-off flexible entries (a planned gift) aren't included: they're
+ * specific plans and keep counting on their own.
+ */
+export function runningRepeatingFlexible(events: FinanceEvent[], today: Date = new Date()): FinanceEvent[] {
+  const t = startOfDay(today)
+  return events.filter(e => e.entryType === 'expense' && e.expenseCategory === 'flexible' && e.repeats
+    && (!e.endDate || startOfDay(parseDate(e.endDate)) > t))
+}
+
+/** Roughly what those cost a week, as a starting point for the pot. */
+export function weeklyFlexibleEstimate(events: FinanceEvent[], today: Date = new Date()): number {
+  return runningRepeatingFlexible(events, today).reduce((a, e) =>
+    a + (e.frequency === 'weekly' ? e.amount : e.frequency === 'fortnightly' ? e.amount / 2 : (e.amount * 12) / 52), 0)
+}
+
 // MARK: - Lists and totals
 
 /** Every occurrence in a month, in date order (income first on a shared day). */

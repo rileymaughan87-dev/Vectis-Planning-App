@@ -3,7 +3,7 @@
 
 import { dayKey, toISO, startOfDay } from '@suite/dates'
 import { create } from 'zustand'
-import { decodeFinanceEvents, splitFrom, type FinanceEvent } from '../model/entries'
+import { decodeFinanceEvents, runningRepeatingFlexible, splitFrom, type FinanceEvent } from '../model/entries'
 import { Filename, storage } from './persist'
 
 interface EntriesState {
@@ -19,6 +19,8 @@ interface EntriesState {
   endFrom(id: string, date: Date): void
   /** Changes a repeating entry from `date` on; earlier ones keep the old details. */
   changeFrom(id: string, date: Date, changes: Partial<FinanceEvent>): void
+  /** The weekly pot takes over: running repeating flexible entries stop from `date`. */
+  endRepeatingFlexible(date: Date): void
 }
 
 const patch = (events: FinanceEvent[], id: string, f: (e: FinanceEvent) => FinanceEvent) => events.map(e => (e.id === id ? f(e) : e))
@@ -39,6 +41,10 @@ export const useEntries = create<EntriesState>()(set => ({
     })),
   endFrom: (id, date) => set(s => ({ events: patch(s.events, id, e => ({ ...e, endDate: toISO(startOfDay(date)) })) })),
   changeFrom: (id, date, changes) => set(s => ({ events: splitFrom(s.events, id, date, changes) })),
+  endRepeatingFlexible: date => set(s => {
+    const ids = new Set(runningRepeatingFlexible(s.events, date).map(e => e.id))
+    return { events: s.events.map(e => (ids.has(e.id) ? { ...e, endDate: toISO(startOfDay(date)) } : e)) }
+  }),
 }))
 
 useEntries.subscribe((state, prev) => {

@@ -4,7 +4,8 @@
 // Estimates are called out rather than blended in silently.
 //
 // New compared with the iPhone app: "a typical month" beside the real
-// one, so a five-payday month doesn't look better than it is.
+// one, so a five-payday month doesn't look better than it is. The weekly
+// pot and quick log sit at the top (WeeklyPotBox).
 
 import { SectionBox, VButton } from '@suite/ui/components'
 import { startOfMonth } from '@suite/months'
@@ -16,10 +17,14 @@ import { formatMoney, formatMoneyWhole } from '../model/money'
 import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
 import { useCurrency } from '../store/settings'
+import { useLogged } from '../store/spending'
+import type { SpendingEntry } from '../model/spending'
 import { EXPENSE, INCOME, UNCONFIRMED } from '../ui/semantic'
 import { EntryEditor, type EntryEditorTarget } from './EntryEditor'
 import { LeftOverTrend } from './LeftOverTrend'
 import { GoalEditor, type GoalEditorTarget } from './GoalSheets'
+import { LogSpendingSheet, PotSetupSheet } from './SpendingSheets'
+import { WeeklyPotBox } from './WeeklyPotBox'
 
 const signed = (n: number, money: (n: number) => string) => (n < 0 ? '−' : '') + money(Math.abs(n))
 
@@ -31,23 +36,30 @@ export function BudgetScreen() {
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [entryEditor, setEntryEditor] = useState<EntryEditorTarget | null>(null)
   const [goalEditor, setGoalEditor] = useState<GoalEditorTarget | null>(null)
+  const [logging, setLogging] = useState<{ editing?: SpendingEntry } | null>(null)
+  const [potSetup, setPotSetup] = useState(false)
+  const logged = useLogged()
 
-  const summary = monthSummary(events, goals, month)
-  const budget = monthBudget(events, goals, month)
-  const typical = typicalMonth(events, goals, month)
+  const summary = monthSummary(events, goals, month, logged)
+  // Whole amounts (the pot's rounded "still to come") without the ".00".
+  const budget = monthBudget(events, goals, month, logged, n => (Number.isInteger(n) ? formatMoneyWhole(n, currency) : formatMoney(n, currency)))
+  const typical = typicalMonth(events, goals, month, logged.pot)
   // A fixed window around this month, so the chart doesn't jump about when you pick a month from it.
-  const trend = monthsAround(new Date(), 2, 3).map(m => monthSummary(events, goals, m))
+  const trend = monthsAround(new Date(), 2, 3).map(m => monthSummary(events, goals, m, logged))
   const today = new Date()
   const newDate = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth() ? today : month
 
   const open = (line: BudgetLine) => {
     if (line.source.kind === 'entry') setEntryEditor({ mode: 'edit', event: line.source.event })
-    else setGoalEditor({ mode: 'edit', goal: line.source.goal })
+    else if (line.source.kind === 'goal') setGoalEditor({ mode: 'edit', goal: line.source.goal })
+    else setPotSetup(true)
   }
   const goalAccent = (k: GoalKind) => kindInfo[k].accent
 
   return (
     <div className="page finance-budget">
+      <WeeklyPotBox onLog={() => setLogging({})} onEdit={e => setLogging({ editing: e })} onSetUp={() => setPotSetup(true)} />
+
       <div className="row spread month-head">
         <button className="icon-button" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} aria-label="Previous month"><ChevronLeft size={20} /></button>
         <button className="month-title" onClick={() => setMonth(startOfMonth(new Date()))} title="Back to this month">
@@ -78,7 +90,7 @@ export function BudgetScreen() {
             empty="Rent, bills, subscriptions — things that stay the same." add="Add fixed cost"
             onAdd={() => setEntryEditor({ mode: 'new', date: newDate, entryType: 'expense', category: 'fixed' })} />
           <BudgetSection title="Flexible spending" accent={EXPENSE} lines={budget.flexible} money={money} onTap={open}
-            empty="Groceries, eating out, fuel — things that vary." add="Add flexible spending"
+            empty="Groceries, eating out, fuel — things that vary." add={logged.pot.isActive ? 'Add a one-off purchase' : 'Add flexible spending'}
             onAdd={() => setEntryEditor({ mode: 'new', date: newDate, entryType: 'expense', category: 'flexible' })} />
           <BudgetSection title="Debt payments" accent={goalAccent('debt')} lines={budget.debts} money={money} onTap={open}
             empty="No debt payments this month." add="Add debt"
@@ -91,6 +103,8 @@ export function BudgetScreen() {
 
       {entryEditor && <EntryEditor target={entryEditor} onClose={() => setEntryEditor(null)} />}
       {goalEditor && <GoalEditor target={goalEditor} onClose={() => setGoalEditor(null)} />}
+      {logging && <LogSpendingSheet editing={logging.editing} onClose={() => setLogging(null)} />}
+      {potSetup && <PotSetupSheet onClose={() => setPotSetup(false)} />}
     </div>
   )
 }
