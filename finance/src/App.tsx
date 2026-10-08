@@ -7,6 +7,7 @@ import { CalendarDays, ChartColumn, Hammer, Settings, Target } from 'lucide-reac
 import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { CalendarScreen } from './screens/CalendarScreen'
+import { GoalsScreen } from './screens/GoalsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { useSettings } from './store/settings'
 
@@ -67,7 +68,7 @@ export default function App() {
     >
       {tab === 'budget' && <NotBuiltYet title="Budget" detail="This week, in and out, sections and room to save — being built after the Calendar and Goals." />}
       {tab === 'calendar' && <CalendarScreen />}
-      {tab === 'goals' && <NotBuiltYet title="Goals" detail="Saving, set-asides and debts broken into payments — coming after the Calendar." />}
+      {tab === 'goals' && <GoalsScreen />}
     </AppShell>
   )
 }

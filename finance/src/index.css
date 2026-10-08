@@ -16,7 +16,12 @@
 
 .entry-row { padding: 10px 14px; }
 
-/* Wide screens: the month and its list side by side. */
+.goal-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
+
+.due-row { border-top: 0.5px solid var(--separator); padding-top: 6px; }
+
+/* Wide screens: the month and its list side by side; goal sections in columns. */
 @media (min-width: 900px) {
   .finance-calendar { display: grid; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); align-items: start; gap: 24px; }
+  .finance-goals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 }

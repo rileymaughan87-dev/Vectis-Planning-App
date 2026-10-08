@@ -99,10 +99,21 @@ is separate from a home-screen web app).
   amounts; **stop from a date** instead of only delete-everything;
   currency setting (defaults to the region; `preferences.json`);
   forgiving amount entry ("1,234.50", "12,5"). 12 Finance model tests.
-- **Next:** F2 goals and payment schedules, F3 Budget page, F4 weekly pot
-  and spending log. Port the logic from `../Finance-App`
-  (FinanceGoalModels, MonthSummary, SpendingStore) as pure functions with
-  tests first. Months are half-open (start ≤ date < end).
+- **F2 (done, 8 Oct):** goals (`model/goals.ts`, `finance_goals.json` in
+  the iPhone shape): saving / set-aside / debt, a payment plan worked out
+  by `schedule()` (skips push it out, extras pull it in), Goals tab with
+  progress and a Confirm button when a payment is due, goal editor,
+  payment pop-up (confirm / skip / extra). Goal payments also show on the
+  Calendar tab (theme colour, amber when due) and in its totals: debt
+  payments count as Out; saving and set-asides show as "to saving" and
+  "Still free" (MonthSummary's rule — that money stays in the account).
+  New vs the iPhone app: every 2 weeks; weekly lands on the first
+  payment's weekday; correct or remove a recorded payment; "a little
+  behind your date — X would get there" (suggestion counts only payments
+  still to come); "Needed by" wording for set-asides. 10 more tests.
+- **Next:** F3 Budget page, F4 weekly pot and spending log. Port the logic
+  from `../Finance-App` (MonthSummary/MonthBudget, SpendingStore) as pure
+  functions with tests first. Months are half-open (start ≤ date < end).
 
 ## Note editor upgrade (7 Oct 2026) — Stage 1 of 3 done
 
