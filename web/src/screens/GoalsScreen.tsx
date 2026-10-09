@@ -1,8 +1,12 @@
+import { notesPerGoal } from '@suite/links'
+import { decodeNote, decodeNotebook } from '@suite/record/decode'
 import { Flag, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { unresolvedDays } from '../model/challenges'
 import type { Goal } from '../model/types'
 import { useData } from '../store/data'
+import { list } from '../model/decode'
+import { Filename, loadRaw } from '../store/persist'
 import { SectionBox, VButton } from '../ui/components'
 import { LongTermGoalCard, ShortTermGoalRow, type GoalHandlers } from '../ui/goalCards'
 import type { ThemeColors } from '../ui/theme'
@@ -41,7 +45,12 @@ export function GoalsScreen({ colors }: { colors: ThemeColors }) {
     return goal
   })
 
+  // Record's notes, read once (Record owns them; they share this browser's storage).
+  const [notesCount] = useState(() =>
+    notesPerGoal(list(loadRaw(Filename.notes), decodeNote), list(loadRaw(Filename.notebooks), decodeNotebook)))
+
   const handlers: GoalHandlers = {
+    notesFor: id => notesCount.get(id) ?? 0,
     onEdit: g => (g.kind === 'longTerm' ? setEditingLong({ goal: g, isNew: false }) : setEditingShort(g)),
     onSetDone: (g, date, done) => setCompletion(g.id, date, done),
     onSetCount: (g, date, count) => setCount(g.id, date, count),

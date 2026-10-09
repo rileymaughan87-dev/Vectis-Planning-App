@@ -9,6 +9,7 @@ import { isDoneOn, missNudge } from '../model/goals'
 import { REVIEW_HEADING, dayDoc, sectionText, withSection } from '../model/noteDoc'
 import { flaggedGoals, journalEntryFor, reviewGoals, reviewPrompt } from '../model/planning'
 import { useData } from '../store/data'
+import { recordJournalLink } from '@suite/links'
 import { CompletionMark, SectionBox, Sheet } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 
@@ -21,7 +22,8 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
   const flagged = flaggedGoals(goals, today, planReview.flagRepeatedMisses)
   const prompt = reviewPrompt(flagged)
 
-  const save = () => {
+  /** Writes the answer (if any) into the day's Daily review section. */
+  const write = () => {
     const trimmed = text.trim()
     if (trimmed) {
       // Only the Daily review section changes; anything already written under Journal stays.
@@ -29,7 +31,15 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
       seedReflection(today, prompt)
       setJournalDoc(today, withSection(day, REVIEW_HEADING, trimmed))
     }
+  }
+  const save = () => {
+    write()
     onClose()
+  }
+  /** Saves, then opens today in Record's journal to keep writing. */
+  const continueInRecord = () => {
+    write()
+    location.href = recordJournalLink(today)
   }
 
   return (
@@ -64,6 +74,10 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
         <label htmlFor="reflection" className="review-prompt">{prompt}</label>
         <textarea id="reflection" className="writing" rows={5} value={text} onChange={e => setText(e.target.value)} style={{ resize: 'vertical' }} />
         <p className="help">Optional — skipping is fine. Your answer goes under today's Daily review heading in your journal in Record.</p>
+        <button className="link-row" onClick={continueInRecord}>
+          <span className="grow">Write more in Record</span>
+          <span aria-hidden="true">→</span>
+        </button>
       </SectionBox>
     </Sheet>
   )

@@ -86,6 +86,25 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Record Stage 3: links between the apps (10 Oct 2026)
+
+- `suite/src/links.ts`: Record opens `#journal=YYYY-MM-DD` (that day's
+  entry) and `#goal=<id>` (Notes filtered to that goal, "Show all" to
+  clear); the address is cleared once read. Links are relative
+  (`../record/…`), so they stay inside the Vectis Home Screen app.
+- Planner's evening review: "Write more in Record →" saves the answer and
+  opens today in Record. Goal cards (yours, not a partner's): "N notes in
+  Record →" when notes or notebooks link to the goal (`notesPerGoal`,
+  counting notes in a linked notebook too).
+- Record's journal day shows "Done in Planner" — goals ticked or counted
+  that day (`GoalRef.doneDays`).
+- **Sync:** changes sent but not yet confirmed by the cloud now stay in
+  `sync:pending` until confirmed, and waiting changes are sent when the
+  page hides. Without this, jumping from Planner to Record within the
+  600ms send delay could let Record pull the cloud's older journal over
+  the review. Pending marks are cleared at the start of connect/choose,
+  not after sending.
+
 ## Index style (9–10 Oct 2026) — all three parts built
 
 Riley's design handoff (`docs/design-handoff-index/README.md`, mock-ups in

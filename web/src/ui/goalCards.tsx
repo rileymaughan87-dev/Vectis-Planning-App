@@ -1,6 +1,7 @@
 // Goal rows and cards. Used by the Goals tab and, read-only, by a
 // partner's view — leave out the handlers and nothing is tappable.
 
+import { recordGoalLink } from '@suite/links'
 import { Minus, Plus } from 'lucide-react'
 import { parseDate } from '../model/dates'
 import { formatShortDate, formatTimeRange } from '../model/format'
@@ -16,6 +17,8 @@ export interface GoalHandlers {
   onSetDone?: (goal: Goal, date: Date, done: boolean) => void
   onSetCount?: (goal: Goal, date: Date, count: number) => void
   onToggleMilestone?: (goal: Goal, milestoneID: string) => void
+  /** Notes in Record linked to a goal (only on your own Goals page). */
+  notesFor?: (goalID: string) => number
 }
 
 function Dot({ state }: { state: GoalDayState }) {
@@ -121,7 +124,19 @@ export function ShortTermGoalRow(props: GoalHandlers & { goal: Goal; accent: str
       {meta.length > 0 && <span className="mono muted">{meta.join(' · ')}</span>}
       {restLeft > 0 && <span className="mono muted">{restLeft} rest day{restLeft === 1 ? '' : 's'} left this week</span>}
       {nudge && <span className="caption">{nudge}</span>}
+      <NotesLink goalID={goal.id} count={props.notesFor?.(goal.id)} />
     </div>
+  )
+}
+
+/** "3 notes in Record →", for a goal with notes or notebooks linked to it. */
+function NotesLink({ goalID, count }: { goalID: string; count?: number }) {
+  if (!count) return null
+  return (
+    <a className="link-row" href={recordGoalLink(goalID)}>
+      <span className="grow">{count} {count === 1 ? 'note' : 'notes'} in Record</span>
+      <span aria-hidden="true">→</span>
+    </a>
   )
 }
 
@@ -198,10 +213,12 @@ export function LongTermGoalCard(props: GoalHandlers & { goal: Goal; allGoals: G
               onEdit={props.onEdit}
               onSetDone={props.onSetDone}
               onSetCount={props.onSetCount}
+              notesFor={props.notesFor}
             />
           ))}
         </>
       )}
+      <NotesLink goalID={goal.id} count={props.notesFor?.(goal.id)} />
     </div>
   )
 }

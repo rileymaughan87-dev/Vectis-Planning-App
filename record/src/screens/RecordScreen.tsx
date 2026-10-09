@@ -6,11 +6,13 @@
 // organised side. Each journal day is one entry with two foldable
 // sections, Journal and Daily review (where the evening review's answer goes).
 
+import type { RecordLink } from '@suite/links'
+import { isLinkedToGoal } from '@suite/links'
 import { MonthGrid } from '@suite/ui/MonthGrid'
 import { BookOpen, CalendarDays, CheckSquare, ChevronRight, FileText, List, PenSquare, Plus, Search, Target, Zap } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { ThemeColors } from '@suite/appearance'
-import { addDays, isSameDay, parseDate, startOfDay } from '@suite/dates'
+import { addDays, dayKey, isSameDay, parseDate, startOfDay } from '@suite/dates'
 import { startOfMonth } from '@suite/months'
 import { RichEditor } from '@suite/record/editor/LazyRichEditor'
 import { matchesJournal } from '@suite/record/journalSearch'
@@ -19,12 +21,13 @@ import {
 } from '@suite/record/noteDoc'
 import type { JournalEntry, Note, NoteType, Notebook } from '@suite/record/types'
 import { Sheet, VButton } from '@suite/ui/components'
+import { goalsDoneOn } from '../model/goals'
 import { useData } from '../store/data'
 import { NoteEditor, NoteTypePicker, NotebookEditor, newNote, newNotebook } from './NoteEditors'
 
 export type Section = 'journal' | 'notebooks' | 'notes'
 
-export function RecordScreen({ section, colors }: { section: Section; colors: ThemeColors }) {
+export function RecordScreen({ section, colors, link }: { section: Section; colors: ThemeColors; link?: RecordLink | null }) {
   const [picking, setPicking] = useState<{ notebookID?: string } | null>(null)
   const [editingNote, setEditingNote] = useState<{ note: Note; isNew: boolean } | null>(null)
   const [editingNotebook, setEditingNotebook] = useState<{ notebook: Notebook; isNew: boolean } | null>(null)
@@ -48,9 +51,11 @@ export function RecordScreen({ section, colors }: { section: Section; colors: Th
         </div>
       )}
 
-      {section === 'journal' && <JournalSection colors={colors} />}
+      {section === 'journal' && <JournalSection colors={colors} openDay={link?.kind === 'journal' ? link.date : undefined} />}
       {section === 'notebooks' && <NotebooksSection colors={colors} onOpen={setOpenNotebookID} />}
-      {section === 'notes' && <NotesSection colors={colors} onSelect={n => setEditingNote({ note: n, isNew: false })} />}
+      {section === 'notes' && (
+        <NotesSection colors={colors} goalID={link?.kind === 'goal' ? link.goalID : undefined} onSelect={n => setEditingNote({ note: n, isNew: false })} />
+      )}
 
       {openNotebookID && !editingNote && !picking && !editingNotebook && (
         <NotebookDetail
@@ -107,12 +112,13 @@ const hasWriting = (e?: JournalEntry) => {
   return Boolean(p.journal || p.review)
 }
 
-function JournalSection({ colors }: { colors: ThemeColors }) {
+function JournalSection({ colors, openDay }: { colors: ThemeColors; openDay?: Date }) {
   const journal = useData(s => s.journal)
   const [query, setQuery] = useState('')
   const [calendar, setCalendar] = useState(false)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
-  const [open, setOpen] = useState<Date | null>(null)
+  // A day opened from Planner's evening review starts open.
+  const [open, setOpen] = useState<Date | null>(openDay ?? null)
 
   const entries = journal.filter(hasWriting).sort((a, b) => b.date.localeCompare(a.date))
 
@@ -221,6 +227,7 @@ function JournalEntryEditor({ date, onClose }: { date: Date; onClose: () => void
 
   return (
     <Sheet fullscreen title={dayLabel(date, true)} onClose={onClose} leftLabel="Close" right={{ label: 'Save', onClick: save }}>
+      <PlannerDay date={date} />
       {entry?.reflectionPrompt && <div className="caption">Review question: <em>{entry.reflectionPrompt}</em></div>}
       <RichEditor
         initial={initial}
@@ -239,6 +246,18 @@ function JournalEntryEditor({ date, onClose }: { date: Date; onClose: () => void
         }}>Delete this day</VButton>
       )}
     </Sheet>
+  )
+}
+
+/** The goals ticked in Planner that day, as context for writing about it. */
+function PlannerDay({ date }: { date: Date }) {
+  const done = goalsDoneOn(useData(s => s.goals), dayKey(date))
+  if (done.length === 0) return null
+  return (
+    <div className="planner-day">
+      <span className="mono muted">Done in Planner</span>
+      <span className="caption">{done.join(' · ')}</span>
+    </div>
   )
 }
 
@@ -290,17 +309,20 @@ function recencyLabel(iso: string, today = startOfDay(new Date())): string {
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 }
 
-function NotesSection({ colors, onSelect }: { colors: ThemeColors; onSelect: (n: Note) => void }) {
-  const { notes, notebooks } = useData()
+function NotesSection({ colors, onSelect, goalID }: { colors: ThemeColors; onSelect: (n: Note) => void; goalID?: string }) {
+  const { notes, notebooks, goals } = useData()
   const [query, setQuery] = useState('')
   const [kind, setKind] = useState<Kind>('all')
+  // From a Planner goal's "notes in Record" link: just that goal's notes, wherever they're kept.
+  const [goalFilter, setGoalFilter] = useState(goalID)
+  const filterGoal = goals.find(g => g.id === goalFilter)
   const q = query.trim().toLowerCase()
   const notebookName = (id?: string) => notebooks.find(b => b.id === id)?.title
 
   // Loose notes live here; notes in a notebook show under it — except when
-  // searching, which looks everywhere so nothing is hard to find.
+  // searching or showing a goal's notes, which look everywhere.
   const pool = notes
-    .filter(n => (q ? true : !n.notebookID) && (kind === 'all' || n.type === kind))
+    .filter(n => (goalFilter ? isLinkedToGoal(n, notebooks, goalFilter) : q ? true : !n.notebookID) && (kind === 'all' || n.type === kind))
     .filter(n => !q || n.title.toLowerCase().includes(q) || notePreview(n).toLowerCase().includes(q))
     .sort((a, b) => b.updatedDate.localeCompare(a.updatedDate))
 
@@ -321,13 +343,20 @@ function NotesSection({ colors, onSelect }: { colors: ThemeColors; onSelect: (n:
       <div className="kind-filter" role="group" aria-label="Show">
         {kinds.map(k => <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>{k.label}</button>)}
       </div>
-      {!anyLoose && !q ? (
+      {goalFilter && (
+        <div className="goal-filter">
+          <Target size={13} style={{ color: colors.primary, flex: 'none' }} />
+          <span className="grow ellipsis">Linked to {filterGoal?.title ?? 'a goal'}</span>
+          <button className="text-button" onClick={() => setGoalFilter(undefined)}>Show all</button>
+        </div>
+      )}
+      {!anyLoose && !q && !goalFilter ? (
         <div className="empty">
           <strong style={{ color: 'var(--text)' }}>No notes yet</strong>
           <span className="caption">Tap New for a quick jot, a list, or a note.</span>
         </div>
       ) : groups.length === 0 ? (
-        <p className="muted" style={{ textAlign: 'center' }}>{q ? 'Nothing matches.' : `No ${kinds.find(k => k.id === kind)!.label.toLowerCase()} here yet.`}</p>
+        <p className="muted" style={{ textAlign: 'center' }}>{q || goalFilter ? 'Nothing matches.' : `No ${kinds.find(k => k.id === kind)!.label.toLowerCase()} here yet.`}</p>
       ) : (
         groups.map(g => (
           <section key={g.label}>

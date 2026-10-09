@@ -1,10 +1,13 @@
 // Record's top level: the suite's shared shell with three tabs — Journal
 // (where it opens), Notebooks and Notes — and Settings in the side menu.
+// Links from the other apps (suite/links.ts) open a journal day or a
+// goal's notes.
 
 import { themeColors, useApplyTheme } from '@suite/appearance'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
 import { Settings } from 'lucide-react'
-import { useState } from 'react'
+import { parseRecordLink, type RecordLink } from '@suite/links'
+import { useEffect, useState } from 'react'
 import { APP_NAME } from './brand'
 import { RecordScreen, type Section } from './screens/RecordScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
@@ -25,12 +28,34 @@ function savedTab(): Section {
   }
 }
 
+/** A link in the address, taken once and then cleared so a reload doesn't repeat it. */
+function takeLink(): RecordLink | null {
+  const link = parseRecordLink(location.hash)
+  if (link) history.replaceState(null, '', location.pathname + location.search)
+  return link
+}
+
+const tabFor = (link: RecordLink): Section => (link.kind === 'journal' ? 'journal' : 'notes')
+
 export default function App() {
   const appearance = useData(s => s.appearance)
   useApplyTheme(appearance)
   const colors = themeColors(appearance)
-  const [tab, setTab] = useState<Section>(savedTab)
+  const [link, setLink] = useState(() => ({ link: takeLink(), n: 0 }))
+  const [tab, setTab] = useState<Section>(() => (link.link ? tabFor(link.link) : savedTab()))
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // A link followed while Record is already open.
+  useEffect(() => {
+    const onHash = () => {
+      const next = takeLink()
+      if (!next) return
+      setLink(l => ({ link: next, n: l.n + 1 }))
+      setTab(tabFor(next))
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   const choose = (t: Section) => {
     setTab(t)
@@ -63,7 +88,7 @@ export default function App() {
       )}
       overlays={settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
     >
-      <RecordScreen key={tab} section={tab} colors={colors} />
+      <RecordScreen key={`${tab}:${link.n}`} section={tab} colors={colors} link={link.link && tabFor(link.link) === tab ? link.link : null} />
     </AppShell>
   )
 }
