@@ -1,5 +1,7 @@
 // Shared pieces, matching the iPhone app's SectionBox, EditorBox,
 // CompletionMark and VectisButtonStyle so screens can't drift apart.
+// Styled in the Index style (suite/src/styles.css): sections are unboxed,
+// with a mono index, an italic title and a pivot rule in their accent.
 
 import { ChevronRight, X } from 'lucide-react'
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react'
@@ -14,26 +16,41 @@ export function accentStyle(accent?: string, onAccent?: string): WithAccent {
   return style
 }
 
-export function SectionBox(props: { title: string; accent: string; subtitle?: string; children: ReactNode; className?: string }) {
+/** The section's lever: a dot and a line running off to the right edge. */
+export function PivotRule({ accent }: { accent?: string }) {
+  return <div className="pivot-rule" style={accentStyle(accent)} aria-hidden="true" />
+}
+
+/**
+ * A page section: index, title and an optional note on the right, over a
+ * pivot rule. Sections number themselves 01, 02… in page order; pass
+ * `index` to choose the number instead.
+ */
+export function SectionBox(props: { title: string; accent: string; subtitle?: string; index?: string; children: ReactNode; className?: string }) {
   return (
     <section className={`section-box ${props.className ?? ''}`} style={accentStyle(props.accent)}>
       <div className="section-head">
-        <span className="stripe" />
+        <span className="index">{props.index}</span>
         <h2>{props.title}</h2>
         {props.subtitle && <span className="subtitle">{props.subtitle}</span>}
       </div>
+      <PivotRule />
       <div className="section-body">{props.children}</div>
     </section>
   )
 }
 
-export function EditorBox(props: { title: string; accent?: string; trailing?: string; children: ReactNode }) {
+/** A section of an editor sheet: the same head as a page section, a size smaller. */
+export function EditorBox(props: { title: string; accent?: string; trailing?: string; index?: string; children: ReactNode }) {
   return (
     <div className="editor-box" style={accentStyle(props.accent)}>
       <div className="editor-box-head">
-        <span className="stripe" />
-        {props.title}
-        {props.trailing && <span className="trailing">{props.trailing}</span>}
+        <div className="head-row">
+          <span className="index">{props.index}</span>
+          <span className="title">{props.title}</span>
+          {props.trailing && <span className="trailing">{props.trailing}</span>}
+        </div>
+        <PivotRule />
       </div>
       {props.children}
     </div>
@@ -56,7 +73,7 @@ export function SummaryRow(props: { title: string; summary: string; onClick: () 
 export function CompletionMark({ on, size = 20, color = 'var(--primary)' }: { on: boolean; size?: number; color?: string }) {
   return (
     <svg className="mark" width={size} height={size} viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="10" cy="10" r="9.25" fill="none" strokeWidth="1.5" stroke={on ? color : 'var(--text-3)'} />
+      <circle cx="10" cy="10" r="9.25" fill="none" strokeWidth="1.5" stroke={on ? color : 'var(--mark-off)'} />
       {on && (
         <path
           d="M5.8 8.5 L8.8 13.3 L14.6 5.2"

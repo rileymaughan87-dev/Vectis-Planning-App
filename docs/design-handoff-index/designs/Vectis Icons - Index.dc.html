@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@1,6..72,500..600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E7E4DD;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#15171B} a{color:#0068B5} a:hover{color:#004679}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="ix-vectis" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#F2EFE8"></rect><text x="150" y="228" font-family="'IBM Plex Mono',monospace" font-weight="500" font-size="92" fill="#0068B5">00</text><text x="500" y="700" text-anchor="middle" font-family="Newsreader,serif" font-style="italic" font-weight="500" font-size="520" fill="#15171B">Ve</text><path d="M150 790 L1024 790" stroke="#0068B5" stroke-width="22"></path><circle cx="150" cy="790" r="26" fill="#0068B5"></circle></symbol>
+<symbol id="ix-planner" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#F2EFE8"></rect><text x="150" y="228" font-family="'IBM Plex Mono',monospace" font-weight="500" font-size="92" fill="#0068B5">01</text><text x="500" y="700" text-anchor="middle" font-family="Newsreader,serif" font-style="italic" font-weight="500" font-size="520" fill="#15171B">Pl</text><path d="M150 790 L1024 790" stroke="#0068B5" stroke-width="22"></path><circle cx="150" cy="790" r="26" fill="#0068B5"></circle></symbol>
+<symbol id="ix-finance" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#F2EFE8"></rect><text x="150" y="228" font-family="'IBM Plex Mono',monospace" font-weight="500" font-size="92" fill="#0068B5">02</text><text x="500" y="700" text-anchor="middle" font-family="Newsreader,serif" font-style="italic" font-weight="500" font-size="520" fill="#15171B">Fi</text><path d="M150 790 L1024 790" stroke="#0068B5" stroke-width="22"></path><circle cx="150" cy="790" r="26" fill="#0068B5"></circle></symbol>
+<symbol id="ix-record" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#F2EFE8"></rect><text x="150" y="228" font-family="'IBM Plex Mono',monospace" font-weight="500" font-size="92" fill="#0068B5">03</text><text x="500" y="700" text-anchor="middle" font-family="Newsreader,serif" font-style="italic" font-weight="500" font-size="520" fill="#15171B">Re</text><path d="M150 790 L1024 790" stroke="#0068B5" stroke-width="22"></path><circle cx="150" cy="790" r="26" fill="#0068B5"></circle></symbol>
+<symbol id="ix-future" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#F2EFE8"></rect><text x="150" y="228" font-family="'IBM Plex Mono',monospace" font-weight="500" font-size="92" fill="#0068B5">04</text><text x="500" y="700" text-anchor="middle" font-family="Newsreader,serif" font-style="italic" font-weight="500" font-size="520" fill="#15171B">He</text><path d="M150 790 L1024 790" stroke="#0068B5" stroke-width="22"></path><circle cx="150" cy="790" r="26" fill="#0068B5"></circle></symbol>
+</defs></svg>
+<main style="padding:72px;display:flex;flex-direction:column;gap:56px;max-width:1400px">
+  <header style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+    <div style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#5B5E66">Direction 2b · Index</div>
+    <h1 style="margin:0;font-family:Newsreader,Georgia,serif;font-style:italic;font-weight:500;font-size:64px;color:#0068B5;line-height:1">Vectis</h1>
+    <p style="margin:0;font-size:18px;line-height:1.5;color:#3A3D44;text-wrap:pretty">Each app is an entry in a numbered set: index, two letters, and a rule that starts at a pivot point and runs off the edge. Vectis is 00, the place to stand.</p>
+  </header>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px">
+    <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+      <figure style="margin:0;display:flex;flex-direction:column;gap:12px">
+        <svg viewBox="0 0 1024 1024" style="width:100%;height:auto;display:block;border-radius:{{ bigRadius }};outline:1px solid #D6D2C8"><use href="#ix-{{ a.key }}"></use></svg>
+        <figcaption style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-family:Newsreader,Georgia,serif;font-style:italic;font-weight:500;font-size:24px;color:#0068B5">{{ a.name }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5B5E66">{{ a.num }}</span>
+        </figcaption>
+      </figure>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:0;border:1px solid #D6D2C8">
+    <div style="background:#EDEBE5;padding:40px;display:flex;flex-direction:column;gap:32px">
+      <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5B5E66">Light Home Screen</div>
+      <div style="display:flex;flex-wrap:wrap;gap:28px">
+        <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:60px">
+            <svg viewBox="0 0 1024 1024" width="60" height="60" style="display:block;border-radius:13.5px;box-shadow:0 1px 2px rgba(0,0,0,0.14)"><use href="#ix-{{ a.key }}"></use></svg>
+            <span style="font-size:11px;color:#15171B">{{ a.name }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+        <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+          <svg viewBox="0 0 1024 1024" width="32" height="32" style="display:block;border-radius:3px;outline:1px solid #D6D2C8"><use href="#ix-{{ a.key }}"></use></svg>
+        </sc-for>
+        <span style="width:8px"></span>
+        <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+          <svg viewBox="0 0 1024 1024" width="16" height="16" style="display:block;border-radius:2px;outline:1px solid #D6D2C8"><use href="#ix-{{ a.key }}"></use></svg>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:#1B1C1F;padding:40px;display:flex;flex-direction:column;gap:32px">
+      <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#A9ABB0">Dark Home Screen</div>
+      <div style="display:flex;flex-wrap:wrap;gap:28px">
+        <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:60px">
+            <svg viewBox="0 0 1024 1024" width="60" height="60" style="display:block;border-radius:13.5px"><use href="#ix-{{ a.key }}"></use></svg>
+            <span style="font-size:11px;color:#ECEAE5">{{ a.name }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+        <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+          <svg viewBox="0 0 1024 1024" width="32" height="32" style="display:block;border-radius:3px"><use href="#ix-{{ a.key }}"></use></svg>
+        </sc-for>
+        <span style="width:8px"></span>
+        <sc-for list="{{ apps }}" as="a" hint-placeholder-count="5">
+          <svg viewBox="0 0 1024 1024" width="16" height="16" style="display:block;border-radius:2px"><use href="#ix-{{ a.key }}"></use></svg>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5B5E66">Lockup</div>
+      <div style="display:flex;align-items:center;gap:20px;background:#FBFAF7;border:1px solid #D6D2C8;padding:32px">
+        <svg viewBox="0 0 1024 1024" width="80" height="80" style="display:block;border-radius:18px;outline:1px solid #D6D2C8"><use href="#ix-vectis"></use></svg>
+        <span style="font-family:Newsreader,Georgia,serif;font-style:italic;font-weight:500;font-size:56px;color:#0068B5;line-height:1">Vectis</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5B5E66">System</div>
+      <dl style="margin:0;display:grid;grid-template-columns:max-content minmax(0,1fr);gap:12px 24px;font-size:15px;line-height:1.5">
+        <dt style="color:#5B5E66">Index</dt><dd style="margin:0">IBM Plex Mono 500, suite blue. Vectis is 00; new apps take the next number.</dd>
+        <dt style="color:#5B5E66">Letters</dt><dd style="margin:0">First two letters of the name, Newsreader italic 500, ink #15171B.</dd>
+        <dt style="color:#5B5E66">Rule</dt><dd style="margin:0">Suite blue, from a pivot dot at the left margin, running off the right edge.</dd>
+        <dt style="color:#5B5E66">Ground</dt><dd style="margin:0">Paper #F2EFE8. Never themed.</dd>
+      </dl>
+    </div>
+  </div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;previewRounding&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;label&quot;:&quot;Round large previews like a phone&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      bigRadius: (this.props.previewRounding ?? false) ? '22.5%' : '0',
+      apps: [
+        { key: 'vectis', name: 'Vectis', num: '00' },
+        { key: 'planner', name: 'Planner', num: '01' },
+        { key: 'finance', name: 'Finance', num: '02' },
+        { key: 'record', name: 'Record', num: '03' },
+        { key: 'future', name: 'Health', num: '04 · example' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

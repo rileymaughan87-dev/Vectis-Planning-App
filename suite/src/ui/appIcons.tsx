@@ -1,42 +1,19 @@
-// The suite's app icons, drawn the same way as each app's Home Screen icon
-// (docs/design-system.md): suite blue square, thin black ring, and one
-// thick round-capped stroke breaking out of the ring at the top right.
-// The source of truth for the icons' shapes (the Home Screen PNGs are drawn
-// from them). Not shown on the Vectis home page, which is text only.
+// The suite's apps in the Index style (docs/brand-brief.md): each has an
+// index number and two letters — Vectis 00 Ve, Planner 01 Pl, Finance
+// 02 Fi, Record 03 Re. A new app takes the next number and its first two
+// letters. The icons themselves are finished PNGs in each app's public/
+// folder (drawn with the real fonts): icon-1024.png for the Home Screen,
+// favicon-16/32.png (one letter, heavier rule) for 48px and below.
 
-export type AppIconName = 'vectis' | 'planner' | 'finance' | 'record'
-
-/** Each icon's stroke(s), in a 1024 × 1024 box. */
-export const ICON_STROKES: Record<AppIconName, { path: string; fill?: string }[]> = {
-  // A lever on its fulcrum (vectis is Latin for lever).
-  vectis: [
-    { path: 'M262 664 L832 284' },
-    { path: 'M440 560 L372 690 L508 690 Z', fill: '#000' },
-  ],
-  // The lever tick.
-  planner: [{ path: 'M306 340 Q 380 570 510 762 Q 640 520 786 272' }],
-  // A rising line.
-  finance: [{ path: 'M284 655 L444 495 L565 600 L792 266' }],
-  // A line of handwriting running off the page.
-  record: [{ path: 'M268 640 C 360 420, 430 760, 530 570 S 690 320, 806 268' }],
+export interface SuiteApp {
+  index: string
+  name: string
+  letters: string
 }
 
-export function AppIcon({ name, size = 56, label }: { name: AppIconName; size?: number; label?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 1024 1024" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
-      <rect width="1024" height="1024" rx="224" fill="#0068B5" />
-      <circle cx="512" cy="512" r="378" fill="none" stroke="#000" strokeWidth="34" />
-      {ICON_STROKES[name].map((s, i) => (
-        <path key={i} d={s.path} fill={s.fill ?? 'none'} stroke="#000" strokeWidth={s.fill ? 0 : 88} strokeLinecap="round" strokeLinejoin="round" />
-      ))}
-    </svg>
-  )
-}
-
-/** The icon as a standalone SVG file (favicon, and drawn to PNG for the Home Screen). */
-export function iconSVG(name: AppIconName, rounded = false): string {
-  const strokes = ICON_STROKES[name]
-    .map(s => `<path d="${s.path}" fill="${s.fill ?? 'none'}" stroke="#000" stroke-width="${s.fill ? 0 : 88}" stroke-linecap="round" stroke-linejoin="round"/>`)
-    .join('')
-  return `<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect width="1024" height="1024"${rounded ? ' rx="224"' : ''} fill="#0068B5"/><circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>${strokes}</svg>`
-}
+export const SUITE_APPS: SuiteApp[] = [
+  { index: '00', name: 'Vectis', letters: 'Ve' },
+  { index: '01', name: 'Planner', letters: 'Pl' },
+  { index: '02', name: 'Finance', letters: 'Fi' },
+  { index: '03', name: 'Record', letters: 'Re' },
+]

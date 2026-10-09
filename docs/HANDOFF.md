@@ -64,6 +64,37 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Index style (9–10 Oct 2026) — part 1 of 3 built
+
+Riley's design handoff (`docs/design-handoff-index/README.md`, mock-ups in
+`designs/` — serve the folder and open the `.dc.html` files) restyles the
+suite as **Index**: paper and ink, suite-blue frame, mono index numbers,
+Newsreader italic titles, pivot rules. Visual only; no behaviour changes
+except the two noted under part 2 and 3.
+
+- **Part 1 (built):** `docs/design-system.md` and `brand-brief.md`
+  rewritten; fonts bundled via Fontsource (`suite/src/fonts.ts`, imported
+  by every app's `main.tsx`); new tokens in `suite/src/styles.css` (frame
+  colours fixed, `--brand` for the frame, scheme colours for content only,
+  radius 0); `SectionBox`/`EditorBox` are unboxed heads with an index
+  (CSS counter, `index` prop overrides) and `PivotRule`; `AppShell` has the
+  "00" home link, ink menu lines, numbered tabs without icons (`ShellTab`
+  lost `icon`); Segmented is an underline selector; the Vectis home page
+  rebuilt to its mock (fixed paper and blue, no longer themed); new icons
+  in every app's `public/` (`favicon.svg` replaced by `favicon-16/32.png`),
+  manifests and `theme-color` now paper `#F2EFE8`. Dark mode keeps the old
+  dark colours (not designed yet). iOS asset catalogues untouched — the
+  Swift apps are read-only.
+- **Part 2 (next):** screen-by-screen against the mocks — the calmer
+  Planner Home (P1: Right now + Today only, tasks behind a "N tasks →"
+  link, evening review card only after 6 pm), Daily header and grid
+  (mono hour labels, 2px blocks, now line as a pivot rule), Long-Term
+  (P4), Goals cards (P2), evening review (P6), Record journal rows (P5),
+  Finance F1–F3, and the app-level CSS in each `index.css`.
+- **Part 3 (next):** category colours setting (P7/P7b) — presets Index,
+  Studio, Garden, Dusk or Custom, stored as `categoryPalette` with the
+  settings and synced; existing category colours migrate into Custom.
+
 ## Record app (9 Oct 2026) — Vectis Stage 2 of 3
 
 Record is its own app at `/record/` (`record/` workspace): bottom tabs

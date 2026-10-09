@@ -5,7 +5,7 @@
 
 import { useApplyTheme } from '@suite/appearance'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
-import { CalendarDays, ChartColumn, Settings, Target } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { BudgetScreen } from './screens/BudgetScreen'
@@ -18,9 +18,9 @@ import { useSettings } from './store/settings'
 type Tab = 'budget' | 'calendar' | 'goals'
 
 const tabs: ShellTab<Tab>[] = [
-  { id: 'budget', title: 'Budget', icon: s => <ChartColumn size={s} /> },
-  { id: 'calendar', title: 'Calendar', icon: s => <CalendarDays size={s} /> },
-  { id: 'goals', title: 'Goals', icon: s => <Target size={s} /> },
+  { id: 'budget', title: 'Budget' },
+  { id: 'calendar', title: 'Calendar' },
+  { id: 'goals', title: 'Goals' },
 ]
 
 export default function App() {

@@ -5,7 +5,9 @@ calendar, a long-term calendar, and a Record tab (journal, notebooks, notes).
 The name refers to Archimedes' lever. Since Oct 2026 the app *shows* as
 "Planner" (home screen, wordmark, launch screen); the code and Xcode project
 are still named Vectis. Suite-wide rules: `docs/suite-rules.md`; design
-system: `docs/design-system.md` (copies shared with the Finance app).
+system: `docs/design-system.md` — the **Index** style since Oct 2026
+(paper and ink, suite-blue frame, mono index numbers, italic serif titles,
+pivot rules; Riley's design handoff is in `docs/design-handoff-index/`).
 
 Full history and status: `docs/HANDOFF.md` (read this at the start of any
 non-trivial task). Design rationale with research: `docs/Vectis-spec.md` — the
@@ -41,9 +43,11 @@ tool; they share design, sign-in and (where it helps) data.
 - One GitHub Pages deploy builds them all (`.github/workflows/deploy-web.yml`):
   home at `/`, Planner at `/planner/`, Finance at `/finance/`, Record at
   `/record/`. Each app's
-  `AppShell` gets `homeHref="../"` (the grid button beside its name).
-- App icons: `suite/src/ui/appIcons.tsx` (strokes for each icon). A PNG is
-  drawn from the same shapes (Vectis's `home/public/icon-1024.png`).
+  `AppShell` gets `homeHref="../"` (the "00" link beside its name).
+- App icons (Index): index number + two letters over a pivot rule —
+  Vectis 00 Ve, Planner 01 Pl, Finance 02 Fi, Record 03 Re. Finished PNGs
+  in each app's `public/` (`icon-1024.png`, `favicon-16/32.png`); the list
+  is `suite/src/ui/appIcons.tsx`. Recipe in `docs/brand-brief.md`.
 
 ## Two codebases (Oct 2026)
 

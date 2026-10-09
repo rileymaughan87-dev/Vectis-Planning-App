@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Design, components and helpers shared by the Vectis apps (Planner, Finance, Record).",
   "dependencies": {
+    "@fontsource-variable/newsreader": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
     "@tiptap/extension-highlight": "^3.31.4",
     "@tiptap/extension-list": "^3.31.4",
     "@tiptap/extensions": "^3.31.4",

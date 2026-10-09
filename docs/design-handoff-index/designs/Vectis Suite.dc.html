@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#E3DFD6;font-family:"IBM Plex Sans",-apple-system,sans-serif;color:#15171B;-webkit-font-smoothing:antialiased} a{color:#0068B5;text-decoration:none} a:hover{color:#004679} h1,h2,h3,p{margin:0}</style>
+</helmet>
+<div style="padding:72px;display:flex;flex-direction:column;gap:72px">
+<header style="display:flex;flex-direction:column;gap:12px;max-width:820px">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0068B5">00 · Index style, applied to the suite</div>
+  <h1 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:64px;line-height:1;color:#0068B5">Vectis</h1>
+  <p style="font-size:17px;line-height:1.55;color:#3A3D44;text-wrap:pretty">Every tab, section and app carries an index number, set in mono. Section titles are in Newsreader italic. Coloured boxes and accent stripes give way to a pivot rule: a dot with a line running off the right edge, as on the icon. Content keeps its scheme colours; the frame is paper and suite blue. The <a href="Vectis Home.dc.html">Vectis home</a> is already done.</p>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:28px">
+  <h2 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:36px;color:#15171B">Planner</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+    <div data-screen-label="P1 Home" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P1 · Home (calmer)</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Planner</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:40px 20px 24px;display:flex;flex-direction:column;gap:48px">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B4C7A">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Right now</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#6B4C7A"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#6B4C7A"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-family:Newsreader,serif;font-size:34px;line-height:1.1">Deep work: chapter 3</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">UNTIL 5:00 PM · 50 MIN LEFT</div>
+            </div>
+            <div style="font-size:15px;color:#55585F">Next: Run at 5:30 pm</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Today</h3><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">1 OF 3</span></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <sc-for list="{{ todayGoals }}" as="g" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+                <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="none" stroke-width="1.5" stroke="{{ g.ring }}"></circle><path d="M5.8 8.5 L8.8 13.3 L14.6 5.2" fill="none" stroke="#0068B5" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="{{ g.tick }}"></path></svg>
+                <span style="flex:1;font-size:15px;color:{{ g.color }};text-decoration:{{ g.strike }}">{{ g.title }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;padding:12px 0 0;margin-top:6px;border-top:1px solid #E2DDD2;font-size:14px;color:#0068B5"><span style="flex:1">2 tasks</span><span>→</span></div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ pTabsHome }}" as="t" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="width:300px;padding-top:30px;font-size:14px;line-height:1.55;color:#3A3D44;text-wrap:pretty">Home keeps two things: what's on now and today's goals. Tasks fold into one link; times, events and the all-day row move to Daily. The evening review card only appears after 6 pm.</div>
+
+    <div data-screen-label="P2 Goals" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P2 · Goals</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Planner</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:20px 20px;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Short-term goals</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <div style="border:1px solid #D9D4C8;background:#FAF8F3;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font-size:16px;font-weight:500">Read 20 pages</span><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="none" stroke-width="1.5" stroke="#0068B5"></circle><path d="M5.8 8.5 L8.8 13.3 L14.6 5.2" fill="none" stroke="#0068B5" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="font-size:13px">Today</span></div>
+              <div style="display:flex;gap:6px">
+                <sc-for list="{{ dots }}" as="d" hint-placeholder-count="14"><span style="width:14px;height:14px;box-sizing:border-box;border-radius:50%;background:{{ d.bg }};border:1.5px solid {{ d.border }}"></span></sc-for>
+              </div>
+              <div style="display:flex;gap:28px;align-items:baseline">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:Newsreader,serif;font-size:28px;line-height:1">9/10</span><span style="font-size:11px;color:#55585F">last fortnight, rest days aside</span></div>
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:Newsreader,serif;font-size:28px;line-height:1">48</span><span style="font-size:11px;color:#55585F">times done</span></div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">7:00 – 7:30 AM · 1 REST DAY LEFT THIS WEEK</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #0068B5;color:#0068B5;padding:11px;font-size:14px;font-weight:500">+ Add goal</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D2574A">02</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Long-term goals</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#D2574A"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#D2574A"></span></div>
+            </div>
+            <div style="border:1px solid #D9D4C8;background:#FAF8F3;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:baseline;gap:8px"><span style="flex:1;font-size:16px;font-weight:500">Finish the first draft</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">BY 1 MAR</span></div>
+              <div style="height:3px;background:#E2DDD2"><div style="width:40%;height:100%;background:#D2574A"></div></div>
+              <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;font-size:14px">
+                  <svg width="15" height="15" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="none" stroke-width="1.5" stroke="{{ m.ring }}"></circle><path d="M5.8 8.5 L8.8 13.3 L14.6 5.2" fill="none" stroke="#D2574A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="{{ m.tick }}"></path></svg>
+                  <span style="flex:1;color:{{ m.color }};text-decoration:{{ m.strike }}">{{ m.title }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">{{ m.date }}</span>
+                </div>
+              </sc-for>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">2 OF 5 MILESTONES · 40%</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="text-align:center;border:1px solid #D2574A;color:#D2574A;padding:11px;font-size:14px;font-weight:500">+ Add goal</div>
+              <div style="text-align:center;border:1px solid #D2574A;color:#D2574A;padding:11px;font-size:14px;font-weight:500">Challenges</div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ pTabsGoals }}" as="t" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P3 Daily" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P3 · Daily</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Planner</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;padding:14px 20px 10px">
+            <span style="font-size:20px;color:#0068B5;width:24px">‹</span>
+            <div style="flex:1;display:flex;align-items:baseline;gap:10px"><span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Today</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">FRI 09 OCT</span></div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#0068B5;width:24px;text-align:center">−</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#0068B5;width:24px;text-align:center">+</span>
+            <span style="font-size:20px;color:#0068B5;width:24px;text-align:right">›</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px 10px">
+            <div style="text-align:center;border:1px solid #D2574A;color:#D2574A;padding:9px;font-size:13px;font-weight:500">Daily planning</div>
+            <div style="text-align:center;border:1px solid #D2574A;color:#D2574A;padding:9px;font-size:13px;font-weight:500">Review</div>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 20px 12px;overflow:hidden">
+            <sc-for list="{{ todayGoals }}" as="g" hint-placeholder-count="3">
+              <div style="flex:none;display:flex;align-items:center;gap:6px;border:1px solid #D9D4C8;background:#FAF8F3;padding:6px 10px;font-size:13px">
+                <svg width="14" height="14" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="none" stroke-width="1.5" stroke="{{ g.ring }}"></circle><path d="M5.8 8.5 L8.8 13.3 L14.6 5.2" fill="none" stroke="#0068B5" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="{{ g.tick }}"></path></svg>
+                <span style="color:{{ g.color }};text-decoration:{{ g.strike }}">{{ g.title }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:relative;height:540px;margin:4px 0 0;border-top:1px solid #D9D4C8">
+            <sc-for list="{{ hours }}" as="h" hint-placeholder-count="12">
+              <div style="position:absolute;left:52px;right:0;top:{{ h.top }}px;border-top:1px solid #DDD8CD"></div>
+              <div style="position:absolute;left:20px;top:{{ h.labelTop }}px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8C8E93">{{ h.label }}</div>
+            </sc-for>
+            <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="6">
+              <div style="position:absolute;left:56px;right:14px;top:{{ b.top }}px;height:{{ b.h }}px;box-sizing:border-box;background:{{ b.bg }};border:1px solid {{ b.border }};border-radius:2px;color:{{ b.fg }};padding:3px 8px;overflow:hidden;display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.title }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:0.85">{{ b.time }}</span>
+              </div>
+            </sc-for>
+            <div style="position:absolute;left:46px;right:0;top:440px;height:1.5px;background:#0068B5"></div>
+            <div style="position:absolute;left:43px;top:437px;width:7px;height:7px;border-radius:50%;background:#0068B5"></div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ pTabsDaily }}" as="t" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P4 Long-Term" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P4 · Long-Term</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Planner</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:24px 20px;display:flex;flex-direction:column;gap:32px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D2574A">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Goals</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#D2574A"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#D2574A"></span></div>
+            </div>
+            <sc-for list="{{ ltGoals }}" as="g" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:4px 0">
+                <div style="display:flex;align-items:baseline"><span style="flex:1;font-size:15px;font-weight:500">{{ g.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">{{ g.pct }}%</span></div>
+                <div style="height:3px;background:#E2DDD2"><div style="width:{{ g.pct }}%;height:100%;background:#D2574A"></div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02</span><h3 style="flex:1;font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">October 2026</h3><span style="font-size:20px;color:#0068B5;padding:0 6px">‹</span><span style="font-size:20px;color:#0068B5;padding:0 6px">›</span></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px">
+              <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7"><span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8C8E93;padding-bottom:4px">{{ w }}</span></sc-for>
+              <sc-for list="{{ ltCells }}" as="c" hint-placeholder-count="35">
+                <div style="height:62px;box-sizing:border-box;background:#FAF8F3;border:1px solid {{ c.border }};padding:4px;display:flex;flex-direction:column;justify-content:space-between;opacity:{{ c.opacity }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ c.numColor }};font-weight:{{ c.weight }}">{{ c.d }}</span>
+                  <div style="display:flex;gap:2px;flex-wrap:wrap"><sc-for list="{{ c.dots }}" as="dd" hint-placeholder-count="0"><span style="width:5px;height:5px;border-radius:50%;background:{{ dd }}"></span></sc-for></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ pTabsLong }}" as="t" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P5 Record" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P5 · Record</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Planner</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:20px 20px;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;gap:24px;border-bottom:1px solid #D9D4C8">
+            <span style="padding:6px 0 10px;border-bottom:2px solid #0068B5;margin-bottom:-1px;font-size:15px;font-weight:600;color:#0068B5">Journal</span>
+            <span style="padding:6px 0 10px;font-size:15px;color:#55585F">Notebooks</span>
+            <span style="padding:6px 0 10px;font-size:15px;color:#55585F">Notes</span>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ journal }}" as="j" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 12px;padding:16px 0;border-bottom:1px solid #E2DDD2">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:Newsreader,serif;font-size:30px;line-height:1">{{ j.day }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#55585F">{{ j.wk }}</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                  <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:19px">{{ j.head }}</span>
+                  <span style="font-size:14px;line-height:1.45;color:#3A3D44;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ j.text }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;background:#0068B5;color:#FFFFFF;padding:12px;font-size:14px;font-weight:500">+ New entry</div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ pTabsRecord }}" as="t" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P6 Evening review" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P6 · Evening review (sheet)</div>
+      <div style="width:390px;height:844px;background:#6E6C67;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="height:784px;background:#F2EFE8;border-radius:10px 10px 0 0;display:flex;flex-direction:column">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 20px;border-bottom:1px solid #D9D4C8">
+            <span style="font-size:14px;color:#0068B5">Skip</span>
+            <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:20px">Evening review</span>
+            <span style="justify-self:end;font-size:14px;font-weight:600;color:#0068B5">Done</span>
+          </div>
+          <div style="padding:24px 20px;display:flex;flex-direction:column;gap:32px">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Today</h3><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">1 OF 3 DONE</span></div>
+                <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+              </div>
+              <sc-for list="{{ todayGoals }}" as="g" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+                  <svg width="18" height="18" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9.25" fill="none" stroke-width="1.5" stroke="{{ g.ring }}"></circle><path d="M5.8 8.5 L8.8 13.3 L14.6 5.2" fill="none" stroke="#0068B5" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity="{{ g.tick }}"></path></svg>
+                  <span style="font-size:15px;color:{{ g.color }};text-decoration:{{ g.strike }}">{{ g.title }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;border-left:1.5px solid #D9D4C8;padding-left:14px">
+              <span style="font-size:15px;font-weight:500">Stretch</span>
+              <span style="font-size:13px;line-height:1.45;color:#55585F">Missed three of the last five. Worth picking back up, or moving to a time that suits better.</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">A line or two</h3></div>
+                <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+              </div>
+              <span style="font-family:Newsreader,serif;font-style:italic;font-size:19px;line-height:1.35">What made today’s reading easy to start?</span>
+              <div style="height:150px;background:#FAF8F3;border:1px solid #D9D4C8;padding:12px 14px;font-family:Newsreader,serif;font-size:17px;line-height:1.5;color:#15171B">Left the book on the kitchen table last night, so it was the first thing I saw.</div>
+              <span style="font-size:12px;line-height:1.45;color:#55585F">Optional, skipping is fine. Your answer goes under today’s Daily review heading in the journal.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div data-screen-label="P7 Colours" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P7 · Settings › Category colours</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-size:20px;color:#0068B5">‹</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:22px">Category colours</span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:20px">
+          <p style="font-size:13px;line-height:1.5;color:#55585F;text-wrap:pretty">Colours for blocks, goals and tasks. The rest of Vectis keeps its paper and blue.</p>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Presets</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <sc-for list="{{ presets }}" as="p" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:12px;padding:7px 12px;border:1px solid {{ p.border }};background:{{ p.bg }}">
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:500">{{ p.name }}</span><span style="font-size:12px;color:#55585F">{{ p.note }}</span></div>
+                  <div style="display:flex;gap:3px"><sc-for list="{{ p.colors }}" as="c" hint-placeholder-count="6"><span style="flex:1;height:12px;border-radius:2px;background:{{ c }}"></span></sc-for></div>
+                </div>
+                <span style="width:18px;text-align:center;color:#0068B5;font-size:15px">{{ p.mark }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Make it yours</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #E2DDD2">
+                <span style="width:20px;height:20px;border-radius:2px;background:{{ c.color }}"></span>
+                <span style="flex:1;font-size:15px">{{ c.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">{{ c.hex }}</span>
+                <span style="color:#8C8E93">›</span>
+              </div>
+            </sc-for>
+            <span style="font-size:12px;line-height:1.5;color:#55585F;padding-top:4px">Changing a colour switches you to Custom. You can go back to a preset at any time.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="P7b Colour picker" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">P7b · Picking a colour (sheet)</div>
+      <div style="width:390px;height:844px;background:#6E6C67;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="background:#F2EFE8;border-radius:10px 10px 0 0;display:flex;flex-direction:column">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 20px;border-bottom:1px solid #D9D4C8">
+            <span style="font-size:14px;color:#0068B5">Cancel</span>
+            <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:20px">Deep work</span>
+            <span style="justify-self:end;font-size:14px;font-weight:600;color:#0068B5">Done</span>
+          </div>
+          <div style="padding:20px 20px 40px;display:flex;flex-direction:column;gap:20px">
+            <div style="height:56px;background:#6B4C7A;border-radius:2px;color:#FFFFFF;padding:8px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">Deep work: chapter 3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:0.85">3:30 – 5:00</span></div>
+            <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px">
+              <sc-for list="{{ palette }}" as="c" hint-placeholder-count="18"><span style="aspect-ratio:1;border-radius:2px;background:{{ c.c }};outline:{{ c.ring }};outline-offset:2px"></span></sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid #E2DDD2">
+              <span style="font-size:15px;flex:1">Any colour</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;border:1px solid #D9D4C8;background:#FAF8F3;padding:6px 10px">#6B4C7A</span>
+            </div>
+            <span style="font-size:12px;line-height:1.5;color:#55585F">Text on the block switches between white and ink so it stays readable.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:28px">
+  <h2 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:36px;color:#15171B">Finance</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+    <div data-screen-label="F1 Budget" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">F1 · Budget</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Finance</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:20px 20px;display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">This week</h3><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">5 – 11 OCT</span></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="font-family:Newsreader,serif;font-size:44px;line-height:1">£64.20 <span style="font-style:italic;font-size:24px;color:#55585F">left</span></div>
+              <span style="font-size:13px;color:#55585F">£55.80 of £120.00 spent · about £21.40 a day for the rest of the week</span>
+              <div style="height:6px;background:#E2DDD2;margin-top:4px"><div style="width:46.5%;height:100%;background:#0068B5"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;background:#0068B5;color:#FFFFFF;padding:12px;font-size:14px;font-weight:500">+ Log spending</div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ logged }}" as="e" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #E2DDD2">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-size:15px">{{ e.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#55585F">{{ e.day }}</span></div>
+                  <span style="font-size:15px;font-weight:500;font-variant-numeric:tabular-nums">{{ e.amt }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px;color:#0068B5;padding:0 4px">‹</span>
+            <span style="flex:1;text-align:center;font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:22px">October 2026</span>
+            <span style="font-size:20px;color:#0068B5;padding:0 4px">›</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">In and out</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#55585F">DIFFERENCE</span><span style="font-family:Newsreader,serif;font-size:36px;line-height:1.1">£412.50</span><span style="font-size:13px;color:#55585F">More in than out — 18% of what comes in.</span></div>
+            <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;font-size:14px"><span style="flex:1">Money in</span><span style="font-weight:600;font-variant-numeric:tabular-nums">£2,290.00</span></div><div style="height:6px;background:#E2DDD2"><div style="width:100%;height:100%;background:#2B8A3E"></div></div></div>
+            <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;font-size:14px"><span style="flex:1">Money out</span><span style="font-weight:600;font-variant-numeric:tabular-nums">£1,877.50</span></div><div style="height:6px;background:#E2DDD2"><div style="width:82%;height:100%;background:#D2574A"></div></div></div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ fTabsBudget }}" as="t" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="F2 Calendar" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">F2 · Calendar</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Finance</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:24px 20px;display:flex;flex-direction:column;gap:28px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01</span><h3 style="flex:1;font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">October 2026</h3><span style="font-size:20px;color:#0068B5;padding:0 6px">‹</span><span style="font-size:20px;color:#0068B5;padding:0 6px">›</span></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px">
+              <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7"><span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8C8E93;padding-bottom:4px">{{ w }}</span></sc-for>
+              <sc-for list="{{ fCells }}" as="c" hint-placeholder-count="35">
+                <div style="height:58px;box-sizing:border-box;background:{{ c.bg }};border:1px solid {{ c.border }};padding:4px;display:flex;flex-direction:column;justify-content:space-between;opacity:{{ c.opacity }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ c.numColor }};font-weight:{{ c.weight }}">{{ c.d }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:{{ c.amtColor }};white-space:nowrap;overflow:hidden">{{ c.amt }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:16px;font-size:11px;color:#55585F">
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:#2B8A3E"></span>In</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:#D2574A"></span>Out</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:#D6862C"></span>Estimate</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Friday 9 October</h3></div>
+              <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+            </div>
+            <sc-for list="{{ dayItems }}" as="e" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #E2DDD2">
+                <span style="width:7px;height:7px;border-radius:50%;background:{{ e.c }}"></span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-size:15px">{{ e.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ e.metaColor }}">{{ e.meta }}</span></div>
+                <span style="font-size:15px;font-weight:500;font-variant-numeric:tabular-nums">{{ e.amt }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ fTabsCal }}" as="t" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="F3 Goals" style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F">F3 · Goals</div>
+      <div style="width:390px;height:844px;background:#F2EFE8;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 #CFC9BC,0 12px 32px rgba(21,23,27,0.10)">
+        <div style="flex:none;height:60px;padding:0 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #D9D4C8">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#55585F;border:1px solid #C9C3B6;padding:3px 5px">00</span>
+          <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Finance</span>
+          <span style="margin-left:auto;display:flex;flex-direction:column;gap:5px;width:20px"><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;background:#15171B"></span><span style="height:1.5px;width:13px;background:#15171B"></span></span>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:24px 20px;display:flex;flex-direction:column;gap:32px">
+          <sc-for list="{{ fGoals }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ s.c }}">{{ s.num }}</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">{{ s.section }}</h3></div>
+                <div style="position:relative;height:7px;margin-right:-20px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:{{ s.c }}"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:{{ s.c }}"></span></div>
+              </div>
+              <div style="border:1px solid #D9D4C8;background:#FAF8F3;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:8px"><span style="flex:1;font-size:15px;font-weight:500">{{ s.title }}</span><span style="font-size:13px;color:#55585F;font-variant-numeric:tabular-nums">{{ s.amounts }}</span></div>
+                <div style="height:3px;background:#E2DDD2"><div style="width:{{ s.pct }}%;height:100%;background:{{ s.c }}"></div></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#55585F">{{ s.plan }}</span>
+                <sc-if value="{{ s.due }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;border-top:1px solid #E2DDD2;padding-top:8px;margin-top:2px"><span style="flex:1;font-size:13px;color:#55585F">{{ s.due }}</span><span style="font-size:13px;font-weight:600;color:{{ s.c }}">Confirm</span></div>
+                </sc-if>
+              </div>
+              <div style="text-align:center;border:1px solid {{ s.c }};color:{{ s.c }};padding:10px;font-size:14px;font-weight:500">+ Add {{ s.add }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #D9D4C8;background:#F7F5EF;padding-bottom:22px">
+          <sc-for list="{{ fTabsGoals }}" as="t" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 6px;border-top:2px solid {{ t.bar }};margin-top:-1px;color:{{ t.color }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ t.num }}</span><span style="font-size:11px;font-weight:{{ t.weight }}">{{ t.label }}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section data-screen-label="System" style="display:flex;flex-direction:column;gap:28px;max-width:1300px">
+  <h2 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:36px;color:#15171B">System</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px">
+    <div style="background:#F2EFE8;padding:28px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01 · TYPE</span>
+      <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:26px;color:#0068B5">Wordmark · Newsreader italic 500</span>
+      <span style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Section title · italic 500, 24</span>
+      <span style="font-family:Newsreader,serif;font-size:36px;line-height:1">£412.50 · Headline numbers, roman</span>
+      <span style="font-size:15px">Body and rows · IBM Plex Sans 400/500, 15</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">01 · INDEXES, TIMES, METADATA · PLEX MONO 11, CAPS</span>
+    </div>
+    <div style="background:#F2EFE8;padding:28px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">02 · COLOUR</span>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+        <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="height:44px;background:{{ s.c }};border:1px solid #D9D4C8"></div><span style="font-size:11px">{{ s.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#55585F">{{ s.c }}</span></div>
+        </sc-for>
+      </div>
+      <span style="font-size:12px;line-height:1.5;color:#55585F">Frame is fixed (paper, ink, suite blue). Scheme primary/secondary/tertiary still colour content: section rules, goal blocks, tasks, events. Semantic colours never change.</span>
+    </div>
+    <div style="background:#F2EFE8;padding:28px;display:flex;flex-direction:column;gap:18px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">03 · COMPONENTS</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0068B5">01</span><h3 style="font-family:Newsreader,serif;font-style:italic;font-weight:500;font-size:24px">Section head</h3><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#55585F">META</span></div>
+        <div style="position:relative;height:7px;margin-right:-28px"><span style="position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#0068B5"></span><span style="position:absolute;left:3px;right:0;top:3px;height:1.5px;background:#0068B5"></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="text-align:center;background:#0068B5;color:#FFFFFF;padding:11px;font-size:14px;font-weight:500">Primary</div>
+        <div style="text-align:center;border:1px solid #0068B5;color:#0068B5;padding:11px;font-size:14px;font-weight:500">Secondary</div>
+      </div>
+      <div style="border:1px solid #D9D4C8;background:#FAF8F3;padding:12px 14px;font-size:14px">Card · 1px rule, square corners, surface #FAF8F3</div>
+      <span style="font-size:12px;line-height:1.5;color:#55585F">Corners: 0 on cards and buttons, 2px on calendar blocks. Pivot rule replaces the 4px accent stripe and the coloured box border. Tab bar: mono index over label, 2px top bar on the selected tab.</span>
+    </div>
+  </div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const BLUE = '#0068B5', INK = '#15171B', MUTED = '#55585F';
+    const tabs = (labels, active) => labels.map((l, i) => ({
+      num: String(i + 1).padStart(2, '0'), label: l,
+      color: i === active ? BLUE : MUTED, bar: i === active ? BLUE : 'transparent', weight: i === active ? 600 : 400
+    }));
+    const P = ['Home', 'Goals', 'Daily', 'Long-Term', 'Record'], F = ['Budget', 'Calendar', 'Goals'];
+    const goal = (title, time, done) => ({ title, time, ring: done ? BLUE : '#B9B4A8', tick: done ? 1 : 0, color: done ? MUTED : INK, strike: done ? 'line-through' : 'none' });
+    const ms = (title, date, done) => ({ title, date, ring: done ? '#D2574A' : '#B9B4A8', tick: done ? 1 : 0, color: done ? MUTED : INK, strike: done ? 'line-through' : 'none' });
+    const dotStates = ['d','d','d','r','d','d','o','d','d','d','r','d','d','p'];
+    const dots = dotStates.map(s => ({
+      bg: s === 'd' ? BLUE : 'transparent',
+      border: s === 'd' ? BLUE : s === 'r' ? '#C9922E' : s === 'p' ? '#B9B4A8' : '#DDD8CD'
+    }));
+    // October 2026, Monday first: 28 Sep – 1 Nov
+    const cells = (decorate) => {
+      const out = [];
+      const days = [28, 29, 30].map(d => ({ d, inMonth: false })).concat(Array.from({ length: 31 }, (_, i) => ({ d: i + 1, inMonth: true }))).concat([{ d: 1, inMonth: false }]);
+      days.forEach(x => {
+        const today = x.inMonth && x.d === 9;
+        out.push(Object.assign({ d: x.d, opacity: x.inMonth ? 1 : 0.4, border: today ? BLUE : '#E2DDD2', numColor: today ? BLUE : INK, weight: today ? 600 : 400 }, decorate(x)));
+      });
+      return out;
+    };
+    const ltDots = { 4: ['#C97B4A'], 9: ['#C97B4A', '#D2574A'], 14: ['#D2574A'], 17: ['#3F6B4E'], 22: ['#D2574A'], 24: ['#3F6B4E', '#6B4C7A'], 31: ['#D2574A'] };
+    const money = { 1: ['+1,850', '#2B8A3E'], 2: ['−950', '#D2574A'], 9: ['−56', '#D2574A'], 12: ['−80', '#D2574A'], 15: ['−142', '#D6862C'], 16: ['+440', '#2B8A3E'], 20: ['−38', '#D2574A'], 28: ['−150', '#D2574A'] };
+    const hours = Array.from({ length: 12 }, (_, i) => {
+      const h = 7 + i; const lbl = h === 12 ? '12 PM' : h > 12 ? (h - 12) + ' PM' : h + ' AM';
+      return { top: i * 48, labelTop: i * 48 - 6 < 0 ? 2 : i * 48 - 6, label: lbl };
+    });
+    const blk = (title, time, top, h, bg, fg) => ({ title, time, top, h: Math.max(h, 18), bg, fg, border: 'rgba(0,0,0,0.22)' });
+    return {
+      pTabsHome: tabs(P, 0), pTabsGoals: tabs(P, 1), pTabsDaily: tabs(P, 2), pTabsLong: tabs(P, 3), pTabsRecord: tabs(P, 4),
+      fTabsBudget: tabs(F, 0), fTabsCal: tabs(F, 1), fTabsGoals: tabs(F, 2),
+      todayGoals: [goal('Read 20 pages', '7:00 AM', true), goal('Run', '5:30 PM', false), goal('Stretch', '', false)],
+      tasks: [{ title: 'Call the bank', dur: '15M' }, { title: 'Return library books', dur: '' }],
+      dots,
+      milestones: [ms('Outline every chapter', '', true), ms('Chapters 1 – 2', '', true), ms('Chapters 3 – 5', '30 NOV', false), ms('Full read-through', '1 MAR', false)],
+      hours,
+      blocks: [
+        blk('Read 20 pages', '7:00 – 7:30', 0, 24, BLUE, '#FFFFFF'),
+        blk('Standup', '9:00 – 9:15', 96, 12, '#3F6B4E', '#FFFFFF'),
+        blk('Writing block', '9:30 – 11:30', 120, 96, '#6B4C7A', '#FFFFFF'),
+        blk('Lunch with Sam', '12:30 – 1:30', 264, 48, '#7C9473', '#FFFFFF'),
+        blk('Call the bank', '2:00 – 2:15', 336, 12, '#C9922E', '#15171B'),
+        blk('Deep work: chapter 3', '3:30 – 5:00', 408, 72, '#6B4C7A', '#FFFFFF'),
+        blk('Run', '5:30 – 6:15', 504, 36, BLUE, '#FFFFFF')
+      ],
+      ltGoals: [{ title: 'Finish the first draft', pct: 40 }, { title: 'Save for the Lisbon trip', pct: 65 }],
+      weekdays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+      ltCells: cells(x => ({ dots: x.inMonth ? (ltDots[x.d] || []) : [] })),
+      fCells: cells(x => {
+        const m = x.inMonth ? money[x.d] : null;
+        return { amt: m ? m[0] : '', amtColor: m ? m[1] : 'transparent', bg: '#FAF8F3' };
+      }),
+      journal: [
+        { day: '09', wk: 'FRI', head: 'Daily review', text: 'Left the book on the kitchen table last night, so it was the first thing I saw.' },
+        { day: '08', wk: 'THU', head: 'Journal', text: 'Slow start. Took the afternoon off after lunch and walked by the river instead, which was the right call.' },
+        { day: '07', wk: 'WED', head: 'Daily review', text: 'Chapter 2 is finally done. The ending works better than I expected once the second scene moved earlier.' },
+        { day: '05', wk: 'MON', head: 'Journal', text: 'Planned the week around two long writing mornings and nothing on Friday afternoon.' }
+      ],
+      logged: [{ title: 'Groceries', day: 'TODAY', amt: '£31.40' }, { title: 'Coffee with Jo', day: 'THURSDAY', amt: '£6.90' }, { title: 'Fuel', day: 'MONDAY', amt: '£17.50' }],
+      dayItems: [
+        { title: 'Phone bill', meta: 'FIXED · MONTHLY', metaColor: MUTED, amt: '−£24.00', c: '#D2574A' },
+        { title: 'Gym', meta: 'ESTIMATED', metaColor: '#D6862C', amt: '−£32.00', c: '#D6862C' }
+      ],
+      fGoals: [
+        { num: '01', section: 'Saving', add: 'saving', c: '#3F6B4E', title: 'Emergency fund', amounts: '£1,200 of £3,000', pct: 40, plan: '£150 A MONTH · DONE AROUND APR 2027', due: '' },
+        { num: '02', section: 'Set-asides', add: 'set-aside', c: '#C9922E', title: 'Car insurance', amounts: '£310 of £480', pct: 65, plan: '£40 A MONTH · AIMING FOR JAN 2027', due: '' },
+        { num: '03', section: 'Debts', add: 'debt', c: '#D2574A', title: 'Credit card', amounts: '£640 left of £1,500', pct: 57, plan: '£80 A MONTH · DONE AROUND MAY 2027', due: '£80.00 planned 12 Oct' }
+      ],
+      presets: [
+        { name: 'Index', note: 'Default', colors: ['#0068B5','#6B4C7A','#3F6B4E','#C9922E','#D2574A','#7C9473'] },
+        { name: 'Studio', note: 'Bold', colors: ['#1F3A93','#C0392B','#E0A100','#16794F','#8E44AD','#2C3E50'] },
+        { name: 'Garden', note: 'Soft greens', colors: ['#3F6B4E','#7C9473','#A3B18A','#C9922E','#8A5A44','#5B7F95'] },
+        { name: 'Dusk', note: 'Muted', colors: ['#4A5A78','#7A5C78','#A86D5A','#6E7F6A','#B08B4F','#5E6670'] },
+        { name: 'Custom', note: 'Your colours', colors: ['#0068B5','#6B4C7A','#2E8B8B','#C9922E','#D2574A','#7C9473'] }
+      ].map((p, i) => ({ ...p, mark: i === 0 ? '✓' : '', border: i === 0 ? '#0068B5' : '#D9D4C8', bg: i === 0 ? '#FFFFFF' : '#FAF8F3' })),
+      categories: [['Work','#0068B5'],['Deep work','#6B4C7A'],['Health','#3F6B4E'],['Errands','#C9922E'],['Social','#D2574A']].map(([name,color]) => ({ name, color, hex: color })),
+      palette: ['#0068B5','#1F3A93','#4A5A78','#2E8B8B','#3F6B4E','#7C9473','#6B4C7A','#7A5C78','#8E44AD','#D2574A','#C0392B','#A86D5A','#C9922E','#E0A100','#B08B4F','#2C3E50','#5E6670','#8A5A44'].map(c => ({ c, ring: c === '#6B4C7A' ? '2px solid #15171B' : 'none' })),
+      swatches: [
+        { name: 'Paper', c: '#F2EFE8' }, { name: 'Surface', c: '#FAF8F3' }, { name: 'Rule', c: '#D9D4C8' }, { name: 'Ink', c: '#15171B' },
+        { name: 'Suite blue', c: '#0068B5' }, { name: 'Income', c: '#2B8A3E' }, { name: 'Expense', c: '#D2574A' }, { name: 'Estimate', c: '#D6862C' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
