@@ -64,7 +64,7 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
-## Sync between devices (8 Oct 2026) — Stage 1 of 3 built, awaiting Riley's first sign-in
+## Sync between devices (8–9 Oct 2026) — Stage 1 of 3 done, confirmed on phone and laptop
 
 Riley chose Firebase (over a Drive sync file, whose hourly GIS token
 would mean re-signing in on the phone). Project `planner-sync`,
@@ -93,7 +93,7 @@ Authentication → Settings → Authorized domains for the live site.
   before the engine attached (`vectis:sync:pending`) win over the cloud.
   UI: "Sync between devices" at the top of Settings (status, sign-in,
   first-time choice, stop syncing). Same item edited on two devices at
-  once: last save wins. **Not yet tested with a real sign-in** — no
+  once: last save wins. 9 Oct: Riley signed in on phone then laptop; works both ways. (Untested by me with a real sign-in — no
   Java here for the Firebase emulators, and the first sign-in should be
   on the device with Riley's real data.
 - **Next:** Stage 2 Finance data (finance needs the config too), Stage 3
