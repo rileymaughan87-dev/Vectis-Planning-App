@@ -1,14 +1,19 @@
-// The Record tab, ported from RecordView.swift and JournalViews.swift:
-// Journal / Notebooks / Jots / Lists & Notes under an underline selector,
+// The Record tab: Journal / Notebooks / Notes under an underline selector,
 // each section swapping in fully rather than stacking on one long scroll.
+//
+// Notes holds every loose jot, list and note (newest first, grouped by
+// when they were last changed, with a filter by kind); Notebooks are the
+// organised side. Each journal day is one entry with two foldable
+// sections, Journal and Daily review (where the evening review's answer goes).
 
 import { MonthGrid } from '@suite/ui/MonthGrid'
-import { BookOpen, CalendarDays, ChevronRight, List, PenSquare, Plus, Search, Target } from 'lucide-react'
+import { BookOpen, CalendarDays, CheckSquare, ChevronRight, FileText, List, PenSquare, Plus, Search, Target, Zap } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { addDays, isSameDay, parseDate, startOfDay } from '../model/dates'
+import { matchesJournal } from '../model/journalSearch'
 import { startOfMonth } from '../model/longTerm'
 import { journalEntryFor } from '../model/planning'
-import { journalDoc, notePlainText, type DocNode } from '../model/noteDoc'
+import { JOURNAL_HEADING, REVIEW_HEADING, dayDoc, docToPlainText, isDocEmpty, notePlainText, sectionText, type DocNode } from '../model/noteDoc'
 import type { JournalEntry, Note, NoteType, Notebook } from '../model/types'
 import { useData } from '../store/data'
 import { Sheet, VButton } from '../ui/components'
@@ -16,17 +21,22 @@ import type { ThemeColors } from '../ui/theme'
 import { RichEditor } from '../ui/editor/LazyRichEditor'
 import { NoteEditor, NoteTypePicker, NotebookEditor, newNote, newNotebook } from './NoteEditors'
 
-type Section = 'journal' | 'notebooks' | 'jots' | 'notes'
+type Section = 'journal' | 'notebooks' | 'notes'
 
 const sections: { id: Section; label: string }[] = [
   { id: 'journal', label: 'Journal' },
   { id: 'notebooks', label: 'Notebooks' },
-  { id: 'jots', label: 'Jots' },
-  { id: 'notes', label: 'Lists & Notes' },
+  { id: 'notes', label: 'Notes' },
 ]
 
+function savedSection(): Section {
+  const saved = sessionStorage.getItem('vectis:ui:record')
+  // "jots" was its own tab before Notes took in jots, lists and notes.
+  return saved === 'journal' || saved === 'notebooks' ? saved : saved ? 'notes' : 'journal'
+}
+
 export function RecordScreen({ colors }: { colors: ThemeColors }) {
-  const [section, setSection] = useState<Section>(() => (sessionStorage.getItem('vectis:ui:record') as Section) || 'journal')
+  const [section, setSection] = useState<Section>(savedSection)
   const [picking, setPicking] = useState<{ notebookID?: string } | null>(null)
   const [editingNote, setEditingNote] = useState<{ note: Note; isNew: boolean } | null>(null)
   const [editingNotebook, setEditingNotebook] = useState<{ notebook: Notebook; isNew: boolean } | null>(null)
@@ -53,17 +63,20 @@ export function RecordScreen({ colors }: { colors: ThemeColors }) {
         ))}
       </div>
 
-      {section !== 'journal' && (
+      {section === 'notes' && (
         <div className="button-row">
-          <VButton small accent={colors.primary} onClick={() => setPicking({})}><PenSquare size={14} /> New note</VButton>
-          <VButton small accent={colors.primary} onClick={() => setEditingNotebook({ notebook: newNotebook(), isNew: true })}><BookOpen size={14} /> New notebook</VButton>
+          <VButton small kind="primary" accent={colors.primary} onClick={() => setPicking({})}><PenSquare size={14} /> New</VButton>
+        </div>
+      )}
+      {section === 'notebooks' && (
+        <div className="button-row">
+          <VButton small kind="primary" accent={colors.primary} onClick={() => setEditingNotebook({ notebook: newNotebook(), isNew: true })}><BookOpen size={14} /> New notebook</VButton>
         </div>
       )}
 
       {section === 'journal' && <JournalSection colors={colors} />}
       {section === 'notebooks' && <NotebooksSection colors={colors} onOpen={setOpenNotebookID} />}
-      {section === 'jots' && <NotesList kinds={['jot']} searchLabel="Search jots" colors={colors} onSelect={n => setEditingNote({ note: n, isNew: false })} />}
-      {section === 'notes' && <NotesList kinds={['list', 'classic']} searchLabel="Search lists and notes" colors={colors} onSelect={n => setEditingNote({ note: n, isNew: false })} />}
+      {section === 'notes' && <NotesSection colors={colors} onSelect={n => setEditingNote({ note: n, isNew: false })} />}
 
       {openNotebookID && !editingNote && !picking && !editingNotebook && (
         <NotebookDetail
@@ -107,6 +120,19 @@ function dayLabel(date: Date, long = false): string {
   return date.toLocaleDateString(undefined, long ? { weekday: 'long', month: 'long', day: 'numeric' } : { weekday: 'long', day: 'numeric' })
 }
 
+/** What's written under each heading of a day. */
+function parts(e: JournalEntry): { journal: string; review: string } {
+  const doc = dayDoc(e)
+  return { journal: sectionText(doc, JOURNAL_HEADING).trim(), review: sectionText(doc, REVIEW_HEADING).trim() }
+}
+
+/** A day with anything written in it. */
+const hasWriting = (e?: JournalEntry) => {
+  if (!e) return false
+  const p = parts(e)
+  return Boolean(p.journal || p.review)
+}
+
 function JournalSection({ colors }: { colors: ThemeColors }) {
   const journal = useData(s => s.journal)
   const [query, setQuery] = useState('')
@@ -114,15 +140,10 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [open, setOpen] = useState<Date | null>(null)
 
-  // Entries with no words yet aren't real entries.
-  const entries = journal
-    .filter(e => e.text.trim())
-    .sort((a, b) => b.date.localeCompare(a.date))
-  const q = query.trim().toLowerCase()
-  const matches = (e: JournalEntry) => !q || e.text.toLowerCase().includes(q) || (e.reflectionPrompt ?? '').toLowerCase().includes(q)
+  const entries = journal.filter(hasWriting).sort((a, b) => b.date.localeCompare(a.date))
 
   const groups: { month: string; entries: JournalEntry[] }[] = []
-  for (const e of entries.filter(matches)) {
+  for (const e of entries.filter(e => matchesJournal(e, query))) {
     const label = parseDate(e.date).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
     const group = groups[groups.length - 1]
     if (group?.month === label) group.entries.push(e)
@@ -132,10 +153,10 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
   return (
     <>
       <div className="row" style={{ gap: 8 }}>
-        {!calendar && <div className="grow"><SearchField value={query} onChange={setQuery} label="Search entries" /></div>}
+        {!calendar && <div className="grow"><SearchField value={query} onChange={setQuery} label="Search words or dates" /></div>}
         {calendar && <span className="grow" />}
         <VButton small accent={colors.primary} onClick={() => setCalendar(c => !c)}>
-          {calendar ? <><List size={14} /> List</> : <><CalendarDays size={14} /> Jump to date</>}
+          {calendar ? <><List size={14} /> List</> : <><CalendarDays size={14} /> Calendar</>}
         </VButton>
         <VButton small kind="primary" accent={colors.primary} onClick={() => setOpen(new Date())}><PenSquare size={14} /> Today</VButton>
       </div>
@@ -148,13 +169,11 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
             showWeekdays={false}
             className="journal-grid"
             renderDay={({ date, inMonth, isToday }) => {
-              const entry = journalEntryFor(journal, date)
-              const has = Boolean(entry?.text.trim())
+              const has = hasWriting(journalEntryFor(journal, date))
               return (
                 <button
                   key={date.toISOString()}
                   className={`day-cell ${inMonth ? '' : 'outside'} ${isToday ? 'today' : ''}`}
-                  disabled={!has}
                   onClick={() => setOpen(date)}
                   aria-label={`${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}${has ? ', has an entry' : ''}`}
                 >
@@ -168,25 +187,30 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
       ) : entries.length === 0 ? (
         <div className="empty">
           <strong style={{ color: 'var(--text)' }}>No entries yet</strong>
-          <span className="caption">Answer the evening review's prompt, or just write something.</span>
+          <span className="caption">Write about your day, or answer the evening review — it's kept as that day's daily review.</span>
         </div>
       ) : groups.length === 0 ? (
-        <p className="muted" style={{ textAlign: 'center' }}>No entries match.</p>
+        <p className="muted" style={{ textAlign: 'center' }}>No entries match. Try a word, or a date like "12 Oct" or "Monday".</p>
       ) : (
         groups.map(g => (
           <section key={g.month}>
             <h3 className="list-heading">{g.month}</h3>
             <div className="list-box">
-              {g.entries.map(e => (
-                <button key={e.id} className="list-item" onClick={() => setOpen(parseDate(e.date))}>
-                  <div className="row" style={{ gap: 6 }}>
+              {g.entries.map(e => {
+                const p = parts(e)
+                return (
+                  <button key={e.id} className="list-item" onClick={() => setOpen(parseDate(e.date))}>
                     <strong>{dayLabel(parseDate(e.date))}</strong>
-                    {e.reflectionPrompt && <span className="tag">review</span>}
-                  </div>
-                  {e.reflectionPrompt && <div className="caption" style={{ fontStyle: 'italic' }}>{e.reflectionPrompt}</div>}
-                  <div className="caption ellipsis">{e.text}</div>
-                </button>
-              ))}
+                    {p.journal && <div className="caption ellipsis">{p.journal.replace(/\n+/g, ' · ')}</div>}
+                    {p.review && (
+                      <div className="row caption" style={{ gap: 6, minWidth: 0 }}>
+                        <span className="tag">review</span>
+                        <span className="ellipsis">{p.review.replace(/\n+/g, ' · ')}</span>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </section>
         ))
@@ -197,24 +221,46 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
   )
 }
 
+/**
+ * One day, one entry: the "Journal" and "Daily review" headings are part
+ * of it, and each folds away with its arrow (the editor's foldable
+ * sections; folding is remembered).
+ */
 function JournalEntryEditor({ date, onClose }: { date: Date; onClose: () => void }) {
   const { journal, setJournalDoc, deleteJournalEntry } = useData()
   const entry = journalEntryFor(journal, date)
-  const [initialDoc] = useState(() => journalDoc(entry))
-  const docRef = useRef<DocNode>(initialDoc)
+  const [initial] = useState(() => dayDoc(entry))
+  const docRef = useRef<DocNode>(initial)
+  const changed = useRef(false)
+
+  const save = () => {
+    // A brand-new day left with just its headings isn't worth keeping.
+    const written = sectionText(docRef.current, JOURNAL_HEADING).trim() || sectionText(docRef.current, REVIEW_HEADING).trim()
+      || !isDocEmpty({ type: 'doc', content: (docRef.current.content ?? []).filter(n => n.type !== 'heading') })
+    if (!entry && !written) return onClose()
+    // An older day opens reshaped with the headings; saving keeps it that way.
+    if (changed.current || docToPlainText(docRef.current) !== entry?.text) setJournalDoc(date, docRef.current)
+    onClose()
+  }
 
   return (
-    <Sheet fullscreen title={dayLabel(date, true)} onClose={onClose} leftLabel="Close" right={{ label: 'Save', onClick: () => { setJournalDoc(date, docRef.current); onClose() } }}>
-      {entry?.reflectionPrompt && <div className="muted" style={{ fontStyle: 'italic' }}>{entry.reflectionPrompt}</div>}
-      <RichEditor initial={initialDoc} onChange={doc => { docRef.current = doc }} label="Journal entry" placeholder="Write about your day…" autofocus={!entry} />
-      <p className="help">Answering the review's prompt starts the entry. Keep writing here anytime — same entry, one per day.</p>
+    <Sheet fullscreen title={dayLabel(date, true)} onClose={onClose} leftLabel="Close" right={{ label: 'Save', onClick: save }}>
+      {entry?.reflectionPrompt && <div className="caption">Review question: <em>{entry.reflectionPrompt}</em></div>}
+      <RichEditor
+        initial={initial}
+        onChange={doc => { docRef.current = doc; changed.current = true }}
+        label="Journal entry"
+        placeholder="Write about your day…"
+      />
+      <p className="help">Tap the arrow beside a heading to fold its section away. The evening review's answer goes under Daily review.</p>
+
       {entry && (
         <VButton kind="destructive" onClick={() => {
-          if (confirm('Delete this journal entry?')) {
+          if (confirm('Delete this day — both the journal and the daily review?')) {
             deleteJournalEntry(entry.id)
             onClose()
           }
-        }}>Delete entry</VButton>
+        }}>Delete this day</VButton>
       )}
     </Sheet>
   )
@@ -227,47 +273,94 @@ function notePreview(note: Note): string {
   return notePlainText(note).split('\n').filter(l => l.trim()).join(' · ')
 }
 
+const KIND_ICON: Record<NoteType, typeof Zap> = { jot: Zap, list: CheckSquare, classic: FileText }
+const KIND_LABEL: Record<NoteType, string> = { jot: 'Jot', list: 'List', classic: 'Note' }
+
 function GoalTag({ goalID, colors }: { goalID?: string; colors: ThemeColors }) {
   const goal = useData(s => s.goals.find(g => g.id === goalID))
   if (!goal) return null
   return <span className="caption2 row" style={{ gap: 4, color: colors.primary }}><Target size={11} />{goal.title}</span>
 }
 
-function NoteRow({ note, colors, onSelect }: { note: Note; colors: ThemeColors; onSelect: (n: Note) => void }) {
+function NoteRow({ note, colors, onSelect, notebook }: { note: Note; colors: ThemeColors; onSelect: (n: Note) => void; notebook?: string }) {
+  const Icon = KIND_ICON[note.type]
   return (
-    <button className="list-item" onClick={() => onSelect(note)}>
-      {note.type === 'jot' ? (
-        <div className="ellipsis">{notePreview(note) || 'Empty jot'}</div>
-      ) : (
-        <>
-          <strong className="ellipsis">{note.title || 'Untitled'}</strong>
-          <div className="caption ellipsis">{notePreview(note) || ' '}</div>
-        </>
-      )}
-      <GoalTag goalID={note.linkedGoalID} colors={colors} />
+    <button className="list-item note-row" onClick={() => onSelect(note)}>
+      <Icon size={15} className="muted" aria-label={KIND_LABEL[note.type]} />
+      <span className="grow" style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {note.type === 'jot' ? (
+          <span className="ellipsis">{notePreview(note) || 'Empty jot'}</span>
+        ) : (
+          <>
+            <strong className="ellipsis">{note.title || 'Untitled'}</strong>
+            <span className="caption ellipsis">{notePreview(note) || ' '}</span>
+          </>
+        )}
+        {notebook && <span className="caption2 row" style={{ gap: 4 }}><BookOpen size={11} />{notebook}</span>}
+        <GoalTag goalID={note.linkedGoalID} colors={colors} />
+      </span>
     </button>
   )
 }
 
-function NotesList({ kinds, searchLabel, colors, onSelect }: { kinds: NoteType[]; searchLabel: string; colors: ThemeColors; onSelect: (n: Note) => void }) {
-  const notes = useData(s => s.notes)
-  const [query, setQuery] = useState('')
-  const q = query.trim().toLowerCase()
-  // Notes in a notebook show under their notebook instead of twice.
-  const loose = notes
-    .filter(n => kinds.includes(n.type) && !n.notebookID)
-    .sort((a, b) => b.updatedDate.localeCompare(a.updatedDate))
-  const shown = loose.filter(n =>
-    !q || n.title.toLowerCase().includes(q) || notePreview(n).toLowerCase().includes(q))
+type Kind = 'all' | NoteType
 
-  if (loose.length === 0) return <div className="empty">Nothing here yet</div>
+/** Groups by when a note was last changed: Today, This week, This month, then by month. */
+function recencyLabel(iso: string, today = startOfDay(new Date())): string {
+  const d = parseDate(iso)
+  if (d >= today) return 'Today'
+  if (d >= addDays(today, -6)) return 'This week'
+  if (d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth()) return 'Earlier this month'
+  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+}
+
+function NotesSection({ colors, onSelect }: { colors: ThemeColors; onSelect: (n: Note) => void }) {
+  const { notes, notebooks } = useData()
+  const [query, setQuery] = useState('')
+  const [kind, setKind] = useState<Kind>('all')
+  const q = query.trim().toLowerCase()
+  const notebookName = (id?: string) => notebooks.find(b => b.id === id)?.title
+
+  // Loose notes live here; notes in a notebook show under it — except when
+  // searching, which looks everywhere so nothing is hard to find.
+  const pool = notes
+    .filter(n => (q ? true : !n.notebookID) && (kind === 'all' || n.type === kind))
+    .filter(n => !q || n.title.toLowerCase().includes(q) || notePreview(n).toLowerCase().includes(q))
+    .sort((a, b) => b.updatedDate.localeCompare(a.updatedDate))
+
+  const groups: { label: string; notes: Note[] }[] = []
+  for (const n of pool) {
+    const label = recencyLabel(n.updatedDate)
+    const g = groups[groups.length - 1]
+    if (g?.label === label) g.notes.push(n)
+    else groups.push({ label, notes: [n] })
+  }
+
+  const kinds: { id: Kind; label: string }[] = [{ id: 'all', label: 'All' }, { id: 'classic', label: 'Notes' }, { id: 'list', label: 'Lists' }, { id: 'jot', label: 'Jots' }]
+  const anyLoose = notes.some(n => !n.notebookID)
+
   return (
     <>
-      <SearchField value={query} onChange={setQuery} label={searchLabel} />
-      {shown.length === 0 ? <p className="muted" style={{ textAlign: 'center' }}>Nothing matches.</p> : (
-        <div className="list-box">
-          {shown.map(n => <NoteRow key={n.id} note={n} colors={colors} onSelect={onSelect} />)}
+      <SearchField value={query} onChange={setQuery} label="Search all notes" />
+      <div className="kind-filter" role="group" aria-label="Show">
+        {kinds.map(k => <button key={k.id} type="button" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>{k.label}</button>)}
+      </div>
+      {!anyLoose && !q ? (
+        <div className="empty">
+          <strong style={{ color: 'var(--text)' }}>No notes yet</strong>
+          <span className="caption">Tap New for a quick jot, a list, or a note.</span>
         </div>
+      ) : groups.length === 0 ? (
+        <p className="muted" style={{ textAlign: 'center' }}>{q ? 'Nothing matches.' : `No ${kinds.find(k => k.id === kind)!.label.toLowerCase()} here yet.`}</p>
+      ) : (
+        groups.map(g => (
+          <section key={g.label}>
+            <h3 className="list-heading">{g.label}</h3>
+            <div className="list-box">
+              {g.notes.map(n => <NoteRow key={n.id} note={n} colors={colors} onSelect={onSelect} notebook={n.notebookID ? notebookName(n.notebookID) : undefined} />)}
+            </div>
+          </section>
+        ))
       )}
     </>
   )
@@ -276,7 +369,14 @@ function NotesList({ kinds, searchLabel, colors, onSelect }: { kinds: NoteType[]
 function NotebooksSection({ colors, onOpen }: { colors: ThemeColors; onOpen: (id: string) => void }) {
   const { notebooks, notes } = useData()
   const sorted = [...notebooks].sort((a, b) => b.createdDate.localeCompare(a.createdDate))
-  if (sorted.length === 0) return <div className="empty">No notebooks yet</div>
+  if (sorted.length === 0) {
+    return (
+      <div className="empty">
+        <strong style={{ color: 'var(--text)' }}>No notebooks yet</strong>
+        <span className="caption">A notebook keeps related notes together — a course, a project, a trip.</span>
+      </div>
+    )
+  }
   return (
     <div className="list-box">
       {sorted.map(b => {
@@ -315,7 +415,7 @@ function NotebookDetail(props: {
           {inside.map(n => <NoteRow key={n.id} note={n} colors={props.colors} onSelect={props.onEditNote} />)}
         </div>
       )}
-      <VButton accent={props.colors.primary} onClick={props.onAddNote}><Plus size={16} /> Add note to this notebook</VButton>
+      <VButton accent={props.colors.primary} onClick={props.onAddNote}><Plus size={16} /> Add to this notebook</VButton>
     </Sheet>
   )
 }

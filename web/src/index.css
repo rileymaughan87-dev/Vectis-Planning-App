@@ -406,3 +406,17 @@
 }
 
 .sync-choice button:hover { background: var(--surface-3); }
+
+/* ---------- Record ---------- */
+.note-row { flex-direction: row; align-items: flex-start; gap: 10px; }
+
+.note-row > svg { flex: none; margin-top: 3px; }
+
+.kind-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.kind-filter button {
+  padding: 5px 12px; font-size: 13px; border-radius: var(--radius-small);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); background: var(--surface); color: var(--text-2);
+}
+
+.kind-filter button[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #FFFFFF); }

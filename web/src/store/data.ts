@@ -83,8 +83,7 @@ interface Actions {
   // Journal
   /** Attaches the review's prompt to the day's entry; never touches its text. */
   seedReflection(date: Date, prompt: string): void
-  setJournalText(date: Date, text: string): void
-  /** Saves a formatted entry, keeping its plain text in step. */
+  /** Saves a formatted day, keeping its plain text in step. */
   setJournalDoc(date: Date, doc: DocNode): void
   deleteJournalEntry(id: string): void
   // Notes
@@ -245,21 +244,7 @@ export const useData = create<DataState & Actions>()(set => ({
       return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), reflectionPrompt: prompt, text: '' }] }
     }),
 
-  setJournalText: (date, text) =>
-    set(s => {
-      const existing = s.journal.find(e => isSameDay(parseDate(e.date), date))
-      if (existing) return { journal: s.journal.map(e => (e === existing ? { ...e, text } : e)) }
-      return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), text }] }
-    }),
-
-  setJournalDoc: (date, doc) =>
-    set(s => {
-      const text = docToPlainText(doc)
-      const body = wrapDoc(doc)
-      const existing = s.journal.find(e => isSameDay(parseDate(e.date), date))
-      if (existing) return { journal: s.journal.map(e => (e === existing ? { ...e, text, body } : e)) }
-      return { journal: [...s.journal, { id: newID(), date: toISO(startOfDay(date)), text, body }] }
-    }),
+  setJournalDoc: (date, doc) => set(s => ({ journal: patchDay(s.journal, date, { text: docToPlainText(doc), body: wrapDoc(doc) }) })),
 
   deleteJournalEntry: id => set(s => ({ journal: s.journal.filter(e => e.id !== id) })),
 
@@ -284,6 +269,13 @@ export const useData = create<DataState & Actions>()(set => ({
 
   replace: patch => set(patch),
 }))
+
+/** Changes the day's entry, starting one if there isn't one yet. */
+function patchDay(journal: JournalEntry[], date: Date, patch: Partial<JournalEntry>): JournalEntry[] {
+  const existing = journal.find(e => isSameDay(parseDate(e.date), date))
+  if (existing) return journal.map(e => (e === existing ? { ...e, ...patch } : e))
+  return [...journal, { id: newID(), date: toISO(startOfDay(date)), text: '', ...patch }]
+}
 
 // Save each slice to its own file whenever it changes.
 const fileFor: Record<keyof DataState, string> = {

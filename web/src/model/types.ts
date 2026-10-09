@@ -148,18 +148,19 @@ export interface VectisTask {
 }
 
 /**
- * One per day. The evening review's reflection and freeform journaling
- * are the same entry, never two records for one day.
+ * One per day. Its document has two foldable sections under headings —
+ * "Journal" and "Daily review" (where the evening review's answer goes);
+ * see `dayDoc` in model/noteDoc.ts.
  */
 export interface JournalEntry {
   id: ID
   /** The day this entry is for, not necessarily when it was written. */
   date: ISODate
-  /** Set only if the evening review's prompt started it. */
+  /** The evening review's prompt, once the review has been answered. */
   reflectionPrompt?: string
-  /** Plain text — what Home, search and the evening review read. */
+  /** Plain text of the whole day — what search reads. */
   text: string
-  /** The formatted entry from the shared editor; see model/noteDoc.ts. */
+  /** The formatted day from the shared editor; see model/noteDoc.ts. */
   body?: NoteDoc
 }
 
