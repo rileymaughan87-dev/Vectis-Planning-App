@@ -73,7 +73,8 @@ export interface SyncState {
   choice?: { device: string; cloud: string }
   signIn(): Promise<void>
   signOut(): Promise<void>
-  choose(side: 'device' | 'cloud'): Promise<void>
+  /** A joining device with data of its own: take the synced data, or combine the two (nothing is deleted either way). */
+  choose(side: 'combine' | 'cloud'): Promise<void>
 }
 
 export type SyncStore = UseBoundStore<StoreApi<SyncState>>

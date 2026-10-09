@@ -6,9 +6,12 @@
 // only by you (the rules in the console). Firestore's offline cache queues
 // changes made without a connection and sends them when it's back.
 //
-// The first time a device syncs, if both it and the cloud already have
-// data, you choose which to keep; the other side's copy is set aside in
-// localStorage rather than thrown away.
+// The first time a device syncs, it takes the cloud's data — unless it
+// has data of its own saved (not just the sample content a new device
+// shows), when you choose: take the synced data, or combine the two. No
+// choice ever deletes anything from the cloud (Oct 2026: replacing the
+// cloud with a re-added Home Screen app's empty copy wiped Riley's data).
+// The side that's replaced is also set aside in localStorage.
 
 import { getApps, initializeApp } from 'firebase/app'
 import {
@@ -20,13 +23,13 @@ import {
   persistentMultipleTabManager, serverTimestamp, writeBatch, type CollectionReference, type Firestore,
 } from 'firebase/firestore'
 import { newID } from '../ids'
-import { diff, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from './records'
+import { combineWrites, diff, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from './records'
 import { firebaseConfig, keys, type Attachment, type SyncApp, type SyncSlice, type SyncStore } from './store'
 
 export interface Engine {
   signIn(): Promise<void>
   signOut(): Promise<void>
-  choose(side: 'device' | 'cloud'): Promise<void>
+  choose(side: 'combine' | 'cloud'): Promise<void>
 }
 
 const store = (key: string, value: string | null) => {
@@ -207,7 +210,14 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
     }
   }
 
-  const choose = async (side: 'device' | 'cloud', uid = auth.currentUser?.uid) => {
+  /** Sends this device's new and changed items, keeping everything only the cloud has. */
+  const combine = (slices: SyncSlice[]) => {
+    const writes = new Map<string, SyncRecord>()
+    for (const s of slices) for (const [id, r] of combineWrites(known, recordsFor(s.file, s.kind, s.get()))) writes.set(id, r)
+    send(writes)
+  }
+
+  const choose = async (side: 'combine' | 'cloud', uid = auth.currentUser?.uid) => {
     if (!uid || !col) return
     useSync.setState({ phase: 'connecting', choice: undefined })
     try {
@@ -217,7 +227,9 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
       } else {
         const cloud = Object.fromEntries(allSlices.map(s => [s.file, rebuild(known, s.file, s.kind)]))
         store(k.cloudBeforeSync, JSON.stringify({ savedAt: new Date().toISOString(), data: cloud }))
-        push(allSlices)
+        combine(allSlices)
+        // Then this device takes the combined whole.
+        pull(allSlices)
       }
       store(k.user, uid)
       clearPending()
@@ -267,7 +279,9 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         goLive()
         return
       }
-      if (!hasContent(local)) {
+      // Sample content a new device shows isn't saved until you change it: only saved data counts.
+      const saved = app.allEntries()
+      if (!hasContent(local) || !app.contentFiles.some(f => f in saved)) {
         await choose('cloud', user.uid)
         return
       }
