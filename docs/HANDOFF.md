@@ -86,7 +86,7 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
-## Index style (9–10 Oct 2026) — parts 1 and 2 of 3 built
+## Index style (9–10 Oct 2026) — all three parts built
 
 Riley's design handoff (`docs/design-handoff-index/README.md`, mock-ups in
 `designs/` — serve the folder and open the `.dc.html` files) restyles the
@@ -124,9 +124,19 @@ except the two noted under part 2 and 3.
   amount per day (names too on wide screens) plus a legend, and the
   month's list is section 02. Shared: section/editor numbering counts
   heads only; an `.editor-box` with no head reads as a card.
-- **Part 3 (next):** category colours setting (P7/P7b) — presets Index,
-  Studio, Garden, Dusk or Custom, stored as `categoryPalette` with the
-  settings and synced; existing category colours migrate into Custom.
+- **Part 3 (built, 10 Oct 2026):** Settings › Categories › "Category
+  colours" (P7): presets Index, Studio, Garden, Dusk, or Custom; "Make it
+  yours" opens the picker (P7b: preview block, 18 swatches, any hex).
+  `model/palette.ts`: the colour in force is written into each
+  category's `colorHex`, so Daily, Long-Term, the share file and the
+  iPhone's categories.json need no change; `category_palette.json`
+  (`{choice, custom}`, synced, added later) keeps the Custom set aside
+  while a preset is on, so going back restores it (kinder than the
+  handoff's "replace it, confirm first"). Nothing saved = Custom = the
+  existing colours, so nothing changed for Riley until they choose.
+  Block text now picks white or ink `#15171B` by WCAG contrast
+  (`contrastingText`). Presets colour categories only; goal and task
+  blocks follow the Appearance scheme.
 
 ## Record app (9 Oct 2026) — Vectis Stage 2 of 3
 

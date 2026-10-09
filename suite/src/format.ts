@@ -46,11 +46,26 @@ export function relativeTime(date: Date, now: Date = new Date()): string {
   return days === 1 ? 'yesterday' : `${days} days ago`
 }
 
-/** Black or white, whichever reads on top of a colour. */
-export function contrastingText(hex: string): string {
+/** Relative luminance (WCAG 2), 0 for black to 1 for white. */
+function luminance(hex: string): number {
   const { r, g, b } = hexToRGB(hex)
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000 / 255
-  return brightness > 0.6 ? '#000000' : '#FFFFFF'
+  const lin = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+/** WCAG contrast ratio between two colours (1 to 21). */
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** White or ink, whichever reads better on top of a colour. */
+export function contrastingText(hex: string): string {
+  const ink = '#15171B'
+  return contrastRatio(hex, '#FFFFFF') >= contrastRatio(hex, ink) ? '#FFFFFF' : ink
 }
 
 /** A deeper shade of the same hue, for block edges. */

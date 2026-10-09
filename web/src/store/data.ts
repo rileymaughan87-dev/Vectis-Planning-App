@@ -18,6 +18,7 @@ import * as challenges from '../model/challenges'
 import { moved, resized, splitSeriesFrom, withOccurrenceActual, withOccurrenceDuration } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
+import { choosePalette, colorForNew, decodePalette, setCategoryColor, type CategoryPalette, type PaletteChoice } from '../model/palette'
 import { docToPlainText, wrapDoc, type DocNode } from '../model/noteDoc'
 import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals } from '../model/sample'
 import type {
@@ -34,6 +35,8 @@ export interface DataState {
   appearance: AppearanceSettings
   planReview: PlanReviewSettings
   journal: JournalEntry[]
+  /** Category colours: a preset or your own. */
+  palette: CategoryPalette
 }
 
 interface Actions {
@@ -72,6 +75,12 @@ interface Actions {
   deleteEvent(id: string): void
   deleteOccurrence(eventID: string, date: Date): void
   setCategories(categories: CalendarCategory[]): void
+  /** Adds a category in the colour scheme in use. */
+  addCategory(name: string): void
+  /** A preset, or back to your own colours. */
+  choosePalette(choice: PaletteChoice): void
+  /** One category's colour — the set becomes Custom. */
+  setCategoryColor(id: string, hex: string): void
   setHours(hours: CalendarHours): void
   // Tasks
   addTask(text: string): void
@@ -112,6 +121,7 @@ function initialState(): DataState {
     appearance: decodeAppearance(loadRaw(Filename.appearance)),
     planReview: decodePlanReview(loadRaw(Filename.planReviewSettings)),
     journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry),
+    palette: decodePalette(loadRaw(Filename.categoryPalette)),
   }
 }
 
@@ -211,6 +221,9 @@ export const useData = create<DataState & Actions>()(set => ({
     })),
 
   setCategories: categories => set({ categories }),
+  addCategory: name => set(s => ({ categories: [...s.categories, { id: newID(), name, colorHex: colorForNew(s.palette, s.categories.length) }] })),
+  choosePalette: choice => set(s => choosePalette(s.categories, s.palette, choice)),
+  setCategoryColor: (id, hex) => set(s => setCategoryColor(s.categories, id, hex)),
   setHours: hours => set({ hours }),
 
   addTask: text => {
@@ -260,6 +273,7 @@ const fileFor: Record<keyof DataState, string> = {
   appearance: Filename.appearance,
   planReview: Filename.planReviewSettings,
   journal: Filename.journalEntries,
+  palette: Filename.categoryPalette,
 }
 
 /** Set while taking in another tab's save, so it isn't written straight back. */

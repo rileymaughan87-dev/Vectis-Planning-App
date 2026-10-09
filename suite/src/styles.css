@@ -640,6 +640,40 @@ textarea.writing { font-family: var(--font-serif); font-size: 17px; line-height:
 
 .rail-head { display: flex; align-items: center; gap: 12px; }
 
+/* ---------- Colours (Planner's category colours) ---------- */
+.preset-list { display: flex; flex-direction: column; gap: 6px; }
+
+.preset-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 7px 12px; border: 1px solid var(--separator); background: var(--surface);
+}
+
+.preset-row[aria-checked='true'] { border-color: var(--brand); background: #fff; }
+
+.preset-name { font-size: 15px; font-weight: 500; }
+
+.preset-strip { display: flex; gap: 3px; margin-top: 6px; }
+
+.preset-strip span { flex: 1; height: 12px; border-radius: 2px; }
+
+.preset-mark { width: 18px; text-align: center; color: var(--brand); }
+
+.colour-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); font-size: 15px; }
+
+.colour-swatch { width: 20px; height: 20px; border-radius: 2px; flex: none; border: 1px solid rgba(0, 0, 0, 0.12); }
+
+.colour-preview { height: 56px; border-radius: 2px; border: 1px solid; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+
+.swatch-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+
+.swatch-grid button { aspect-ratio: 1; border-radius: 2px; }
+
+.swatch-grid button[aria-checked='true'] { outline: 2px solid var(--text); outline-offset: 2px; }
+
+.any-colour { display: flex; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--rule-soft); font-size: 15px; }
+
+.any-colour input[type='color'] { width: 34px; height: 34px; padding: 2px; flex: none; }
+
 /* ---------- Sync ---------- */
 .sync-choice { display: grid; gap: 8px; }
 

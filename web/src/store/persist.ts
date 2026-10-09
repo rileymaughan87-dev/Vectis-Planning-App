@@ -21,6 +21,8 @@ export const Filename = {
   // Web-only
   share: 'share.json',
   partners: 'partners.json',
+  /** Which category colours are in use: a preset or your own (model/palette.ts). */
+  categoryPalette: 'category_palette.json',
 } as const
 
 export type FilenameValue = (typeof Filename)[keyof typeof Filename]
