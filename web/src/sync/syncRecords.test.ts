@@ -1,6 +1,6 @@
 // The shared sync records (suite/sync/records.ts), checked with Planner's data.
 import { describe as group, expect, it } from 'vitest'
-import { diff, docID, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from '@suite/sync/records'
+import { combineWrites, diff, docID, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from '@suite/sync/records'
 import { Filename } from '../store/persist'
 
 const goals = [{ id: 'A', title: 'Read' }, { id: 'B/2', title: 'Run' }]
@@ -72,5 +72,23 @@ group('reading and describing', () => {
     const r = new Map([...recordsFor(Filename.goals, 'list', goals), ...recordsFor(Filename.journalEntries, 'list', [{ id: 'J1' }, { id: 'J2' }])])
     expect(describeCounts([['goal', 'goals', countIn(r, Filename.goals)], ['journal entry', 'journal entries', countIn(r, Filename.journalEntries)]])).toBe('2 goals, 2 journal entries')
     expect(describeCounts([['goal', 'goals', 0]])).toBe('nothing yet')
+  })
+})
+
+group('a device joining with data of its own', () => {
+  it('combines: adds and updates its items, never deletes the cloud ones', () => {
+    // The cloud has a year of goals; a re-added Home Screen app has one sample goal.
+    const cloud = recordsFor(Filename.goals, 'list', [...goals, { id: 'C', title: 'Pray' }])
+    const device = recordsFor(Filename.goals, 'list', [{ id: 'S', title: 'Sample' }, { id: 'A', title: 'Read more' }])
+    const writes = combineWrites(cloud, device)
+    expect([...writes.values()].some(r => r.deleted)).toBe(false)
+    expect([...writes.keys()].sort()).toEqual(['goals__A', 'goals__S'])
+    const after = new Map([...cloud, ...writes])
+    expect((rebuild(after, Filename.goals, 'list') as { title: string }[]).map(g => g.title).sort()).toEqual(['Pray', 'Read more', 'Run', 'Sample'])
+  })
+
+  it('sends nothing when the device matches the cloud', () => {
+    const cloud = recordsFor(Filename.goals, 'list', goals)
+    expect(combineWrites(cloud, recordsFor(Filename.goals, 'list', goals)).size).toBe(0)
   })
 })

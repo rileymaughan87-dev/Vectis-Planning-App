@@ -1,6 +1,7 @@
 // "Sync between devices" in an app's Settings: sign in with Google once
 // per device, then everything stays the same on each, live. The first
-// time a device joins, if both sides have data, you choose which to keep.
+// time a device joins with data of its own, you take the synced data or
+// combine the two; nothing in the cloud is ever deleted by that choice.
 // Shared by Planner and Finance; each passes its own sync store.
 
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
@@ -42,20 +43,20 @@ export function SyncBox({ useSync, what, notYet }: {
 
       {phase === 'choose' && choice && (
         <>
-          <strong>Both have data — which do you want to keep?</strong>
+          <strong>This device has data of its own</strong>
           <p className="help" style={{ margin: 0 }}>
-            This is a one-time choice for this device. The other copy isn't deleted: it's set aside on this device in case you need it.
+            A one-time choice for this device. Neither option deletes anything from your synced data, and this device's copy is set aside in case you need it.
           </p>
           <div className="sync-choice">
             <button type="button" onClick={() => void choose('cloud')}>
               <strong>Use the synced data</strong>
               <span className="caption">{choice.cloud}</span>
-              <span className="caption2">Replaces what's on this device. Pick this on your second device.</span>
+              <span className="caption2">Replaces what's on this device. The usual choice.</span>
             </button>
-            <button type="button" onClick={() => void choose('device')}>
-              <strong>Use this device's data</strong>
-              <span className="caption">{choice.device}</span>
-              <span className="caption2">Replaces what's synced.</span>
+            <button type="button" onClick={() => void choose('combine')}>
+              <strong>Combine both</strong>
+              <span className="caption">Adds this device's {choice.device}</span>
+              <span className="caption2">Keeps everything synced and adds this device's items. Where both have the same item, this device's version is kept.</span>
             </button>
           </div>
         </>

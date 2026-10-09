@@ -64,6 +64,28 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Data loss and sync safety (10 Oct 2026)
+
+**What happened:** to get the new Index icon, Riley removed and re-added
+the Vectis Home Screen app on the phone (on iPhone that deletes its
+storage), signed in again, and on the first-sync choice picked "Use this
+device's data". That replaced the cloud with the new device's sample
+content — tombstoning every goal, event, note and journal entry — and the
+other devices followed. Recovered from a backup Riley downloaded on the
+laptop.
+
+**Fixes:**
+- Restore (`restoreEntries` in `suite/src/storage.ts`) writes entries back
+  as saved text (it used to fail on sync's plain-text account id), leaves
+  device-only notes alone, and marks every restored file pending, so the
+  restore is sent up rather than overwritten by the cloud.
+- First sync can't wipe the cloud any more: a device whose content isn't
+  saved (only sample data) takes the cloud's automatically, and the
+  choice is now "Use the synced data" or **"Combine both"**
+  (`combineWrites`: adds and updates, never tombstones).
+- **Never suggest removing a Home Screen web app on iPhone** — it deletes
+  that app's data.
+
 ## Index style (9–10 Oct 2026) — part 1 of 3 built
 
 Riley's design handoff (`docs/design-handoff-index/README.md`, mock-ups in
