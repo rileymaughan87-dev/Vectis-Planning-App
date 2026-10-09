@@ -9,7 +9,7 @@ body { background: var(--bg); }
   padding: calc(28px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
 }
 
-.home-head { display: flex; align-items: center; gap: 12px; }
+.home-head { display: flex; flex-direction: column; gap: 2px; }
 
 .home-head .wordmark { font-size: 30px; line-height: 1.1; }
 
@@ -22,8 +22,6 @@ body { background: var(--bg); }
 }
 
 .home-app > span.grow { display: flex; flex-direction: column; gap: 2px; }
-
-.home-app svg { flex: none; border-radius: 12px; }
 
 .home-app-name { font-size: 18px; font-weight: 600; }
 
