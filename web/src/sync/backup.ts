@@ -7,10 +7,7 @@ import {
 } from '../model/decode'
 import { downloadVectisBackup, restoreVectisBackup } from '@suite/record/backup'
 import { useData, type DataState } from '../store/data'
-import { Filename, allEntries, loadRaw, saveRaw } from '../store/persist'
-
-/** Planner's saved data, for the shared backup. */
-const storage = { allEntries, loadRaw, saveRaw }
+import { Filename, saveRaw, storage } from '../store/persist'
 
 /** iPhone file name → how to read it into which slice. */
 const swiftFiles: Record<string, (raw: unknown) => Partial<DataState>> = {

@@ -24,9 +24,8 @@ export async function restoreVectisBackup(storage: AppStorage, file: File) {
   if (parsed?.format !== 'vectis-backup' || typeof parsed.entries !== 'object') {
     throw new Error("That file isn't a Planner or Record backup.")
   }
-  for (const [name, text] of Object.entries(parsed.entries as Record<string, string>)) {
-    storage.saveRaw(name, JSON.parse(text))
-  }
+  // Saved text goes back as it was; the restored data then wins over the cloud's.
+  storage.restoreEntries(parsed.entries as Record<string, string>)
   // Older backups have no pictures; newer ones bring them back.
   if (parsed.attachments && typeof parsed.attachments === 'object') await importAttachments(parsed.attachments)
   location.reload()
