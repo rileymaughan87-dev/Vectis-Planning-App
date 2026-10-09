@@ -3,7 +3,9 @@
 import { AppearanceEditor } from '@suite/ui/AppearanceEditor'
 import { EditorBox, Sheet, VButton } from '@suite/ui/components'
 import { useRef, useState } from 'react'
+import { SyncBox } from '@suite/ui/SyncBox'
 import { CURRENCIES, regionCurrency } from '../model/money'
+import { useSync } from '../store/sync'
 import { backups } from '../store/persist'
 import { useSettings } from '../store/settings'
 
@@ -14,6 +16,8 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
+      <SyncBox useSync={useSync} what="your entries, goals, logged spending and weekly pot" />
+
       <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 
       <EditorBox title="Currency">

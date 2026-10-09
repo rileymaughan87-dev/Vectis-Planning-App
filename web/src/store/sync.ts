@@ -1,106 +1,54 @@
-// Sync between your devices: what the rest of the app sees. The Firebase
-// side (sync/engine.ts) is only downloaded once you've signed in, so
-// devices that don't sync never load it.
+// What Planner syncs between your devices. The machinery is shared with
+// Finance (suite/sync); this just lists Planner's data and how to read it
+// back. Keys stay under "vectis:", so devices that already sync carry on.
 
-import { create } from 'zustand'
-import type { DataState } from './data'
-import { useData } from './data'
+import { countIn, describeCounts } from '@suite/sync/records'
+import { createSyncStore, type SyncSlice } from '@suite/sync/store'
+import {
+  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview,
+  decodeTask, list,
+} from '../model/decode'
+import { useData, type DataState } from './data'
+import { Filename, allEntries } from './persist'
 
-export type SyncPhase =
-  /** No Firebase settings in this build. */
-  | 'unavailable'
-  | 'signedOut'
-  | 'connecting'
-  /** Both this device and the cloud have data: which one to keep? */
-  | 'choose'
-  | 'live'
-  | 'error'
-
-export interface SyncState {
-  phase: SyncPhase
-  email?: string
-  /** While live: whether everything has reached the cloud. */
-  status: 'upToDate' | 'sending' | 'offline'
-  lastSyncedAt?: number
-  error?: string
-  /** What each side holds, when choosing. */
-  choice?: { device: string; cloud: string }
-  signIn(): Promise<void>
-  signOut(): Promise<void>
-  choose(side: 'device' | 'cloud'): Promise<void>
-}
-
-/** Which account this device syncs with, once the first sync has settled. */
-export const SYNC_USER_KEY = 'vectis:sync:user'
-/** Slices edited while sync wasn't running yet; these win over the cloud on start. */
-export const SYNC_PENDING_KEY = 'vectis:sync:pending'
-
-export function firebaseConfig(): Record<string, string> | null {
-  try {
-    const raw = import.meta.env.VITE_FIREBASE_CONFIG
-    const parsed = raw ? JSON.parse(raw) : null
-    return parsed && typeof parsed.apiKey === 'string' && typeof parsed.projectId === 'string' ? parsed : null
-  } catch {
-    return null
+function slice<K extends keyof DataState>(key: K, file: string, kind: SyncSlice['kind'], decode: (raw: unknown) => DataState[K]): SyncSlice {
+  return {
+    file,
+    kind,
+    get: () => useData.getState()[key],
+    set: value => useData.getState().replace({ [key]: value } as Partial<DataState>),
+    decode,
+    subscribe: onChange => useData.subscribe((state, prev) => {
+      if (state[key] !== prev[key]) onChange()
+    }),
   }
 }
 
-const read = (key: string) => {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
+export const PLANNER_SLICES: SyncSlice[] = [
+  slice('goals', Filename.goals, 'list', raw => list(raw, decodeGoal)),
+  slice('events', Filename.calendarEvents, 'list', raw => list(raw, decodeEvent)),
+  slice('categories', Filename.categories, 'list', raw => list(raw, decodeCategory)),
+  slice('hours', Filename.calendarHours, 'single', decodeHours),
+  slice('tasks', Filename.tasks, 'list', raw => list(raw, decodeTask)),
+  slice('appearance', Filename.appearance, 'single', decodeAppearance),
+  slice('planReview', Filename.planReviewSettings, 'single', decodePlanReview),
+  slice('journal', Filename.journalEntries, 'list', raw => list(raw, decodeJournalEntry)),
+  slice('notes', Filename.notes, 'list', raw => list(raw, decodeNote)),
+  slice('notebooks', Filename.notebooks, 'list', raw => list(raw, decodeNotebook)),
+]
 
-let engine: Promise<typeof import('../sync/engine')> | null = null
-const loadEngine = () => {
-  engine ??= import('../sync/engine').then(async m => {
-    await m.start()
-    return m
-  })
-  return engine
-}
-
-export const useSync = create<SyncState>()(() => ({
-  phase: firebaseConfig() ? 'signedOut' : 'unavailable',
-  status: 'upToDate',
-  signIn: async () => {
-    const m = await loadEngine()
-    await m.signIn()
-  },
-  signOut: async () => {
-    const m = await loadEngine()
-    await m.signOut()
-  },
-  choose: async side => {
-    const m = await loadEngine()
-    await m.choose(side)
-  },
-}))
-
-/** Engine attached and in charge of sending changes. */
-let attached = false
-export const setAttached = (on: boolean) => { attached = on }
-
-// Edits made before the engine has caught up (the first moments after
-// opening) are remembered, so starting up doesn't overwrite them with the
-// cloud's older copy.
-useData.subscribe((state, prev) => {
-  if (attached || !read(SYNC_USER_KEY)) return
-  const changed = (Object.keys(state) as (keyof DataState)[]).filter(k => typeof state[k] !== 'function' && state[k] !== prev[k])
-  if (!changed.length) return
-  try {
-    const pending = new Set<string>(JSON.parse(localStorage.getItem(SYNC_PENDING_KEY) ?? '[]'))
-    for (const k of changed) pending.add(k)
-    localStorage.setItem(SYNC_PENDING_KEY, JSON.stringify([...pending]))
-  } catch {
-    // Can't record it; the cloud copy will win for these.
-  }
+export const useSync = createSyncStore({
+  name: 'Planner',
+  collection: 'planner',
+  prefix: 'vectis:',
+  slices: PLANNER_SLICES,
+  contentFiles: [Filename.goals, Filename.calendarEvents, Filename.tasks, Filename.journalEntries, Filename.notes, Filename.notebooks],
+  describe: records => describeCounts([
+    ['goal', 'goals', countIn(records, Filename.goals)],
+    ['event', 'events', countIn(records, Filename.calendarEvents)],
+    ['task', 'tasks', countIn(records, Filename.tasks)],
+    ['note', 'notes', countIn(records, Filename.notes)],
+    ['journal entry', 'journal entries', countIn(records, Filename.journalEntries)],
+  ]),
+  allEntries,
 })
-
-// A device that already syncs reconnects straight away on opening.
-if (firebaseConfig() && read(SYNC_USER_KEY)) {
-  useSync.setState({ phase: 'connecting' })
-  void loadEngine()
-}

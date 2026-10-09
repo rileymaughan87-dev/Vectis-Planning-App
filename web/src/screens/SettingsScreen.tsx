@@ -8,7 +8,8 @@ import { newID } from '../model/ids'
 import { useData } from '../store/data'
 import { downloadBackup, importSwiftFiles, restoreBackup, type ImportResult } from '../sync/backup'
 import { EditorBox, Field, Sheet, Toggle, VButton } from '../ui/components'
-import { SyncBox } from './SyncBox'
+import { SyncBox } from '@suite/ui/SyncBox'
+import { useSync } from '../store/sync'
 
 const toTime = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
@@ -23,7 +24,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
-      <SyncBox />
+      <SyncBox useSync={useSync} what="your goals, calendar, tasks, notes and journal" notYet="Pictures in notes don't sync yet." />
 
       <EditorBox title="Plan and review">
         <Toggle label="Plan and review" checked={planReview.isEnabled} onChange={isEnabled => setPlanReview({ isEnabled })} />

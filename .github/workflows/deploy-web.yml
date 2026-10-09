@@ -40,6 +40,8 @@ jobs:
           # Sync between devices (one JSON line from the Firebase console).
           VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
       - run: npm run build -w finance
+        env:
+          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
       - name: Put both apps on one site
         run: |
           mkdir site
