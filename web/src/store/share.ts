@@ -19,7 +19,7 @@ export interface Partner {
   snapshot?: ShareSnapshot
 }
 
-interface ShareSettings {
+export interface ShareSettings {
   ownerName: string
   fileID?: string
   lastPublishedAt?: string
@@ -50,8 +50,9 @@ interface ShareState extends ShareSettings {
   removePartner(id: string): void
 }
 
-function loadSettings(): ShareSettings {
-  const raw = loadRaw(Filename.share) as Partial<ShareSettings> | undefined
+/** Reads saved share settings, with a default for anything missing. */
+export function decodeShareSettings(value: unknown): ShareSettings {
+  const raw = (typeof value === 'object' && value !== null ? value : {}) as Partial<ShareSettings>
   return {
     ownerName: typeof raw?.ownerName === 'string' ? raw.ownerName : '',
     fileID: typeof raw?.fileID === 'string' ? raw.fileID : undefined,
@@ -60,8 +61,8 @@ function loadSettings(): ShareSettings {
   }
 }
 
-function loadPartners(): Partner[] {
-  const raw = loadRaw(Filename.partners)
+/** Reads a saved partners list; anything malformed is skipped. */
+export function decodePartners(raw: unknown): Partner[] {
   if (!Array.isArray(raw)) return []
   return raw.flatMap(p => {
     if (typeof p !== 'object' || p === null || typeof p.id !== 'string') return []
@@ -99,8 +100,8 @@ export const useShare = create<ShareState>()((set, get) => {
   }
 
   return {
-    ...loadSettings(),
-    partners: loadPartners(),
+    ...decodeShareSettings(loadRaw(Filename.share)),
+    partners: decodePartners(loadRaw(Filename.partners)),
     status: 'idle',
     error: null,
     hasUnpublishedChanges: false,

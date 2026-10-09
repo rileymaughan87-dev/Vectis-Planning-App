@@ -61,6 +61,15 @@ export function diff(known: Map<string, SyncRecord>, file: string, current: Map<
   return writes
 }
 
+/**
+ * For a slice this device has never synced: its items the cloud doesn't
+ * know about at all (no record, not even a tombstone). Sending just these
+ * merges the device's list into the cloud's instead of replacing either.
+ */
+export function newToCloud(known: Map<string, SyncRecord>, current: Map<string, SyncRecord>): Map<string, SyncRecord> {
+  return new Map([...current].filter(([id]) => !known.has(id)))
+}
+
 /** One slice rebuilt from the records: a list in order, or the single value (undefined if there isn't one). */
 export function rebuild(records: Map<string, SyncRecord>, file: string, kind: SliceKind): unknown {
   const mine = [...records.values()].filter(r => r.file === file && !r.deleted)

@@ -20,7 +20,7 @@ import {
   persistentMultipleTabManager, serverTimestamp, writeBatch, type CollectionReference, type Firestore,
 } from 'firebase/firestore'
 import { newID } from '../ids'
-import { diff, readRecord, rebuild, recordsFor, type SyncRecord } from './records'
+import { diff, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from './records'
 import { firebaseConfig, keys, type Attachment, type SyncApp, type SyncSlice, type SyncStore } from './store'
 
 export interface Engine {
@@ -48,6 +48,8 @@ function friendly(error: unknown): string {
 }
 
 export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attachment): Engine {
+  /** Slices a device synced before it kept a list of them: all but those the app added later. */
+  const FIRST_TRACKED = app.slices.map(s => s.file).filter(f => !(app.addedLater ?? []).includes(f))
   const k = keys(app)
   const config = firebaseConfig()
   if (!config) {
@@ -102,11 +104,28 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
     col = null
   }
 
+  /** This device has now synced these slices (so later they follow the cloud). */
+  const markSynced = () => store(k.files, JSON.stringify(allSlices.map(s => s.file)))
+
   /** Sends what changed in these slices. */
   const push = (slices: SyncSlice[]) => {
     if (!col || !slices.length) return
     const writes = new Map<string, SyncRecord>()
     for (const s of slices) for (const [id, r] of diff(known, s.file, recordsFor(s.file, s.kind, s.get()))) writes.set(id, r)
+    send(writes)
+  }
+
+  /** Merges list slices this device has never synced: only items the cloud has never seen go up. */
+  const mergeIn = (slices: SyncSlice[]) => {
+    const writes = new Map<string, SyncRecord>()
+    for (const s of slices) {
+      if (s.kind === 'list') for (const [id, r] of newToCloud(known, recordsFor(s.file, s.kind, s.get()))) writes.set(id, r)
+    }
+    send(writes)
+  }
+
+  const send = (writes: Map<string, SyncRecord>) => {
+    if (!col) return
     const entries = [...writes]
     // Firestore takes up to 500 writes at once.
     for (let i = 0; i < entries.length; i += 400) {
@@ -196,6 +215,7 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
       }
       store(k.user, uid)
       store(k.pending, null)
+      markSynced()
       goLive()
     } catch (error) {
       useSync.setState({ phase: 'error', error: friendly(error) })
@@ -218,10 +238,16 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         // This device already syncs: the cloud wins, except for anything edited before we got here
         // (and anything the cloud has never had, such as a slice added in a later version).
         const pending = new Set<string>(JSON.parse(localStorage.getItem(k.pending) ?? '[]'))
-        const fromHere = (s: SyncSlice) => pending.has(s.file) || ![...known.values()].some(r => r.file === s.file)
+        const inCloud = (s: SyncSlice) => [...known.values()].some(r => r.file === s.file)
+        // Before this was tracked, every slice the app then had was synced: assume those.
+        const seen = new Set<string>(JSON.parse(localStorage.getItem(k.files) ?? 'null') ?? FIRST_TRACKED)
+        const fromHere = (s: SyncSlice) => pending.has(s.file) || !inCloud(s)
+        // A slice new to this device that another device already sent: merge rather than replace.
         push(allSlices.filter(fromHere))
+        mergeIn(allSlices.filter(s => !fromHere(s) && !seen.has(s.file)))
         pull(allSlices.filter(s => !fromHere(s)))
         store(k.pending, null)
+        markSynced()
         goLive()
         return
       }
@@ -231,6 +257,7 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         // The first device: send everything up.
         push(allSlices)
         store(k.user, user.uid)
+        markSynced()
         goLive()
         return
       }
