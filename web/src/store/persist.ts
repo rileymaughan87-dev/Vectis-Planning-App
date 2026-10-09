@@ -27,7 +27,7 @@ export type FilenameValue = (typeof Filename)[keyof typeof Filename]
 
 // Planner's entries live under "vectis:" (the code name), so everything
 // saved before the rename still loads. The logic is shared (suite/storage).
-const storage = createStorage('vectis:', 'Planner')
+export const storage = createStorage('vectis:', 'Planner')
 export const loadRaw = storage.loadRaw
 export const saveRaw = storage.saveRaw
 export const allEntries = storage.allEntries

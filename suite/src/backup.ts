@@ -24,9 +24,7 @@ export function createBackups(storage: AppStorage, format: string, filePrefix: s
       if (parsed?.format !== format || typeof parsed.entries !== 'object') {
         throw new Error(`That file isn't a ${appName} backup.`)
       }
-      for (const [name, text] of Object.entries(parsed.entries as Record<string, string>)) {
-        storage.saveRaw(name, JSON.parse(text))
-      }
+      storage.restoreEntries(parsed.entries as Record<string, string>)
       location.reload()
     },
   }
