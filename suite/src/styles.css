@@ -517,3 +517,8 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
   .day-item { font-size: 11px; gap: 5px; }
   .day-more { font-size: 10px; }
 }
+
+/* ---------- Back to the Vectis home page ---------- */
+.home-link { color: var(--text-2); margin-left: -8px; }
+
+.rail-head { display: flex; align-items: center; gap: 4px; }

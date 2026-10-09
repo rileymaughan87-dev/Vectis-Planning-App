@@ -47,6 +47,7 @@ export default function App() {
   return (
     <AppShell
       appName={APP_NAME}
+      homeHref="../"
       tabs={tabs}
       tab={tab}
       onTab={choose}

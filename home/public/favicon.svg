@@ -1,0 +1,9 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Vectis icon: suite blue square, thin black ring, and a lever on its
+       fulcrum breaking out of the ring at the top right (vectis is Latin
+       for lever). Matches icon-1024.png and suite/src/ui/appIcons.tsx. -->
+  <rect width="1024" height="1024" fill="#0068B5"/>
+  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
+  <path d="M262 664 L832 284" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M440 560 L372 690 L508 690 Z" fill="#000"/>
+</svg>

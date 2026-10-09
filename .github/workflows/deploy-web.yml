@@ -1,5 +1,5 @@
-# Builds both web apps and publishes them to GitHub Pages on every push to
-# master that touches them: Planner at the site root, Finance at /finance/.
+# Builds the Vectis home page and its apps and publishes them to GitHub Pages on every push to
+# master that touches them: Vectis home at the root, Planner at /planner/, Finance at /finance/.
 # The Google client ID and API key (Planner's sharing) come from repository
 # secrets (Settings → Secrets and variables → Actions), so they stay out of git.
 
@@ -8,7 +8,7 @@ name: Deploy web apps
 on:
   push:
     branches: [master]
-    paths: ['web/**', 'finance/**', 'suite/**', 'package.json', 'package-lock.json', '.github/workflows/deploy-web.yml']
+    paths: ['home/**', 'web/**', 'finance/**', 'suite/**', 'package.json', 'package-lock.json', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
 
 permissions:
@@ -42,11 +42,14 @@ jobs:
       - run: npm run build -w finance
         env:
           VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
-      - name: Put both apps on one site
+      - run: npm run build -w home
+      - name: Put the apps on one site
+        # The Vectis home page at the root, each app in its own folder.
         run: |
           mkdir site
-          cp -r web/dist/. site/
-          mkdir site/finance
+          cp -r home/dist/. site/
+          mkdir site/planner site/finance
+          cp -r web/dist/. site/planner/
           cp -r finance/dist/. site/finance/
       - uses: actions/upload-pages-artifact@v3
         with:
