@@ -1,16 +1,18 @@
-// What's happening right now, today's goals, and tasks. Built on the
-// same dayBlocks() as the Daily grid, so a placed task shows here too.
+// Home keeps two things: what's on now, and today's goals (Index style,
+// Oct 2026). Tasks fold into one link that opens them; times, events and
+// all-day items live in Daily. The evening review card appears once it's
+// evening. Built on the same dayBlocks() as the Daily grid, so a placed
+// task shows here too.
 
-import { ArrowRight, ChevronRight, Clock, Plus, X } from 'lucide-react'
+import { Clock, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { dayKey } from '../model/dates'
-import { allDayEvents, dayBlocks } from '../model/dayBlocks'
-import { formatDuration, formatTime, formatTimeRange } from '../model/format'
-import { minutesFromMidnight } from '../model/dates'
+import { dayKey, minutesFromMidnight } from '../model/dates'
+import { dayBlocks } from '../model/dayBlocks'
+import { formatDuration, formatTime } from '../model/format'
 import { isScheduled } from '../model/goals'
 import { hasReviewed } from '../model/planning'
 import { sortedTasks, useData } from '../store/data'
-import { CompletionMark, SectionBox } from '../ui/components'
+import { CompletionMark, SectionBox, Sheet } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 import { EveningReview } from './EveningReview'
 
@@ -36,9 +38,9 @@ export function useNow(intervalMs = 30_000) {
 
 export function HomeScreen({ colors }: { colors: ThemeColors }) {
   const now = useNow()
-  const { goals, events, tasks, categories, journal, planReview, setCompletion, addTask, toggleTask, setTaskDuration, deleteTask } = useData()
-  const [newTask, setNewTask] = useState('')
+  const { goals, events, tasks, categories, journal, planReview, setCompletion } = useData()
   const [reviewing, setReviewing] = useState(false)
+  const [tasksOpen, setTasksOpen] = useState(false)
 
   // Quiet until it's relevant and gone once done: only with Plan and
   // review on, after the evening time, until today's review is answered.
@@ -47,7 +49,6 @@ export function HomeScreen({ colors }: { colors: ThemeColors }) {
   const blocks = dayBlocks({ events, goals, tasks, categories }, now)
   const current = blocks.find(b => b.start <= now && b.end > now)
   const next = blocks.find(b => b.start > now)
-  const allDay = allDayEvents(events, now)
 
   const nowAccent = !current ? colors.secondary
     : current.kind === 'goal' ? colors.primary
@@ -56,85 +57,79 @@ export function HomeScreen({ colors }: { colors: ThemeColors }) {
 
   const todaysGoals = goals.filter(g => g.kind === 'shortTerm' && isScheduled(g, now))
   const key = dayKey(now)
-  const left = todaysGoals.filter(g => g.completions[key] !== true).length
-  const incomplete = tasks.filter(t => !t.done).length
+  const done = todaysGoals.filter(g => g.completions[key] === true).length
+  const openTasks = tasks.filter(t => !t.done).length
+  const minutesLeft = current ? Math.max(Math.round((current.end.getTime() - now.getTime()) / 60_000), 0) : 0
 
   return (
     <div className="page home">
-      <SectionBox
-        title="Right now"
-        accent={nowAccent}
-        subtitle={now.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {current ? (
-            <div>
-              <div className="big-title">{current.title}</div>
-              <div className="caption">
-                {formatTime(current.start)} – {formatTime(current.end)} · {Math.max(Math.round((current.end.getTime() - now.getTime()) / 60_000), 0)} min left
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="muted" style={{ fontSize: 20, fontWeight: 600 }}>Nothing scheduled</div>
-              <div className="caption">{next ? `Open until ${formatTime(next.start)}.` : 'Nothing else on today.'}</div>
-            </div>
-          )}
+      <SectionBox title="Right now" accent={nowAccent}>
+        {current ? (
+          <div className="now-block">
+            <div className="now-title">{current.title}</div>
+            <div className="mono now-meta">Until {formatTime(current.end)} · {minutesLeft} min left</div>
+          </div>
+        ) : (
+          <div className="now-block">
+            <div className="now-title muted">Nothing scheduled</div>
+            <div className="mono now-meta">{next ? `Open until ${formatTime(next.start)}` : 'Nothing else on today'}</div>
+          </div>
+        )}
+        {current && next && <div className="now-next">Next: {next.title} at {formatTime(next.start)}</div>}
+      </SectionBox>
 
-          {current && next && (
-            <>
-              <hr className="divider" />
-              <div className="row caption">
-                <ArrowRight size={12} />
-                <span className="ellipsis">{next.title} at {formatTime(next.start)}</span>
-              </div>
-            </>
-          )}
-
-          {allDay.length > 0 && (
-            <>
-              <hr className="divider" />
-              {allDay.map(e => (
-                <div key={e.id} className="row caption" style={{ color: 'var(--text)' }}>
-                  <span className="swatch" style={{ background: categories.find(c => c.id === e.categoryID)?.colorHex ?? '#999' }} />
-                  <span className="grow ellipsis">{e.title}</span>
-                  <span className="caption2">All day</span>
-                </div>
-              ))}
-            </>
-          )}
+      <SectionBox title="Today" accent={colors.primary} subtitle={todaysGoals.length ? `${done} of ${todaysGoals.length}` : undefined}>
+        <div className="today-list">
+          {todaysGoals.length === 0 && <span className="caption">No goals scheduled today.</span>}
+          {todaysGoals.map(g => {
+            const ticked = g.completions[key] === true
+            return (
+              <button key={g.id} className="today-goal" onClick={() => setCompletion(g.id, now, !ticked)} aria-pressed={ticked}>
+                <CompletionMark on={ticked} size={18} color={colors.primary} />
+                <span className={`grow ${ticked ? 'strike' : ''}`}>{g.title}</span>
+              </button>
+            )
+          })}
+          <button className="link-row" onClick={() => setTasksOpen(true)}>
+            <span className="grow">{openTasks === 0 ? 'Tasks' : `${openTasks} ${openTasks === 1 ? 'task' : 'tasks'}`}</span>
+            <span aria-hidden="true">→</span>
+          </button>
         </div>
       </SectionBox>
 
-      <SectionBox title="Today's goals" accent={colors.primary} subtitle={todaysGoals.length ? `${left} left` : undefined}>
-        {todaysGoals.length === 0 ? (
-          <span className="caption">No goals scheduled today.</span>
-        ) : (
-          <div className="scroll-list">
-            {todaysGoals.map(g => {
-              const done = g.completions[key] === true
-              return (
-                <button key={g.id} className="row list-row" style={{ width: '100%', textAlign: 'left' }} onClick={() => setCompletion(g.id, now, !done)} aria-pressed={done}>
-                  <CompletionMark on={done} size={17} color={colors.primary} />
-                  <span className={`grow ${done ? 'strike' : ''}`}>{g.title}</span>
-                  {g.scheduledOnCalendar && (
-                    <span className="caption2">{formatTimeRange(g.scheduledStartMinutes, g.scheduledStartMinutes + g.scheduledDurationMinutes)}</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </SectionBox>
+      {showReview && (
+        <button className="review-entry" onClick={() => setReviewing(true)}>
+          <span className="mono index" style={{ color: colors.primary }}>03</span>
+          <span className="grow">
+            <span className="review-entry-title">Evening review</span>
+            <span className="caption">A quick look back, and a line or two if you want.</span>
+          </span>
+          <span className="review-entry-go" aria-hidden="true">→</span>
+        </button>
+      )}
+      {reviewing && <EveningReview colors={colors} onClose={() => setReviewing(false)} />}
+      {tasksOpen && <TasksSheet colors={colors} onClose={() => setTasksOpen(false)} />}
+    </div>
+  )
+}
 
-      <SectionBox title="Tasks" accent={colors.tertiary} subtitle={tasks.length ? `${incomplete} left` : undefined}>
+/** Every task: tick, give a duration (so it can go on the Daily grid), delete, add. */
+function TasksSheet({ colors, onClose }: { colors: ThemeColors; onClose: () => void }) {
+  const { tasks, addTask, toggleTask, setTaskDuration, deleteTask } = useData()
+  const [newTask, setNewTask] = useState('')
+  const open = tasks.filter(t => !t.done).length
+
+  return (
+    <Sheet title="Tasks" onClose={onClose} leftLabel="Done">
+      {tasks.length > 0 && <span className="mono muted">{open} left</span>}
+      <div>
         {sortedTasks(tasks).map(t => (
           <div key={t.id} className="row list-row">
             <button onClick={() => toggleTask(t.id)} aria-label={t.done ? 'Mark not done' : 'Mark done'} aria-pressed={t.done}>
               <CompletionMark on={t.done} size={17} color={colors.tertiary} />
             </button>
             <span className={`grow ${t.done ? 'strike' : ''}`}>{t.text}</span>
-            <label className="caption2" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }} title="Duration">
+            <label className="mono muted" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }} title="Duration">
               {t.durationMinutes ? formatDuration(t.durationMinutes) : <Clock size={13} style={{ opacity: 0.5 }} />}
               <select
                 aria-label="Duration"
@@ -158,21 +153,10 @@ export function HomeScreen({ colors }: { colors: ThemeColors }) {
           }}
         >
           <Plus size={14} className="muted" style={{ width: 17 }} />
-          <input value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a task" aria-label="Add a task" style={{ background: 'transparent', padding: '4px 0' }} />
+          <input value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a task" aria-label="Add a task" style={{ background: 'transparent', border: 0, padding: '4px 0' }} />
         </form>
-      </SectionBox>
-
-      {showReview && (
-        <button style={{ textAlign: 'left' }} onClick={() => setReviewing(true)}>
-          <SectionBox title="Evening review" accent={colors.primary}>
-            <div className="row spread">
-              <span className="caption">A quick look back, and a line or two if you want.</span>
-              <ChevronRight size={14} className="muted" />
-            </div>
-          </SectionBox>
-        </button>
-      )}
-      {reviewing && <EveningReview colors={colors} onClose={() => setReviewing(false)} />}
-    </div>
+      </div>
+      <p className="help">With Plan and review on, a task with a duration waits in Daily planning, ready to drop onto your day.</p>
+    </Sheet>
   )
 }

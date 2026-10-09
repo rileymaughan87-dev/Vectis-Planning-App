@@ -241,12 +241,10 @@ input[type='checkbox'] { width: auto; }
 @keyframes rise { from { transform: translateY(24px); opacity: 0; } }
 
 /* ---------- Sections: index, italic title, pivot rule ---------- */
-.section-box {
-  display: flex; flex-direction: column;
-  counter-increment: section;
-}
+.section-box { display: flex; flex-direction: column; }
 
-.section-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+/* Counted on the head, so a box without one doesn't take a number. */
+.section-head { display: flex; align-items: baseline; gap: 10px; min-width: 0; counter-increment: section; }
 
 .section-head .index { font-family: var(--font-mono); font-size: 11px; color: var(--accent, var(--brand)); flex: none; }
 
@@ -279,6 +277,8 @@ input[type='checkbox'] { width: auto; }
   padding: 14px 16px;
   display: flex; flex-direction: column; gap: 10px;
 }
+
+.card .title-link { text-decoration: none; font-size: 16px; font-weight: 500; }
 
 .card.nested { background: transparent; border: 0; border-left: 1.5px solid var(--separator); border-radius: 0; padding: 2px 0 2px 14px; }
 
@@ -390,9 +390,12 @@ input[type='checkbox'] { width: auto; }
 .sheet-body { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; counter-reset: section; }
 
 /* An editor's section: the same head as a page section, slightly smaller. */
-.editor-box { display: flex; flex-direction: column; gap: 12px; counter-increment: section; }
+.editor-box { display: flex; flex-direction: column; gap: 12px; }
 
-.editor-box-head { display: flex; flex-direction: column; }
+/* A group of fields with no head of its own reads as a card. */
+.editor-box:not(:has(> .editor-box-head)) { background: var(--surface); border: 1px solid var(--separator); padding: 14px 16px; }
+
+.editor-box-head { display: flex; flex-direction: column; counter-increment: section; }
 
 .editor-box-head .head-row { display: flex; align-items: baseline; gap: 10px; }
 
@@ -501,6 +504,26 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
 
 .month-title { font-family: var(--font-serif); font-style: italic; font-size: 22px; font-weight: 500; }
 
+/* The month as a section's title, with ‹ › at the end of its head. */
+.month-section .section-head { align-items: center; }
+
+.month-section .month-title { font-size: inherit; text-align: left; }
+
+.month-section .month-nav { margin-left: auto; display: flex; margin-right: -8px; }
+
+.month-section { margin-bottom: 14px; }
+
+/* A plain list of tappable rows between soft rules. */
+.row-list > * { width: 100%; text-align: left; padding: 11px 0; }
+
+.row-list > * + * { border-top: 1px solid var(--rule-soft); }
+
+/* Writing: a serif for the words, roomy lines. */
+textarea.writing { font-family: var(--font-serif); font-size: 17px; line-height: 1.5; padding: 12px 14px; }
+
+/* A link that leads on: blue text, an arrow, a rule above. */
+.link-row { display: flex; align-items: center; width: 100%; text-align: left; padding: 12px 0 0; margin-top: 6px; border-top: 1px solid var(--rule-soft); font-size: 14px; color: var(--brand); }
+
 .month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
 
 .weekday { text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--text-3); padding: 2px 0; }
@@ -570,7 +593,7 @@ ol.steps { margin: 0; padding-left: 20px; font-size: 13px; display: flex; flex-d
   .vbutton.destructive:hover { background: color-mix(in srgb, var(--danger) 6%, transparent); }
   .summary-row:hover { color: var(--brand); }
   .day-cell:hover { background: var(--surface-3); }
-  .text-button:hover, .title-link:hover { color: var(--brand-dark); }
+  .text-button:hover, .title-link:hover, .link-row:hover { color: var(--brand-dark); }
 }
 
 /* ---------- Wide screens: sidebar + roomier pages ---------- */

@@ -118,9 +118,9 @@ export function ShortTermGoalRow(props: GoalHandlers & { goal: Goal; accent: str
         </div>
       )}
 
-      {meta.length > 0 && <span className="caption2">{meta.join('  ·  ')}</span>}
-      {restLeft > 0 && <span className="caption2">{restLeft} rest day{restLeft === 1 ? '' : 's'} left this week</span>}
-      {nudge && <span className="caption2">{nudge}</span>}
+      {meta.length > 0 && <span className="mono muted">{meta.join(' · ')}</span>}
+      {restLeft > 0 && <span className="mono muted">{restLeft} rest day{restLeft === 1 ? '' : 's'} left this week</span>}
+      {nudge && <span className="caption">{nudge}</span>}
     </div>
   )
 }
@@ -145,9 +145,9 @@ export function LongTermGoalCard(props: GoalHandlers & { goal: Goal; allGoals: G
             Day {day}{goal.challengeAttempt > 1 ? ` · attempt ${goal.challengeAttempt}` : ''}
           </span>
         ) : isTargetOverdue(goal) ? (
-          <span className="caption2 danger-text">Overdue</span>
+          <span className="mono danger-text">Overdue</span>
         ) : goal.targetDate ? (
-          <span className="caption2">by {formatShortDate(parseDate(goal.targetDate))}</span>
+          <span className="mono muted">by {formatShortDate(parseDate(goal.targetDate))}</span>
         ) : null}
       </div>
 
@@ -175,13 +175,13 @@ export function LongTermGoalCard(props: GoalHandlers & { goal: Goal; allGoals: G
               </button>
               <span className={`caption grow ${m.done ? 'strike' : ''}`} style={m.done ? undefined : { color: 'var(--text)' }}>{m.title}</span>
               {isMilestoneOverdue(m) ? (
-                <span className="caption2 danger-text">Overdue</span>
+                <span className="mono danger-text">Overdue</span>
               ) : m.addToCalendar && m.date ? (
-                <span className="caption2">{formatShortDate(parseDate(m.date))}</span>
+                <span className="mono muted">{formatShortDate(parseDate(m.date))}</span>
               ) : null}
             </div>
           ))}
-          <span className="caption2">{doneCount} of {goal.milestones.length} milestones · {percent}%</span>
+          <span className="mono muted">{doneCount} of {goal.milestones.length} milestones · {percent}%</span>
         </div>
       )}
 

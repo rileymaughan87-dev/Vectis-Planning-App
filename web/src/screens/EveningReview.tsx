@@ -9,7 +9,7 @@ import { isDoneOn, missNudge } from '../model/goals'
 import { REVIEW_HEADING, dayDoc, sectionText, withSection } from '../model/noteDoc'
 import { flaggedGoals, journalEntryFor, reviewGoals, reviewPrompt } from '../model/planning'
 import { useData } from '../store/data'
-import { CompletionMark, Sheet } from '../ui/components'
+import { CompletionMark, SectionBox, Sheet } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 
 export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClose: () => void }) {
@@ -34,43 +34,37 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
 
   return (
     <Sheet title="Evening review" onClose={onClose} leftLabel="Skip" right={{ label: 'Done', onClick: save }}>
-      <div className="editor-box">
-        <div style={{ fontWeight: 600, fontSize: 18 }}>Today</div>
+      <SectionBox title="Today" accent={colors.primary} subtitle={scheduled.length ? `${done.length} of ${scheduled.length} done` : undefined}>
         {scheduled.length === 0 ? (
           <span className="muted">Nothing scheduled today.</span>
         ) : (
-          <>
-            <span className="caption">{done.length} of {scheduled.length} done</span>
+          <div>
             {/* Every goal, so something done but never ticked can be caught here. */}
             {scheduled.map(g => {
               const isDone = isDoneOn(g, today)
               return (
-                <button key={g.id} className="row" style={{ textAlign: 'left' }} onClick={() => setCompletion(g.id, today, !isDone)} aria-pressed={isDone}>
+                <button key={g.id} className="row review-goal" onClick={() => setCompletion(g.id, today, !isDone)} aria-pressed={isDone}>
                   <CompletionMark on={isDone} size={18} color={colors.primary} />
                   <span className={isDone ? 'strike' : ''}>{g.title}</span>
                 </button>
               )
             })}
-          </>
+          </div>
         )}
-      </div>
+      </SectionBox>
 
-      {flagged.length > 0 && (
-        <div className="editor-box">
-          {flagged.map(g => (
-            <div key={g.id}>
-              <div style={{ fontWeight: 500 }}>{g.title}</div>
-              <div className="caption">{missNudge(g, today)}</div>
-            </div>
-          ))}
+      {flagged.map(g => (
+        <div key={g.id} className="card nested">
+          <div style={{ fontWeight: 500 }}>{g.title}</div>
+          <div className="caption">{missNudge(g, today)}</div>
         </div>
-      )}
+      ))}
 
-      <div className="editor-box">
-        <label htmlFor="reflection" style={{ fontStyle: 'italic', fontWeight: 500 }}>{prompt}</label>
-        <textarea id="reflection" rows={5} value={text} onChange={e => setText(e.target.value)} style={{ resize: 'vertical' }} />
+      <SectionBox title="A line or two" accent={colors.primary}>
+        <label htmlFor="reflection" className="review-prompt">{prompt}</label>
+        <textarea id="reflection" className="writing" rows={5} value={text} onChange={e => setText(e.target.value)} style={{ resize: 'vertical' }} />
         <p className="help">Optional — skipping is fine. Your answer goes under today's Daily review heading in your journal in Record.</p>
-      </div>
+      </SectionBox>
     </Sheet>
   )
 }

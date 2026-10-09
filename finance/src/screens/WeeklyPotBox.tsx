@@ -39,7 +39,9 @@ export function WeeklyPotBox({ onLog, onEdit, onSetUp }: { onLog: () => void; on
 
       {showPot ? (
         <div className="pot-summary">
-          <div className="headline-number">{status.left >= 0 ? `${money(status.left)} left` : `${money(-status.left)} over`}</div>
+          <div className="headline-number">
+            {money(Math.abs(status.left))} <span className="headline-suffix">{status.left >= 0 ? 'left' : 'over'}</span>
+          </div>
           <span className="caption">
             {money(status.spent)} of {money(pot.weeklyAmount)} spent
             {isThisWeek && status.perDay !== undefined && ` · about ${money(status.perDay)} a day for the rest of the week`}
@@ -64,9 +66,9 @@ export function WeeklyPotBox({ onLog, onEdit, onSetUp }: { onLog: () => void; on
               <button key={e.id} className="budget-line" onClick={() => onEdit(e)}>
                 <span className="grow" style={{ minWidth: 0 }}>
                   <div className="ellipsis">{e.note || 'Spending'}</div>
-                  <div className="caption2">{isSameDay(d, new Date()) ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'long' })}</div>
+                  <div className="mono muted">{isSameDay(d, new Date()) ? 'Today' : d.toLocaleDateString(undefined, { weekday: 'long' })}</div>
                 </span>
-                <strong className="num">{money(e.amount)}</strong>
+                <span className="amount">{money(e.amount)}</span>
               </button>
             )
           })}

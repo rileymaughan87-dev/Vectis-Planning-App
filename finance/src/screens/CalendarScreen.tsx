@@ -8,7 +8,7 @@
 // waiting for a real amount is called out at the top.
 
 import { dayKey, isSameDay } from '@suite/dates'
-import { Sheet, VButton } from '@suite/ui/components'
+import { SectionBox, Sheet, VButton } from '@suite/ui/components'
 import { MonthGrid } from '@suite/ui/MonthGrid'
 import { startOfMonth } from '@suite/months'
 import { ChevronRight, Plus } from 'lucide-react'
@@ -37,6 +37,24 @@ const rowTitle = (r: Row) => (r.kind === 'entry' ? r.item.event.title : r.paymen
 const rowColor = (r: Row) => r.kind === 'entry'
   ? (!r.item.confirmed ? UNCONFIRMED : r.item.event.entryType === 'income' ? INCOME : EXPENSE)
   : (isDue(r.payment) ? UNCONFIRMED : kindInfo[r.payment.kind].accent)
+
+/** In minus out for a day, and whether any of it is still an estimate (Index style: one amount per day cell). */
+function dayNet(rows: Row[]): { net: number; estimate: boolean } {
+  let net = 0
+  let estimate = false
+  for (const r of rows) {
+    if (r.kind === 'entry') {
+      net += r.item.event.entryType === 'income' ? r.item.amount : -r.item.amount
+      if (!r.item.confirmed) estimate = true
+    } else {
+      net -= r.payment.amount
+      if (isDue(r.payment)) estimate = true
+    }
+  }
+  return { net, estimate }
+}
+
+const wholeNumber = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 })
 
 export function CalendarScreen() {
   const events = useEntries(s => s.events)
@@ -76,14 +94,22 @@ export function CalendarScreen() {
         <MonthGrid
           month={month}
           onMonthChange={setMonth}
+          section={{}}
+          className="money-grid"
           renderDay={({ date, inMonth, isToday }) => {
             const dayRows = inMonth ? rows.filter(r => isSameDay(rowDate(r), date)) : rowsOn(date)
+            const { net, estimate } = dayNet(dayRows)
             const visible = dayRows.slice(0, MAX_VISIBLE)
             const overflow = dayRows.length - visible.length
             const label = `${dayTitle(date)}${dayRows.length ? `, ${dayRows.length} item${dayRows.length === 1 ? '' : 's'}` : ''}`
             return (
               <button role="gridcell" className={`day-cell ${inMonth ? '' : 'outside'} ${isToday ? 'today' : ''}`} onClick={() => setSelected(date)} aria-label={label}>
                 <span className="day-number">{date.getDate()}</span>
+                {dayRows.length > 0 && (
+                  <span className="day-amount" style={{ color: estimate ? UNCONFIRMED : net >= 0 ? INCOME : EXPENSE }}>
+                    {net > 0 ? '+' : net < 0 ? '−' : ''}{wholeNumber.format(Math.abs(net))}
+                  </span>
+                )}
                 {visible.map(r => (
                   <span key={rowKey(r)} className="day-item">
                     <span className="swatch" style={{ background: rowColor(r), width: 5, height: 5 }} />
@@ -91,14 +117,18 @@ export function CalendarScreen() {
                   </span>
                 ))}
                 {overflow > 0 && <span className="day-more">+{overflow} more</span>}
-                {dayRows.length > 0 && <span className="day-dots" aria-hidden="true">{dayRows.slice(0, 4).map(r => <span key={rowKey(r)} style={{ background: rowColor(r) }} />)}</span>}
               </button>
             )
           }}
         />
+        <div className="money-legend" aria-hidden="true">
+          <span><span className="swatch" style={{ background: INCOME }} />In</span>
+          <span><span className="swatch" style={{ background: EXPENSE }} />Out</span>
+          <span><span className="swatch" style={{ background: UNCONFIRMED }} />Estimate</span>
+        </div>
       </section>
 
-      <section className="finance-month" aria-label="This month">
+      <SectionBox title={month.toLocaleDateString(undefined, { month: 'long' })} accent="var(--brand)" className="finance-month">
         {waiting.length > 0 && (
           <button className="notice confirm-notice" onClick={() => open(waiting[0])}>
             <strong>{waiting.length} amount{waiting.length === 1 ? '' : 's'} to confirm</strong>
@@ -118,30 +148,28 @@ export function CalendarScreen() {
           </div>
         )}
 
-        <div className="row spread">
-          <h2 className="list-heading" style={{ margin: 0 }}>{month.toLocaleDateString(undefined, { month: 'long' })}</h2>
-          <button className="text-button" onClick={() => setEditor({ mode: 'new', date: isSameDay(startOfMonth(today), month) ? today : month })}>
-            <Plus size={15} style={{ verticalAlign: -3 }} /> Add entry
-          </button>
-        </div>
-
         {rows.length === 0 ? (
           <div className="empty" style={{ padding: '24px 16px' }}>
-            <strong style={{ color: 'var(--text)' }}>Nothing this month yet</strong>
+            <strong>Nothing this month yet</strong>
             <span className="caption">Add your pay, bills and regular spending. Repeating ones fill in every month by themselves.</span>
             <VButton kind="primary" accent="var(--primary)" onClick={() => setEditor({ mode: 'new', date: today })}>Add your first entry</VButton>
           </div>
         ) : (
-          <div className="list-box">
+          <div className="money-rows">
             {rows.map(r => <CalendarRow key={rowKey(r)} row={r} currency={currency} showDate onClick={() => open(r)} />)}
           </div>
         )}
-      </section>
+        {rows.length > 0 && (
+          <VButton onClick={() => setEditor({ mode: 'new', date: isSameDay(startOfMonth(today), month) ? today : month })}>
+            <Plus size={15} style={{ verticalAlign: -3 }} /> Add entry
+          </VButton>
+        )}
+      </SectionBox>
 
       {selected && !editor && !confirming && !payment && (
         <Sheet title={dayTitle(selected)} onClose={() => setSelected(null)} leftLabel="Close" right={{ label: 'Add', onClick: () => setEditor({ mode: 'new', date: selected }) }}>
           {rowsOn(selected).length === 0 ? <p className="muted" style={{ margin: 0 }}>Nothing this day.</p> : (
-            <div className="list-box">
+            <div className="money-rows">
               {rowsOn(selected).map(r => <CalendarRow key={rowKey(r)} row={r} currency={currency} onClick={() => open(r)} />)}
             </div>
           )}
@@ -168,12 +196,12 @@ function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency:
   const info = kindInfo[p.kind]
   const due = isDue(p)
   return (
-    <button className="list-item entry-row" onClick={onClick}>
+    <button className="money-row" onClick={onClick}>
       <span className="row" style={{ gap: 10 }}>
         <span className="swatch" style={{ background: due ? UNCONFIRMED : info.accent }} />
         <span className="grow" style={{ minWidth: 0 }}>
           <div className="ellipsis">{p.title || 'Untitled'}</div>
-          <div className="caption2">
+          <div className="mono muted">
             {showDate && `${p.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })} · `}
             {p.kind === 'debt' ? 'Debt payment' : info.label}{p.confirmed ? '' : ' · planned'}
           </div>
@@ -182,7 +210,7 @@ function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency:
           <div style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }} className={p.confirmed && p.amount === 0 ? 'muted' : ''}>
             {p.confirmed && p.amount === 0 ? 'Skipped' : formatSigned(p.amount, currency, '-')}
           </div>
-          {due && <div className="caption2" style={{ color: UNCONFIRMED, fontWeight: 600 }}>To confirm</div>}
+          {due && <div className="mono" style={{ color: UNCONFIRMED }}>To confirm</div>}
         </span>
         <ChevronRight size={16} className="muted" />
       </span>
@@ -194,7 +222,7 @@ function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency:
 function Total({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="total">
-      <span className="caption">{label}</span>
+      <span className="mono muted">{label}</span>
       <strong style={{ color }}>{value}</strong>
     </div>
   )
@@ -205,19 +233,19 @@ function EntryRow({ item, currency, showDate, onClick }: { item: LineItem; curre
   const income = event.entryType === 'income'
   const kind = income ? 'Money in' : event.expenseCategory === 'flexible' ? 'Flexible' : 'Fixed bill'
   return (
-    <button className="list-item entry-row" onClick={onClick}>
+    <button className="money-row" onClick={onClick}>
       <span className="row" style={{ gap: 10 }}>
         <span className="swatch" style={{ background: confirmed ? (income ? INCOME : EXPENSE) : UNCONFIRMED }} />
         <span className="grow" style={{ minWidth: 0 }}>
           <div className="ellipsis">{event.title || 'Untitled'}</div>
-          <div className="caption2">
+          <div className="mono muted">
             {showDate && `${date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })} · `}
             {kind}{event.repeats ? ` · ${repeatText(event)}` : ''}
           </div>
         </span>
         <span style={{ textAlign: 'right' }}>
           <div style={{ fontWeight: 600, color: income ? INCOME : undefined, fontVariantNumeric: 'tabular-nums' }}>{formatSigned(amount, currency, income ? '+' : '-')}</div>
-          {!confirmed && <div className="caption2" style={{ color: UNCONFIRMED, fontWeight: 600 }}>Estimate</div>}
+          {!confirmed && <div className="mono" style={{ color: UNCONFIRMED }}>Estimate</div>}
         </span>
         <ChevronRight size={16} className="muted" />
       </span>

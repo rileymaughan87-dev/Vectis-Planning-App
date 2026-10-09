@@ -86,7 +86,7 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
-## Index style (9–10 Oct 2026) — part 1 of 3 built
+## Index style (9–10 Oct 2026) — parts 1 and 2 of 3 built
 
 Riley's design handoff (`docs/design-handoff-index/README.md`, mock-ups in
 `designs/` — serve the folder and open the `.dc.html` files) restyles the
@@ -107,12 +107,23 @@ except the two noted under part 2 and 3.
   manifests and `theme-color` now paper `#F2EFE8`. Dark mode keeps the old
   dark colours (not designed yet). iOS asset catalogues untouched — the
   Swift apps are read-only.
-- **Part 2 (next):** screen-by-screen against the mocks — the calmer
-  Planner Home (P1: Right now + Today only, tasks behind a "N tasks →"
-  link, evening review card only after 6 pm), Daily header and grid
-  (mono hour labels, 2px blocks, now line as a pivot rule), Long-Term
-  (P4), Goals cards (P2), evening review (P6), Record journal rows (P5),
-  Finance F1–F3, and the app-level CSS in each `index.css`.
+- **Part 2 (built, 10 Oct 2026):** screen by screen against the mocks.
+  Planner Home is two sections (Right now: serif title, mono "until ·
+  min left", next; Today: goals, then a "N tasks →" link opening a Tasks
+  sheet with the old task list); the evening review entry still follows
+  the Plan and review time setting. Daily: italic day title + mono date,
+  secondary-colour plan buttons, surface goal chips, mono hour labels,
+  2px blocks, the now line as a blue pivot rule. Goals: 13px ring dots
+  (done filled, missed a pale ring, today a darker ring, rest tertiary),
+  mono metadata. Long-Term: 01 Goals with 3px bars, 02 the month as a
+  section (`MonthGrid` `section` prop). Evening review: 01 Today, flagged
+  notes as nested cards, 02 A line or two with a serif prompt and
+  `textarea.writing`. Record journal: day number over weekday, italic
+  heading, two-line clamp. Finance: "£… left" headline, mono labels,
+  6px bars, rows between soft rules; the calendar shows one coloured
+  amount per day (names too on wide screens) plus a legend, and the
+  month's list is section 02. Shared: section/editor numbering counts
+  heads only; an `.editor-box` with no head reads as a card.
 - **Part 3 (next):** category colours setting (P7/P7b) — presets Index,
   Studio, Garden, Dusk or Custom, stored as `categoryPalette` with the
   settings and synced; existing category colours migrate into Custom.

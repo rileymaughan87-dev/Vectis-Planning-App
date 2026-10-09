@@ -119,8 +119,8 @@ function InAndOut({ summary: s, money }: { summary: MonthSummary; money: (n: num
   const parts = ([['Fixed', s.fixed], ['Flexible', s.flexible], ['Debt payments', s.debtPayments]] as const).filter(([, v]) => v > 0)
   return (
     <>
-      <div>
-        <span className="caption">Difference</span>
+      <div className="difference">
+        <span className="mono muted">Difference</span>
         <div className="headline-number">{signed(s.leftOver, money)}</div>
         <span className="caption">{detail}</span>
       </div>
@@ -136,7 +136,7 @@ function InAndOut({ summary: s, money }: { summary: MonthSummary; money: (n: num
 function Comparison({ label, amount, fraction, color, money }: { label: string; amount: number; fraction: number; color: string; money: (n: number) => string }) {
   return (
     <div className="comparison">
-      <div className="row spread"><span>{label}</span><strong className="num">{money(amount)}</strong></div>
+      <div className="row spread"><span>{label}</span><span className="amount" style={{ fontWeight: 600 }}>{money(amount)}</span></div>
       <div className="comparison-track"><div style={{ width: `${Math.min(Math.max(fraction, 0), 1) * 100}%`, background: color }} /></div>
     </div>
   )
@@ -149,16 +149,15 @@ function TypicalMonth({ summary, typical, currency }: { summary: MonthSummary; t
     : gap > 0 ? `This month leaves about ${whole(gap)} more than a typical one — often an extra weekly payday, or one-offs being light.`
     : `This month leaves about ${whole(-gap)} less than a typical one — often an extra weekly bill, or one-offs.`
   return (
-    <div className="editor-box typical">
-      <div className="editor-box-head"><span className="stripe" style={{ background: 'var(--text-3)' }} />A typical month</div>
+    <SectionBox title="A typical month" accent="var(--text-3)" className="typical">
       <div className="typical-grid">
-        <span className="caption">In</span><span className="caption">Out</span><span className="caption">Left over</span>
+        <span className="mono muted">In</span><span className="mono muted">Out</span><span className="mono muted">Left over</span>
         <strong className="num">{whole(typical.income)}</strong>
         <strong className="num">{whole(typical.spending)}</strong>
         <strong className="num">{(typical.leftOver < 0 ? '−' : '') + whole(Math.abs(typical.leftOver))}</strong>
       </div>
       <p className="help">{note} Weekly amounts are spread as 52 weeks over 12 months; one-offs and saving aren't counted.</p>
-    </div>
+    </SectionBox>
   )
 }
 
@@ -194,10 +193,10 @@ function BudgetSection(props: {
         <button key={line.id} className="budget-line" onClick={() => props.onTap(line)}>
           <span className="grow" style={{ minWidth: 0 }}>
             <div className="ellipsis">{line.title || 'Untitled'}</div>
-            <div className="caption2">{line.detail}</div>
+            <div className="mono muted">{line.detail}</div>
           </span>
-          {line.isEstimate && <span className="caption2" style={{ color: UNCONFIRMED, fontWeight: 600 }}>Estimated</span>}
-          <strong className="num">{props.money(line.amount)}</strong>
+          {line.isEstimate && <span className="mono" style={{ color: UNCONFIRMED, fontWeight: 500 }}>Estimated</span>}
+          <span className="amount">{props.money(line.amount)}</span>
           <ChevronRight size={14} className="muted" />
         </button>
       ))}

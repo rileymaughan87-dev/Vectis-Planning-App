@@ -63,15 +63,15 @@ function GoalCard({ goal, onEdit, onConfirm }: { goal: FinanceGoal; onEdit: () =
   ]
 
   return (
-    <div className="card goal-card" style={{ ...accentStyle(accent), border: 0, background: 'var(--surface-2)' }}>
-      <button className="row spread" style={{ textAlign: 'left', width: '100%' }} onClick={onEdit}>
-        <span style={{ fontWeight: 500, fontSize: 14 }}>{goal.title || 'Untitled'}</span>
-        {done ? <CompletionMark on size={18} color={accent} /> : <span className="caption">{amounts}</span>}
+    <div className="card goal-card" style={accentStyle(accent)}>
+      <button className="row spread" style={{ textAlign: 'left', width: '100%', alignItems: 'baseline' }} onClick={onEdit}>
+        <span style={{ fontWeight: 500, fontSize: 15 }}>{goal.title || 'Untitled'}</span>
+        {done ? <CompletionMark on size={18} color={accent} /> : <span className="caption num">{amounts}</span>}
       </button>
       <div className="progress" role="progressbar" aria-valuenow={Math.round(progress(goal) * 100)} aria-valuemin={0} aria-valuemax={100}>
         <div style={{ width: `${progress(goal) * 100}%` }} />
       </div>
-      <span className="caption2">{bits.join(' · ')}</span>
+      <span className="mono muted">{bits.join(' · ')}</span>
       {p?.kind === 'late' && (
         <span className="caption2">
           A little behind your date{p.needed ? ` — ${planText({ ...goal, paymentAmount: p.needed }, money)} would get there` : ''}.

@@ -160,7 +160,7 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
         </div>
       ) : entries.length === 0 ? (
         <div className="empty">
-          <strong style={{ color: 'var(--text)' }}>No entries yet</strong>
+          <strong>No entries yet</strong>
           <span className="caption">Write about your day, or answer the evening review — it's kept as that day's daily review.</span>
         </div>
       ) : groups.length === 0 ? (
@@ -169,19 +169,21 @@ function JournalSection({ colors }: { colors: ThemeColors }) {
         groups.map(g => (
           <section key={g.month}>
             <h3 className="list-heading">{g.month}</h3>
-            <div className="list-box">
+            <div>
               {g.entries.map(e => {
                 const p = parts(e)
+                const day = parseDate(e.date)
                 return (
-                  <button key={e.id} className="list-item" onClick={() => setOpen(parseDate(e.date))}>
-                    <strong>{dayLabel(parseDate(e.date))}</strong>
-                    {p.journal && <div className="caption ellipsis">{p.journal.replace(/\n+/g, ' · ')}</div>}
-                    {p.review && (
-                      <div className="row caption" style={{ gap: 6, minWidth: 0 }}>
-                        <span className="tag">review</span>
-                        <span className="ellipsis">{p.review.replace(/\n+/g, ' · ')}</span>
-                      </div>
-                    )}
+                  <button key={e.id} className="journal-row" onClick={() => setOpen(day)} aria-label={dayLabel(day, true)}>
+                    <span className="journal-day">
+                      <span className="journal-day-number">{day.getDate()}</span>
+                      <span className="mono muted">{day.toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                    </span>
+                    <span className="journal-text">
+                      <span className="journal-heading">{p.journal ? JOURNAL_HEADING : REVIEW_HEADING}</span>
+                      <span className="journal-clamp">{(p.journal || p.review).replace(/\n+/g, ' · ')}</span>
+                      {p.journal && p.review && <span className="mono muted">+ {REVIEW_HEADING}</span>}
+                    </span>
                   </button>
                 )
               })}

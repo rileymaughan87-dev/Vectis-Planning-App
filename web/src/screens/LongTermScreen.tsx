@@ -11,7 +11,7 @@ import { formatTime } from '../model/format'
 import { isTargetOverdue, milestonePercent } from '../model/goals'
 import { longTermItems, startOfMonth, type LongTermItem } from '../model/longTerm'
 import { useData } from '../store/data'
-import { Sheet, VButton, accentStyle } from '../ui/components'
+import { SectionBox, Sheet, VButton, accentStyle } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 import { EventEditor, type EventEditorTarget } from './EventEditor'
 
@@ -28,28 +28,28 @@ export function LongTermScreen({ colors }: { colors: ThemeColors }) {
   return (
     <div className="page longterm">
       {longTermGoals.length > 0 && (
-        <section className="lt-goals" aria-label="Long-term goals">
-          <h2 className="lt-heading">Goals</h2>
+        <SectionBox title="Goals" accent={colors.secondary} className="lt-goals">
           {longTermGoals.map(g => {
             const percent = milestonePercent(g.milestones)
             return (
-              <div key={g.id} className="card" style={{ ...accentStyle(colors.secondary), gap: 6, padding: 12, border: 0, background: 'var(--surface)' }}>
-                <div className="row spread">
-                  <span style={{ fontWeight: 500, fontSize: 14 }}>{g.title}</span>
-                  {isTargetOverdue(g) ? <span className="caption2 danger-text">Overdue</span>
-                    : g.milestones.length > 0 ? <span className="caption2">{percent}%</span> : null}
+              <div key={g.id} className="lt-goal">
+                <div className="row spread" style={{ alignItems: 'baseline' }}>
+                  <span className="lt-goal-title">{g.title}</span>
+                  {isTargetOverdue(g) ? <span className="mono danger-text">Overdue</span>
+                    : g.milestones.length > 0 ? <span className="mono muted">{percent}%</span> : null}
                 </div>
-                {g.milestones.length > 0 && <div className="progress"><div style={{ width: `${percent}%` }} /></div>}
+                {g.milestones.length > 0 && <div className="progress" style={accentStyle(colors.secondary)}><div style={{ width: `${percent}%` }} /></div>}
               </div>
             )
           })}
-        </section>
+        </SectionBox>
       )}
 
       <section className="lt-month" aria-label="Month">
         <MonthGrid
           month={month}
           onMonthChange={setMonth}
+          section={{ accent: colors.primary }}
           renderDay={({ date, inMonth, isToday }) => {
             const items = longTermItems(data, date, colors.secondary)
             const visible = items.slice(0, MAX_VISIBLE)
@@ -112,7 +112,7 @@ function DaySheet(props: {
       {props.items.length === 0 && <p className="muted" style={{ margin: 0 }}>Nothing scheduled.</p>}
 
       {events.length > 0 && (
-        <div className="editor-box" style={{ gap: 0, padding: '4px 14px' }}>
+        <div className="row-list">
           {events.map(({ id, title, colorHex, event }) => (
             <button key={id} className="row list-row" style={{ textAlign: 'left', padding: '10px 0' }} onClick={() => props.onEdit(event)}>
               <span className="swatch" style={{ background: colorHex }} />
@@ -132,7 +132,7 @@ function DaySheet(props: {
       {milestones.length > 0 && (
         <>
           <span className="field-label" style={{ marginTop: 6 }}>Goal milestones</span>
-          <div className="editor-box" style={{ gap: 0, padding: '4px 14px' }}>
+          <div className="row-list">
             {milestones.map(({ id, title, colorHex, milestone, goal }) => (
               <div key={id} className="row list-row" style={{ padding: '10px 0' }}>
                 <span className="swatch" style={{ background: colorHex }} />

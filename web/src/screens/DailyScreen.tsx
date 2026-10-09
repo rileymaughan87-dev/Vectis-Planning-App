@@ -258,7 +258,8 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
       <div className="day-header">
         <button className="icon-button" onClick={() => setDayOffset(o => o - 1)} aria-label="Previous day"><ChevronLeft size={20} /></button>
         <button className="label" onClick={() => setDayOffset(0)} title="Back to today">
-          {dayOffset === 0 ? 'Today' : formatDayHeading(date)}
+          <span className="day-title">{dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : dayOffset === -1 ? 'Yesterday' : date.toLocaleDateString(undefined, { weekday: 'long' })}</span>
+          <span className="mono muted">{formatDayHeading(date)}</span>
         </button>
         <div className="row" style={{ gap: 0 }}>
           <button className="icon-button" aria-label="Zoom out" disabled={slot <= MIN_SLOT} onClick={() => setSlot(s => Math.max(MIN_SLOT, s - 6))}><Minus size={16} /></button>
