@@ -3,7 +3,7 @@
 // Tap one to select it: "Mark up" draws on it, "Remove" takes it out.
 
 import { Node, mergeAttributes } from '@tiptap/core'
-import { attachmentURL } from '../../store/attachments'
+import { ATTACHMENT_READY, attachmentURL } from '../../store/attachments'
 
 export type AttachmentKind = 'photo' | 'scan' | 'drawing'
 
@@ -52,7 +52,7 @@ export const Attachment = Node.create({
       img.draggable = false
       const missing = document.createElement('figcaption')
       missing.className = 'attachment-missing'
-      missing.textContent = "This picture isn't on this device — it may be in a backup from another one."
+      missing.textContent = "This picture isn't on this device yet. With sync on it arrives shortly; otherwise it may be in a backup from another device."
       const actions = document.createElement('div')
       actions.className = 'attachment-actions'
 
@@ -100,6 +100,11 @@ export const Attachment = Node.create({
 
       dom.append(img, actions)
       show()
+      // Synced from another device after the note opened: show it now.
+      const onReady = (e: Event) => {
+        if ((e as CustomEvent<string>).detail === (node.attrs as AttachmentAttrs).id) show()
+      }
+      window.addEventListener(ATTACHMENT_READY, onReady)
 
       return {
         dom,
@@ -115,6 +120,7 @@ export const Attachment = Node.create({
         // The buttons handle their own taps.
         stopEvent: event => event.target instanceof HTMLButtonElement,
         ignoreMutation: () => true,
+        destroy: () => window.removeEventListener(ATTACHMENT_READY, onReady),
       }
     }
   },

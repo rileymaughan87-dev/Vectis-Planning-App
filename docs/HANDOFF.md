@@ -93,7 +93,7 @@ not two, each section folding away with the heading arrow.
   text" edge). The list shows each section's text (`sectionText`); search
   ignores the two heading lines.
 
-## Sync between devices (8–9 Oct 2026) — Stages 1–2 of 3 (Planner confirmed on phone and laptop)
+## Sync between devices (8–9 Oct 2026) — Stages 1–3 built (Planner confirmed on phone and laptop)
 
 Riley chose Firebase (over a Drive sync file, whose hourly GIS token
 would mean re-signing in on the phone). Project `planner-sync`,
@@ -138,8 +138,21 @@ Authentication → Settings → Authorized domains for the live site.
   `finance/vite.config.ts` (one copy); the deploy passes the secret to
   both builds. On the laptop both apps share the browser's sign-in (same
   site); each Home Screen app on a phone signs in on its own.
-- **Next:** Stage 3 note pictures (Firestore docs; Firebase Storage may
-  need a card). Accountability partners/share settings aren't synced.
+- **Stage 3 (built, 9 Oct): note pictures.** Kept in Firestore, not
+  Firebase Storage (which may need a card): `users/{uid}/pictureParts/
+  {id}_{n}` hold the picture's base64 in 700k-character parts (Firestore
+  docs max 1 MiB), and `users/{uid}/pictureIndex/{id}` `{parts, type, size,
+  createdAt}` is written last in the same batch, so an index entry means
+  the picture is complete. `web/src/sync/pictures.ts` runs while live via
+  the engine's new `SyncApp.onLive` hook (lazy, ~1 KB): watches the small
+  index only; uploads local pictures the cloud lacks; downloads pictures a
+  note here uses that this device lacks (then `ATTACHMENT_READY` makes an
+  open note show it); removes cloud pictures no note uses once they're
+  over a week old, and only when the index came from the server.
+  `model`-style plan in `sync/picturePlan.ts` (2 tests). Re-runs on a new
+  local picture (`ATTACHMENT_SAVED`) or a notes/journal change. Spark plan:
+  1 GiB stored, plenty for a few thousand ~400 KB photos.
+- **Not synced:** accountability partners and share settings (optional).
 
 ## Finance web app (7 Oct 2026) — F0 done
 

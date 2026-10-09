@@ -51,4 +51,6 @@ export const useSync = createSyncStore({
     ['journal entry', 'journal entries', countIn(records, Filename.journalEntries)],
   ]),
   allEntries,
+  // Note pictures, which live outside the data above (store/attachments.ts).
+  onLive: () => import('../sync/pictures').then(m => m.start),
 })
