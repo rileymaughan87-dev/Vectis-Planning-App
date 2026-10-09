@@ -15,6 +15,9 @@
 
 .dot.pending { border: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent); }
 
+/* A planned rest day: outlined in the goal's colour — not filled (done), not grey (missed). */
+.dot.rest { border: 1.5px solid var(--accent); }
+
 .dot.off { width: 5px; height: 5px; background: var(--fill); }
 
 /* ---------- Daily ---------- */

@@ -46,10 +46,31 @@ export function OptionalDate(props: {
   )
 }
 
+/**
+ * Rest days a week (spec 2.2). Planned breaks have far lower dropout than
+ * unplanned ones, so the rest is built in when the goal is set up.
+ */
+function RestDaysField({ value, repeatDays, onChange }: { value: number; repeatDays: number; onChange: (n: number) => void }) {
+  const max = Math.max(0, repeatDays - 1)
+  const shown = Math.min(value, max)
+  const label = shown === 0 ? 'No rest days' : `${shown} rest day${shown === 1 ? '' : 's'} a week`
+  return (
+    <>
+      <Stepper label={label} value={shown} min={0} max={max} onChange={onChange} />
+      <p className="help">
+        {shown === 0
+          ? 'Add a rest day or two if you want planned breaks — they show as outlined dots, not misses.'
+          : `A full week is ${repeatDays - shown} of ${repeatDays - shown}: the first ${shown === 1 ? 'day' : `${shown} days`} you don't do it each week ${shown === 1 ? 'is' : 'are'} rest, not a miss.`}
+      </p>
+    </>
+  )
+}
+
 export function AddShortTermGoalSheet({ onClose }: { onClose: () => void }) {
   const add = useData(s => s.addShortTermGoal)
   const [title, setTitle] = useState('')
   const [repeatDays, setRepeatDays] = useState([...ALL_DAYS])
+  const [restDaysPerWeek, setRestDays] = useState(0)
   const [endDate, setEndDate] = useState<string | undefined>()
   const valid = title.trim() !== '' && repeatDays.length > 0
 
@@ -57,7 +78,7 @@ export function AddShortTermGoalSheet({ onClose }: { onClose: () => void }) {
     <Sheet
       title="New short-term goal"
       onClose={onClose}
-      right={{ label: 'Add', disabled: !valid, onClick: () => { add({ title: title.trim(), repeatDays, endDate }); onClose() } }}
+      right={{ label: 'Add', disabled: !valid, onClick: () => { add({ title: title.trim(), repeatDays, endDate, restDaysPerWeek: Math.min(restDaysPerWeek, Math.max(0, repeatDays.length - 1)) }); onClose() } }}
     >
       <EditorBox title="Name">
         <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Read for 30 min" aria-label="Name" />
@@ -65,6 +86,9 @@ export function AddShortTermGoalSheet({ onClose }: { onClose: () => void }) {
       </EditorBox>
       <EditorBox title="Repeats on">
         <RepeatDaysPicker days={repeatDays} onChange={setRepeatDays} />
+      </EditorBox>
+      <EditorBox title="Rest days">
+        <RestDaysField value={restDaysPerWeek} repeatDays={repeatDays.length} onChange={setRestDays} />
       </EditorBox>
       <EditorBox title="Duration">
         <OptionalDate value={endDate} onChange={setEndDate} toggleLabel="Set a duration" dateLabel="Ends on" />
@@ -96,7 +120,7 @@ export function ShortTermGoalEditor({ goal: original, openedFromDay, onClose }: 
   const save = () => {
     // Versioned against the schedule as it was when the editor opened,
     // so the change only affects today onward.
-    update(goal, liveSchedule(original))
+    update({ ...goal, restDaysPerWeek: Math.min(goal.restDaysPerWeek, Math.max(0, goal.repeatDays.length - 1)) }, liveSchedule(original))
     onClose()
   }
 
@@ -132,6 +156,12 @@ export function ShortTermGoalEditor({ goal: original, openedFromDay, onClose }: 
         )}
         <p className="help">{help[goal.frequencyType]}</p>
       </EditorBox>
+
+      {goal.frequencyType === 'specificDays' && (
+        <EditorBox title="Rest days">
+          <RestDaysField value={goal.restDaysPerWeek} repeatDays={goal.repeatDays.length} onChange={restDaysPerWeek => patch({ restDaysPerWeek })} />
+        </EditorBox>
+      )}
 
       <EditorBox title="Duration">
         <OptionalDate value={goal.endDate} onChange={endDate => patch({ endDate })} toggleLabel="Set a duration" dateLabel="Ends on" />

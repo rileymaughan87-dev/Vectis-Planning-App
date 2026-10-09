@@ -64,6 +64,23 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Rest days (9 Oct 2026) — spec 2.2
+
+`Goal.restDaysPerWeek` (default 0, decoded with a default, so nothing
+changes for other goals; travels in the share file, so partners see it).
+`restAllowance(goal)`: that number for chosen-days goals, and `7 −
+target` for times-a-week goals, so "daily with one rest day" and "6 times
+a week" are scored by the same code (a test checks they match).
+`isRestDay`: each week's first unmet scheduled days, up to the allowance,
+are rest; later ones are ordinary misses (nothing says "overused").
+History dots: new `rest` state, an outlined ring in the goal's colour.
+`recentRate` leaves rest days out, so a full week reads 6/6;
+`consecutiveMisses` skips them. The card says "N rest days left this
+week" while any are; the "last fortnight" stat says "rest days aside".
+Times-a-week cards keep their "x of y this week" line. Editor: a "Rest
+days" stepper (0 to days − 1) on new and edited chosen-days goals.
+5 tests.
+
 ## Record tab tidy (9 Oct 2026)
 
 Riley asked for: journal search by date; Jots and Lists & Notes merged;
@@ -487,7 +504,7 @@ Still to verify on device (carried over plus new):
 | Repo hygiene: `.gitignore` for `.DS_Store` and `xcuserdata/`; those files untracked | Done (Oct 2026) |
 | Buffer awareness (2.8) | Built (Oct 2026), awaiting device test |
 | Unused `tab*` image assets | Removed (Oct 2026) |
-| Rest days (2.2) | Not built |
+| Rest days (2.2) | Built on the web (9 Oct 2026) |
 | Editor restyle for goals / settings / notes | Built (Oct 2026), awaiting device test |
 | Share my day | Not built |
 | Estimate calibration (2.5) | Waiting — needs 5+ logged actuals |

@@ -126,6 +126,7 @@ export function decodeGoal(r: Raw): Goal {
     currentScheduleEffectiveFrom: str(r.currentScheduleEffectiveFrom, DISTANT_PAST),
     statsStartDate: optStr(r.statsStartDate),
     hiddenBlockDays: strs(r.hiddenBlockDays),
+    restDaysPerWeek: Math.max(0, Math.min(6, Math.round(num(r.restDaysPerWeek, 0)))),
   }
 }
 

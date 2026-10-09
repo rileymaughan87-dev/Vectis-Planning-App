@@ -135,6 +135,11 @@ export interface Goal {
   statsStartDate?: ISODate
   /** Day keys whose calendar block was removed ("Remove from [day]"). */
   hiddenBlockDays: string[]
+  /**
+   * Rest days a week (spec 2.2), for goals on chosen days: that many
+   * missed days each week are planned rest, not misses. 0 = none.
+   */
+  restDaysPerWeek: number
 }
 
 export interface VectisTask {

@@ -6,7 +6,7 @@ import { parseDate } from '../model/dates'
 import { formatShortDate, formatTimeRange } from '../model/format'
 import {
   challengeDay, completionCount, isDoneOn, isMilestoneOverdue, isScheduled, isTargetOverdue, milestonePercent,
-  missNudge, recentDates, recentHistory, recentRate, totalCompletions, weeklyCompletionCount, type GoalDayState,
+  missNudge, recentDates, recentHistory, recentRate, restAllowance, restDaysLeft, totalCompletions, weeklyCompletionCount, type GoalDayState,
 } from '../model/goals'
 import type { Goal } from '../model/types'
 import { CompletionMark, accentStyle } from './components'
@@ -24,7 +24,7 @@ function Dot({ state }: { state: GoalDayState }) {
 }
 
 const stateLabel: Record<GoalDayState, string> = {
-  done: 'done', missed: 'missed', pending: 'not yet', notScheduled: 'not scheduled',
+  done: 'done', rest: 'rest day', missed: 'missed', pending: 'not yet', notScheduled: 'not scheduled',
 }
 
 export function HistoryStrip({ goal, onSetDone }: { goal: Goal; onSetDone?: GoalHandlers['onSetDone'] }) {
@@ -56,6 +56,7 @@ export function ShortTermGoalRow(props: GoalHandlers & { goal: Goal; accent: str
   const rate = recentRate(goal)
   const total = totalCompletions(goal)
   const nudge = missNudge(goal)
+  const restLeft = goal.frequencyType === 'specificDays' && restAllowance(goal) > 0 ? restDaysLeft(goal, today) : 0
 
   const meta: string[] = []
   if (goal.scheduledOnCalendar) {
@@ -112,12 +113,13 @@ export function ShortTermGoalRow(props: GoalHandlers & { goal: Goal; accent: str
 
       {goal.frequencyType === 'specificDays' && (rate.scheduled > 0 || total > 0) && (
         <div className="row" style={{ gap: 22, alignItems: 'baseline' }}>
-          {rate.scheduled > 0 && <div className="stat"><div className="value">{rate.done}/{rate.scheduled}</div><div className="caption2">last fortnight</div></div>}
+          {rate.scheduled > 0 && <div className="stat"><div className="value">{rate.done}/{rate.scheduled}</div><div className="caption2">last fortnight{restAllowance(goal) > 0 ? ', rest days aside' : ''}</div></div>}
           {total > 0 && <div className="stat"><div className="value">{total}</div><div className="caption2">times done</div></div>}
         </div>
       )}
 
       {meta.length > 0 && <span className="caption2">{meta.join('  ·  ')}</span>}
+      {restLeft > 0 && <span className="caption2">{restLeft} rest day{restLeft === 1 ? '' : 's'} left this week</span>}
       {nudge && <span className="caption2">{nudge}</span>}
     </div>
   )
