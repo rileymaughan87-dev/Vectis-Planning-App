@@ -4,14 +4,13 @@
 // Planner writes into Record's journal, for instance).
 //
 // Everything opened from here stays inside the same Home Screen app, so
-// on a phone they share storage and one sync sign-in.
+// on a phone they share storage and one sync sign-in. Text only — no
+// logos on this page (Riley's call; new logos are being designed).
 
 import { decodeAppearance, useApplyTheme } from '@suite/appearance'
-import { AppIcon, type AppIconName } from '@suite/ui/appIcons'
 import { ChevronRight } from 'lucide-react'
 
 interface AppEntry {
-  icon: AppIconName
   name: string
   what: string
   /** Relative to this page; none while it's being built. */
@@ -19,9 +18,9 @@ interface AppEntry {
 }
 
 const APPS: AppEntry[] = [
-  { icon: 'planner', name: 'Planner', what: 'Goals, your day in time blocks, and the evening review.', href: './planner/' },
-  { icon: 'finance', name: 'Finance', what: 'A calm budget, a money calendar, and goals broken into payments.', href: './finance/' },
-  { icon: 'record', name: 'Record', what: 'Journal, notebooks and notes. Moving out of Planner next.' },
+  { name: 'Planner', what: 'Goals, your day in time blocks, and the evening review.', href: './planner/' },
+  { name: 'Finance', what: 'A calm budget, a money calendar, and goals broken into payments.', href: './finance/' },
+  { name: 'Record', what: 'Journal, notebooks and notes. Moving out of Planner next.' },
 ]
 
 /** The look follows Planner's colour scheme (saved in this browser under "vectis:"). */
@@ -47,18 +46,14 @@ export default function App() {
   return (
     <div className="home">
       <header className="home-head">
-        <AppIcon name="vectis" size={44} />
-        <div>
-          <div className="wordmark">Vectis</div>
-          <div className="caption">{greeting()} · {today}</div>
-        </div>
+        <div className="wordmark">Vectis</div>
+        <div className="caption">{greeting()} · {today}</div>
       </header>
 
       <main className="home-apps" aria-label="Apps">
         {APPS.map(app => {
           const body = (
             <>
-              <AppIcon name={app.icon} size={56} />
               <span className="grow" style={{ minWidth: 0 }}>
                 <span className="home-app-name">{app.name}</span>
                 <span className="caption">{app.what}</span>

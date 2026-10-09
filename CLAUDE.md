@@ -20,8 +20,9 @@ npm workspaces — run `npm install` once at the repo root, then
 "Vectis", opening a home page with a tile per app. Each app is its own
 tool; they share design, sign-in and (where it helps) data.
 
-- `home/` — the **Vectis home page** at the site root: tiles for Planner,
-  Finance and Record (Record coming next). Forwards old
+- `home/` — the **Vectis home page** at the site root: text tiles (no
+  logos — Riley's call) for Planner, Finance and Record (Record coming
+  next). New logos are being designed from `docs/brand-brief.md`. Forwards old
   `…/#partner=` links to Planner. Its manifest's scope covers the apps'
   folders, so on a phone everything opened from the icon shares storage
   and one sync sign-in.

@@ -1,7 +1,8 @@
 // The suite's app icons, drawn the same way as each app's Home Screen icon
 // (docs/design-system.md): suite blue square, thin black ring, and one
 // thick round-capped stroke breaking out of the ring at the top right.
-// Used for the tiles on the Vectis home page.
+// The source of truth for the icons' shapes (the Home Screen PNGs are drawn
+// from them). Not shown on the Vectis home page, which is text only.
 
 export type AppIconName = 'vectis' | 'planner' | 'finance' | 'record'
 
