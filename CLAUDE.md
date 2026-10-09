@@ -118,7 +118,8 @@ never the plain folder (opening the folder gives a scheme-less window).
   looks in notebooks too). Journal search matches words or dates
   (`suite/src/record/journalSearch.ts`). Planner and Record share the
   journal: both save `vectis:journal_entries.json`, both sync it, and
-  each takes in the other's saves (`storage` events).
+  each takes in the other's saves (`storage` events). Links between the
+  apps: `suite/src/links.ts` (`record/#journal=…`, `record/#goal=…`).
 - **Long-term vs short-term goals.** Only short-term goals are daily-trackable;
   a short-term goal can link to a long-term one via `linkedToGoalID`.
 

@@ -111,10 +111,22 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
   // Planner and Record share these notes (same "vectis:" prefix), so each adds or clears only its own files.
   const readList = (key: string): string[] | null => JSON.parse(localStorage.getItem(key) ?? 'null')
   const markSynced = () => store(k.files, JSON.stringify([...new Set([...(readList(k.files) ?? []), ...allSlices.map(s => s.file)])]))
-  const clearPending = () => {
-    const rest = (readList(k.pending) ?? []).filter(f => !allSlices.some(s => s.file === f))
+  const clearPending = () => removePending(allSlices.map(s => s.file))
+  const removePending = (files: string[]) => {
+    const rest = (readList(k.pending) ?? []).filter(f => !files.includes(f))
     store(k.pending, rest.length ? JSON.stringify(rest) : null)
   }
+  const addPending = (files: string[]) => {
+    store(k.pending, JSON.stringify([...new Set([...(readList(k.pending) ?? []), ...files])]))
+  }
+
+  /**
+   * Files with changes sent but not yet confirmed by the cloud. They stay
+   * marked as pending until then, so if this page closes first (say, the
+   * evening review opening Record) the next app or start sends them
+   * rather than taking the cloud's older copy over them.
+   */
+  const inFlight = new Map<string, number>()
 
   /** Sends what changed in these slices. */
   const push = (slices: SyncSlice[]) => {
@@ -136,6 +148,11 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
   const send = (writes: Map<string, SyncRecord>) => {
     if (!col) return
     const entries = [...writes]
+    if (!entries.length) return
+    const files = [...new Set(entries.map(([, r]) => r.file))]
+    addPending(files)
+    for (const f of files) inFlight.set(f, (inFlight.get(f) ?? 0) + 1)
+    const commits: Promise<void>[] = []
     // Firestore takes up to 500 writes at once.
     for (let i = 0; i < entries.length; i += 400) {
       const batch = writeBatch(db)
@@ -144,9 +161,31 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         known.set(id, r)
       }
       // Offline, this resolves only once it reaches the cloud; the local cache has it already.
-      void batch.commit().catch(error => useSync.setState({ error: friendly(error) }))
+      commits.push(batch.commit())
     }
+    Promise.all(commits)
+      .then(() => {
+        const settled = files.filter(f => {
+          const left = (inFlight.get(f) ?? 1) - 1
+          inFlight.set(f, left)
+          return left === 0 && ![...dirty].some(s => s.file === f)
+        })
+        removePending(settled)
+      })
+      .catch(error => useSync.setState({ error: friendly(error) }))
   }
+
+  /** Sends anything still waiting, now — the page is closing or going to another app. */
+  const flush = () => {
+    if (!dirty.size) return
+    clearTimeout(pushTimer)
+    const slices = [...dirty]
+    dirty.clear()
+    push(slices)
+  }
+  const onHidden = () => document.visibilityState === 'hidden' && flush()
+  window.addEventListener('pagehide', flush)
+  document.addEventListener('visibilitychange', onHidden)
 
   /** Takes the cloud's copy of these slices into the app, where it differs. */
   const pull = (slices: SyncSlice[]) => {
@@ -221,6 +260,7 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
     if (!uid || !col) return
     useSync.setState({ phase: 'connecting', choice: undefined })
     try {
+      clearPending()
       if (side === 'cloud') {
         store(k.beforeSync, JSON.stringify({ savedAt: new Date().toISOString(), entries: app.allEntries() }))
         pull(allSlices)
@@ -232,7 +272,6 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         pull(allSlices)
       }
       store(k.user, uid)
-      clearPending()
       markSynced()
       goLive()
     } catch (error) {
@@ -260,11 +299,11 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         // Before this was tracked, every slice the app then had was synced: assume those.
         const seen = new Set<string>(JSON.parse(localStorage.getItem(k.files) ?? 'null') ?? FIRST_TRACKED)
         const fromHere = (s: SyncSlice) => pending.has(s.file) || !inCloud(s)
+        clearPending()
         // A slice new to this device that another device already sent: merge rather than replace.
         push(allSlices.filter(fromHere))
         mergeIn(allSlices.filter(s => !fromHere(s) && !seen.has(s.file)))
         pull(allSlices.filter(s => !fromHere(s)))
-        clearPending()
         markSynced()
         goLive()
         return
