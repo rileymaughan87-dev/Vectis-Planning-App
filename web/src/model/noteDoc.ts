@@ -94,15 +94,65 @@ export function noteDoc(note: Note): DocNode {
   }
 }
 
+// MARK: - Journal days
+
+export const JOURNAL_HEADING = 'Journal'
+export const REVIEW_HEADING = 'Daily review'
+
+const heading = (title: string): DocNode => ({ type: 'heading', attrs: { level: 2 }, content: [text(title)] })
+const nodeText = (n: DocNode): string => (n.type === 'text' ? n.text ?? '' : (n.content ?? []).map(nodeText).join(''))
+const isSectionHeading = (n: DocNode, title: string) =>
+  n.type === 'heading' && (n.attrs?.level ?? 2) === 2 && nodeText(n).trim().toLowerCase() === title.toLowerCase()
+
+/** Where a section's heading is, and where its content ends (the next heading of the same or higher rank). */
+function sectionRange(doc: DocNode, title: string): { at: number; end: number } | null {
+  const nodes = doc.content ?? []
+  const at = nodes.findIndex(n => isSectionHeading(n, title))
+  if (at < 0) return null
+  let end = at + 1
+  while (end < nodes.length && !(nodes[end].type === 'heading' && ((nodes[end].attrs?.level as number) ?? 2) <= 2)) end++
+  return { at, end }
+}
+
 /**
- * A journal entry's document. The plain `text` is the source of truth
- * when the two disagree — the evening review writes text only, so a
- * saved document that no longer matches it is out of date.
+ * A journal day as one document with two foldable sections, "Journal"
+ * and "Daily review". Older days are shaped into it as they open: what
+ * they held goes under Journal, except days that only ever held the
+ * evening review's answer (the review used to write plain text), which
+ * goes under Daily review.
  */
-export function journalDoc(entry: JournalEntry | undefined): DocNode {
-  if (!entry) return emptyDoc()
-  if (entry.body && docToPlainText(entry.body.doc) === entry.text) return entry.body.doc
-  return textToDoc(entry.text)
+export function dayDoc(entry: JournalEntry | undefined): DocNode {
+  if (!entry) return { type: 'doc', content: [heading(JOURNAL_HEADING), paragraph(), heading(REVIEW_HEADING), paragraph()] }
+  const reviewOnly = Boolean(entry.reflectionPrompt) && !entry.body && entry.text.trim() !== ''
+  if (reviewOnly) {
+    return { type: 'doc', content: [heading(JOURNAL_HEADING), paragraph(), heading(REVIEW_HEADING), ...textToDoc(entry.text).content!] }
+  }
+  // The plain text is the truth when the two disagree (an older review rewrote text only).
+  const base = entry.body && docToPlainText(entry.body.doc) === entry.text ? entry.body.doc : textToDoc(entry.text)
+  let content = base.content ?? [paragraph()]
+  const hasJournal = content.some(n => isSectionHeading(n, JOURNAL_HEADING))
+  const hasReview = content.some(n => isSectionHeading(n, REVIEW_HEADING))
+  if (hasJournal && hasReview) return base
+  if (!hasJournal) content = [heading(JOURNAL_HEADING), ...content]
+  if (!hasReview) content = [...content, heading(REVIEW_HEADING), paragraph()]
+  return { type: 'doc', content }
+}
+
+/** The plain text under one of the day's headings. */
+export function sectionText(doc: DocNode, title: string): string {
+  const range = sectionRange(doc, title)
+  if (!range) return ''
+  return docToPlainText({ type: 'doc', content: (doc.content ?? []).slice(range.at + 1, range.end) })
+}
+
+/** The day with one section's content replaced by plain text (the evening review's answer). */
+export function withSection(doc: DocNode, title: string, plain: string): DocNode {
+  const nodes = doc.content ?? []
+  const range = sectionRange(doc, title)
+  const body = plain.trim() ? textToDoc(plain).content! : [paragraph()]
+  if (!range) return { type: 'doc', content: [...nodes, heading(title), ...body] }
+  // Keep the heading itself (and whether it's folded).
+  return { type: 'doc', content: [...nodes.slice(0, range.at + 1), ...body, ...nodes.slice(range.end)] }
 }
 
 // MARK: - Plain text

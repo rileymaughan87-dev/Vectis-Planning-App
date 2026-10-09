@@ -1,19 +1,20 @@
 // The evening review, ported from EveningReviewView.swift. What got done
 // comes first, repeated misses second, one written prompt last — the
 // order matters (leading with shortfalls works against reflection).
-// Answering starts that day's journal entry; skipping is fine.
+// The answer goes under the day's "Daily review" heading in the journal; skipping is fine.
 
 import { useState } from 'react'
 import { isDoneOn, missNudge } from '../model/goals'
+import { REVIEW_HEADING, dayDoc, sectionText, withSection } from '../model/noteDoc'
 import { flaggedGoals, journalEntryFor, reviewGoals, reviewPrompt } from '../model/planning'
 import { useData } from '../store/data'
 import { CompletionMark, Sheet } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 
 export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClose: () => void }) {
-  const { goals, journal, planReview, setCompletion, seedReflection, setJournalText } = useData()
+  const { goals, journal, planReview, setCompletion, seedReflection, setJournalDoc } = useData()
   const [today] = useState(() => new Date())
-  const [text, setText] = useState(() => journalEntryFor(journal, today)?.text ?? '')
+  const [text, setText] = useState(() => sectionText(dayDoc(journalEntryFor(journal, today)), REVIEW_HEADING))
 
   const { scheduled, done } = reviewGoals(goals, today)
   const flagged = flaggedGoals(goals, today, planReview.flagRepeatedMisses)
@@ -22,8 +23,10 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
   const save = () => {
     const trimmed = text.trim()
     if (trimmed) {
+      // Only the Daily review section changes; anything already written under Journal stays.
+      const day = dayDoc(journalEntryFor(useData.getState().journal, today))
       seedReflection(today, prompt)
-      setJournalText(today, trimmed)
+      setJournalDoc(today, withSection(day, REVIEW_HEADING, trimmed))
     }
     onClose()
   }
@@ -65,7 +68,7 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
       <div className="editor-box">
         <label htmlFor="reflection" style={{ fontStyle: 'italic', fontWeight: 500 }}>{prompt}</label>
         <textarea id="reflection" rows={5} value={text} onChange={e => setText(e.target.value)} style={{ resize: 'vertical' }} />
-        <p className="help">Optional — skipping is fine. Answering is what starts today's journal entry.</p>
+        <p className="help">Optional — skipping is fine. Your answer goes under today's Daily review heading in the journal.</p>
       </div>
     </Sheet>
   )

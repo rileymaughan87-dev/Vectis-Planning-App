@@ -64,6 +64,35 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Record tab tidy (9 Oct 2026)
+
+Riley asked for: journal search by date; Jots and Lists & Notes merged;
+each journal day to hold a Journal and a Daily review section — one entry,
+not two, each section folding away with the heading arrow.
+
+- Tabs are now **Journal · Notebooks · Notes**. Notes: every loose jot,
+  list and note, newest first in groups (Today / This week / Earlier this
+  month / by month), with a kind icon, an All · Notes · Lists · Jots
+  filter, and search that also covers notes in notebooks (labelled with
+  the notebook). "New" asks Jot / List / Note; Notebooks has "New
+  notebook". A saved "jots" tab choice opens Notes.
+- **Journal search** (`model/journalSearch.ts`, 3 tests): every word must
+  match the day's date ("12 oct", "october 2026", "monday", "12th",
+  "2026-10-12", "12/10", "yesterday") or what was written in either part
+  (not the review's prompt). The calendar view's days are all tappable now,
+  so past days can be filled in.
+- **One entry, two foldable sections**: no new fields. `dayDoc(entry)`
+  (model/noteDoc.ts, 3 tests) gives every day the level-2 headings
+  "Journal" and "Daily review" (the editor's foldable sections, so each
+  has its arrow and folding is saved). New days start with both; older
+  days get them on opening — their writing under Journal, except days
+  that only ever held the review's answer (prompt set, no body), which go
+  under Daily review. The evening review now writes the whole document
+  via `withSection(day, 'Daily review', answer)`, so formatting and
+  pictures under Journal are never lost (ends the old "review rewrites
+  text" edge). The list shows each section's text (`sectionText`); search
+  ignores the two heading lines.
+
 ## Sync between devices (8–9 Oct 2026) — Stages 1–2 of 3 (Planner confirmed on phone and laptop)
 
 Riley chose Firebase (over a Drive sync file, whose hourly GIS token

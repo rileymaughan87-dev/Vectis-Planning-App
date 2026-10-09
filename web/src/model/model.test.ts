@@ -270,16 +270,42 @@ describe('note documents', () => {
     expect(docToPlainText(classic)).toBe('Plan\nBook hotel')
   })
 
-  it('prefers the saved document, and journal text when the two disagree', async () => {
-    const { noteDoc, journalDoc, textToDoc, wrapDoc, docToPlainText, decodeDoc } = await import('./noteDoc')
+  it('prefers the saved document, and plain text when the two disagree', async () => {
+    const { noteDoc, textToDoc, wrapDoc, decodeDoc } = await import('./noteDoc')
     const doc = textToDoc('Saved version')
     expect(noteDoc({ id: 'N', type: 'jot', title: '', jotText: 'old', checklistItems: [], mathResults: true, updatedDate: '', body: wrapDoc(doc) })).toBe(doc)
-    const entry = { id: 'J', date: toISO(today), text: 'Saved version', body: wrapDoc(doc) }
-    expect(journalDoc(entry)).toBe(doc)
-    // The evening review rewrote the text: the stale document is ignored.
-    expect(docToPlainText(journalDoc({ ...entry, text: 'From the review' }))).toBe('From the review')
     expect(decodeDoc({ format: 'something-else', doc })).toBeUndefined()
     expect(decodeDoc(JSON.parse(JSON.stringify(wrapDoc(doc))))?.doc).toEqual(doc)
+  })
+})
+
+describe('journal days: one entry, two foldable sections', () => {
+  const date = toISO(today)
+
+  it('starts a new day with both headings', async () => {
+    const { dayDoc, docToPlainText } = await import('./noteDoc')
+    expect(docToPlainText(dayDoc(undefined))).toBe('Journal\n\nDaily review')
+  })
+
+  it('shapes older days: writing under Journal, a review-only day under Daily review', async () => {
+    const { dayDoc, sectionText, textToDoc, wrapDoc } = await import('./noteDoc')
+    const written = dayDoc({ id: 'A', date, text: 'Long walk', body: wrapDoc(textToDoc('Long walk')) })
+    expect([sectionText(written, 'Journal'), sectionText(written, 'Daily review')]).toEqual(['Long walk', ''])
+    const reviewOnly = dayDoc({ id: 'B', date, reflectionPrompt: 'What worked today?', text: 'Getting outside' })
+    expect([sectionText(reviewOnly, 'Journal'), sectionText(reviewOnly, 'Daily review')]).toEqual(['', 'Getting outside'])
+  })
+
+  it('writes the evening review into its section only, keeping the journal and any folding', async () => {
+    const { dayDoc, docToPlainText, sectionText, withSection, wrapDoc } = await import('./noteDoc')
+    let doc = withSection(dayDoc(undefined), 'Journal', 'Read in the evening')
+    doc = { ...doc, content: doc.content!.map(n => (n.type === 'heading' ? { ...n, attrs: { ...n.attrs, collapsed: true } } : n)) }
+    const after = withSection(doc, 'Daily review', 'Planning the morning first')
+    expect(sectionText(after, 'Journal')).toBe('Read in the evening')
+    expect(sectionText(after, 'Daily review')).toBe('Planning the morning first')
+    expect(after.content!.filter(n => n.type === 'heading').every(n => n.attrs?.collapsed)).toBe(true)
+    // A saved day already has both headings, so it opens as it was.
+    const entry = { id: 'C', date, text: docToPlainText(after), body: wrapDoc(after) }
+    expect(dayDoc(entry)).toBe(after)
   })
 })
 

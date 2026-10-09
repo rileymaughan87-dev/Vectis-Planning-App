@@ -84,9 +84,16 @@ never the plain folder (opening the folder gives a scheme-less window).
 - **Plan and review** (opt-in in Settings): "Daily planning" and "Review"
   buttons above the Daily grid. Planning = capture popup → drag tray onto the
   grid. Review = what got done (tickable) → repeated misses → one reflection
-  prompt that seeds that day's journal entry.
-- **Journal entries are one per day.** The review's reflection and freeform
-  journaling are the same entry.
+  prompt, whose answer goes under that day's "Daily review" heading.
+- **Journal entries are one per day** — one document with two foldable
+  sections under the headings "Journal" and "Daily review" (web, Oct 2026,
+  Riley's call). `dayDoc` (model/noteDoc.ts) shapes any day into that;
+  the evening review replaces only the Daily review section
+  (`withSection`).
+- **Record tab (web):** Journal · Notebooks · Notes. Notes holds loose jots,
+  lists and notes together (filter by kind, grouped by recency; search
+  looks in notebooks too). Journal search matches words or dates
+  (`model/journalSearch.ts`).
 - **Long-term vs short-term goals.** Only short-term goals are daily-trackable;
   a short-term goal can link to a long-term one via `linkedToGoalID`.
 
