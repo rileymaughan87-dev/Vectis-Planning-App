@@ -2,7 +2,7 @@
 // One definition of "what still needs a slot", shared by the capture
 // popup and the drag tray so the two can never disagree.
 
-import { isSameDay, parseDate } from './dates'
+import { journalEntryFor } from '@suite/record/noteDoc'
 import { eventsOn } from './events'
 import { isDoneOn, isScheduled, missNudge } from './goals'
 import type { CalendarEvent, Goal, JournalEntry, VectisTask } from './types'
@@ -55,9 +55,8 @@ export function reviewPrompt(flagged: Goal[]): string {
   return flagged.length === 0 ? 'What worked today?' : 'What slowed you down today?'
 }
 
-export function journalEntryFor(journal: JournalEntry[], date: Date): JournalEntry | undefined {
-  return journal.find(e => isSameDay(parseDate(e.date), date))
-}
+// Shared with Record, which owns the journal.
+export { journalEntryFor }
 
 /** Reviewed today means today's entry was started by the review's prompt. */
 export function hasReviewed(journal: JournalEntry[], date: Date): boolean {

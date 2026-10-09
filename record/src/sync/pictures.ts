@@ -10,7 +10,7 @@
 
 import type { LiveContext } from '@suite/sync/store'
 import { collection, doc, getDoc, onSnapshot, writeBatch, type CollectionReference, type Firestore } from 'firebase/firestore'
-import { ATTACHMENT_SAVED, attachmentIDs, fromBase64, loadAttachment, saveAttachment, toBase64 } from '../store/attachments'
+import { ATTACHMENT_SAVED, attachmentIDs, fromBase64, loadAttachment, saveAttachment, toBase64 } from '@suite/record/attachments'
 import { useData } from '../store/data'
 import { attachmentsInUse } from './backup'
 import { planPictures, splitParts, type CloudIndex } from './picturePlan'

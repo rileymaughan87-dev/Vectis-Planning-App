@@ -5,11 +5,12 @@
     "home",
     "web",
     "finance",
+    "record",
     "suite"
   ],
   "scripts": {
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build -w home && npm run build -w web && npm run build -w finance",
+    "build": "npm run build -w home && npm run build -w web && npm run build -w finance && npm run build -w record",
     "lint": "npm run lint --workspaces --if-present"
   }
 }

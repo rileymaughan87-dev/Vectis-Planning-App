@@ -4,20 +4,24 @@
 // built from a single snapshot and published whenever anything changes.
 //
 // Each slice saves to its own file whenever it changes.
+//
+// The journal is Record's (its own app since Oct 2026); Planner keeps it
+// for the evening review, which writes each day's Daily review section.
+// Record's saves are picked up here as they happen (another tab).
 
 import { create } from 'zustand'
 import { dayKey, isSameDay, parseDate, startOfDay, toISO } from '../model/dates'
 import {
-  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview, decodeTask, list,
+  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodePlanReview, decodeTask, list,
 } from '../model/decode'
 import * as challenges from '../model/challenges'
 import { moved, resized, splitSeriesFrom, withOccurrenceActual, withOccurrenceDuration } from '../model/events'
 import { applyScheduleChange, liveSchedule, makeGoal, withCompletion, withCount } from '../model/goals'
 import { newID } from '../model/ids'
 import { docToPlainText, wrapDoc, type DocNode } from '../model/noteDoc'
-import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals, sampleNotes } from '../model/sample'
+import { DEFAULT_CATEGORIES, sampleEvents, sampleGoals } from '../model/sample'
 import type {
-  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, Note, Notebook, PlanReviewSettings, VectisTask,
+  AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, PlanReviewSettings, VectisTask,
 } from '../model/types'
 import { Filename, loadRaw, saveRaw } from './persist'
 
@@ -30,8 +34,6 @@ export interface DataState {
   appearance: AppearanceSettings
   planReview: PlanReviewSettings
   journal: JournalEntry[]
-  notes: Note[]
-  notebooks: Notebook[]
 }
 
 interface Actions {
@@ -86,13 +88,6 @@ interface Actions {
   /** Saves a formatted day, keeping its plain text in step. */
   setJournalDoc(date: Date, doc: DocNode): void
   deleteJournalEntry(id: string): void
-  // Notes
-  /** Adds or replaces a note, stamping it as just updated. */
-  saveNote(note: Note): void
-  deleteNote(id: string): void
-  saveNotebook(notebook: Notebook): void
-  /** Keeps its notes — they go back to their own sections. */
-  deleteNotebook(id: string): void
   /** Replaces whole slices — used by import from the iPhone app. */
   replace(patch: Partial<DataState>): void
 }
@@ -104,7 +99,6 @@ function initialState(): DataState {
   const savedGoals = loadRaw(Filename.goals)
   const savedEvents = loadRaw(Filename.calendarEvents)
   const savedTasks = loadRaw(Filename.tasks)
-  const savedNotes = loadRaw(Filename.notes)
 
   let events = savedEvents === undefined ? sampleEvents(categories) : list(savedEvents, decodeEvent)
   events = repairOrphanedEvents(events, categories)
@@ -118,8 +112,6 @@ function initialState(): DataState {
     appearance: decodeAppearance(loadRaw(Filename.appearance)),
     planReview: decodePlanReview(loadRaw(Filename.planReviewSettings)),
     journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry),
-    notes: savedNotes === undefined ? sampleNotes() : list(savedNotes, decodeNote),
-    notebooks: list(loadRaw(Filename.notebooks), decodeNotebook),
   }
 }
 
@@ -248,25 +240,6 @@ export const useData = create<DataState & Actions>()(set => ({
 
   deleteJournalEntry: id => set(s => ({ journal: s.journal.filter(e => e.id !== id) })),
 
-  saveNote: note =>
-    set(s => {
-      const stamped = { ...note, updatedDate: toISO(new Date()) }
-      const exists = s.notes.some(n => n.id === note.id)
-      return { notes: exists ? s.notes.map(n => (n.id === note.id ? stamped : n)) : [...s.notes, stamped] }
-    }),
-  deleteNote: id => set(s => ({ notes: s.notes.filter(n => n.id !== id) })),
-  saveNotebook: notebook =>
-    set(s => ({
-      notebooks: s.notebooks.some(b => b.id === notebook.id)
-        ? s.notebooks.map(b => (b.id === notebook.id ? notebook : b))
-        : [...s.notebooks, notebook],
-    })),
-  deleteNotebook: id =>
-    set(s => ({
-      notebooks: s.notebooks.filter(b => b.id !== id),
-      notes: s.notes.map(n => (n.notebookID === id ? { ...n, notebookID: undefined } : n)),
-    })),
-
   replace: patch => set(patch),
 }))
 
@@ -287,13 +260,27 @@ const fileFor: Record<keyof DataState, string> = {
   appearance: Filename.appearance,
   planReview: Filename.planReviewSettings,
   journal: Filename.journalEntries,
-  notes: Filename.notes,
-  notebooks: Filename.notebooks,
 }
 
+/** Set while taking in another tab's save, so it isn't written straight back. */
+let fromElsewhere = false
+
 useData.subscribe((state, prev) => {
+  if (fromElsewhere) return
   for (const key of Object.keys(fileFor) as (keyof DataState)[]) {
     if (state[key] !== prev[key]) saveRaw(fileFor[key], state[key])
+  }
+})
+
+// Record (or Planner in another tab) saved the journal: take it in, so the
+// evening review never writes back an older copy over it.
+window.addEventListener('storage', e => {
+  if (e.key !== `vectis:${Filename.journalEntries}`) return
+  fromElsewhere = true
+  try {
+    useData.setState({ journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry) })
+  } finally {
+    fromElsewhere = false
   }
 })
 

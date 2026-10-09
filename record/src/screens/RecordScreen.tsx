@@ -1,5 +1,5 @@
-// The Record tab: Journal / Notebooks / Notes under an underline selector,
-// each section swapping in fully rather than stacking on one long scroll.
+// Record's three tabs — Journal, Notebooks and Notes — one section each.
+// (Until Oct 2026 this was Planner's Record tab.)
 //
 // Notes holds every loose jot, list and note (newest first, grouped by
 // when they were last changed, with a filter by kind); Notebooks are the
@@ -9,47 +9,27 @@
 import { MonthGrid } from '@suite/ui/MonthGrid'
 import { BookOpen, CalendarDays, CheckSquare, ChevronRight, FileText, List, PenSquare, Plus, Search, Target, Zap } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { addDays, isSameDay, parseDate, startOfDay } from '../model/dates'
-import { matchesJournal } from '../model/journalSearch'
-import { startOfMonth } from '../model/longTerm'
-import { journalEntryFor } from '../model/planning'
-import { JOURNAL_HEADING, REVIEW_HEADING, dayDoc, docToPlainText, isDocEmpty, notePlainText, sectionText, type DocNode } from '../model/noteDoc'
-import type { JournalEntry, Note, NoteType, Notebook } from '../model/types'
+import type { ThemeColors } from '@suite/appearance'
+import { addDays, isSameDay, parseDate, startOfDay } from '@suite/dates'
+import { startOfMonth } from '@suite/months'
+import { RichEditor } from '@suite/record/editor/LazyRichEditor'
+import { matchesJournal } from '@suite/record/journalSearch'
+import {
+  JOURNAL_HEADING, REVIEW_HEADING, dayDoc, docToPlainText, isDocEmpty, journalEntryFor, notePlainText, sectionText, type DocNode,
+} from '@suite/record/noteDoc'
+import type { JournalEntry, Note, NoteType, Notebook } from '@suite/record/types'
+import { Sheet, VButton } from '@suite/ui/components'
 import { useData } from '../store/data'
-import { Sheet, VButton } from '../ui/components'
-import type { ThemeColors } from '../ui/theme'
-import { RichEditor } from '../ui/editor/LazyRichEditor'
 import { NoteEditor, NoteTypePicker, NotebookEditor, newNote, newNotebook } from './NoteEditors'
 
-type Section = 'journal' | 'notebooks' | 'notes'
+export type Section = 'journal' | 'notebooks' | 'notes'
 
-const sections: { id: Section; label: string }[] = [
-  { id: 'journal', label: 'Journal' },
-  { id: 'notebooks', label: 'Notebooks' },
-  { id: 'notes', label: 'Notes' },
-]
-
-function savedSection(): Section {
-  const saved = sessionStorage.getItem('vectis:ui:record')
-  // "jots" was its own tab before Notes took in jots, lists and notes.
-  return saved === 'journal' || saved === 'notebooks' ? saved : saved ? 'notes' : 'journal'
-}
-
-export function RecordScreen({ colors }: { colors: ThemeColors }) {
-  const [section, setSection] = useState<Section>(savedSection)
+export function RecordScreen({ section, colors }: { section: Section; colors: ThemeColors }) {
   const [picking, setPicking] = useState<{ notebookID?: string } | null>(null)
   const [editingNote, setEditingNote] = useState<{ note: Note; isNew: boolean } | null>(null)
   const [editingNotebook, setEditingNotebook] = useState<{ notebook: Notebook; isNew: boolean } | null>(null)
   const [openNotebookID, setOpenNotebookID] = useState<string | null>(null)
 
-  const choose = (s: Section) => {
-    setSection(s)
-    try {
-      sessionStorage.setItem('vectis:ui:record', s)
-    } catch {
-      // Section just won't be remembered.
-    }
-  }
   const startNote = (type: NoteType, notebookID?: string) => {
     setPicking(null)
     setEditingNote({ note: newNote(type, notebookID), isNew: true })
@@ -57,12 +37,6 @@ export function RecordScreen({ colors }: { colors: ThemeColors }) {
 
   return (
     <div className="page record">
-      <div className="record-tabs" role="tablist" aria-label="Record sections">
-        {sections.map(s => (
-          <button key={s.id} role="tab" aria-selected={section === s.id} onClick={() => choose(s.id)}>{s.label}</button>
-        ))}
-      </div>
-
       {section === 'notes' && (
         <div className="button-row">
           <VButton small kind="primary" accent={colors.primary} onClick={() => setPicking({})}><PenSquare size={14} /> New</VButton>

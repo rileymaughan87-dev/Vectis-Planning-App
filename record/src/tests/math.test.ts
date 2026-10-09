@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluate, evaluateLines, formatValue } from './math'
+import { evaluate, evaluateLines, formatValue } from '@suite/record/math'
 
 const show = (text: string) => {
   const v = evaluate(text)

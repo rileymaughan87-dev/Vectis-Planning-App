@@ -4,8 +4,8 @@
 // corners are placed by hand.)
 
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { defaultQuad, type Quad } from '../../model/scan'
-import { Segmented, Sheet, VButton } from '../components'
+import { defaultQuad, type Quad } from '../scan'
+import { Segmented, Sheet, VButton } from '../../ui/components'
 import { applyLook, canvasOf, flatten, rotate, toBlob, type Picture, type ScanLook } from './images'
 
 export function ScanSheet({ photo, onDone, onClose }: { photo: ImageBitmap; onDone: (p: Picture) => void; onClose: () => void }) {

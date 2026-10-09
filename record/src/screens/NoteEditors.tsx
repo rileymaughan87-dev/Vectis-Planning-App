@@ -1,15 +1,16 @@
 // Note and notebook editors, ported from NoteSheets.swift and
-// NotebookViews.swift. Each works on a local copy until Save.
+// NotebookViews.swift (Planner's Record tab before Record was its own app). Each works on a local copy until Save.
 
 import { CheckSquare, FileText, Zap } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { toISO } from '../model/dates'
-import { newID } from '../model/ids'
-import { checklistToDoc, isDocEmpty, noteDoc, textToDoc, wrapDoc, type DocNode } from '../model/noteDoc'
-import type { Goal, Note, NoteType, Notebook } from '../model/types'
+import { toISO } from '@suite/dates'
+import { newID } from '@suite/ids'
+import { RichEditor } from '@suite/record/editor/LazyRichEditor'
+import { checklistToDoc, isDocEmpty, noteDoc, textToDoc, wrapDoc, type DocNode } from '@suite/record/noteDoc'
+import type { Note, NoteType, Notebook } from '@suite/record/types'
+import { EditorBox, Field, Sheet, Toggle, VButton } from '@suite/ui/components'
+import type { GoalRef } from '../model/goals'
 import { useData } from '../store/data'
-import { EditorBox, Field, Sheet, Toggle, VButton } from '../ui/components'
-import { RichEditor } from '../ui/editor/LazyRichEditor'
 
 /** Any goal, grouped the way the iPhone picker groups them. */
 export function GoalSelect({ value, onChange }: { value?: string; onChange: (id: string | undefined) => void }) {
@@ -17,7 +18,7 @@ export function GoalSelect({ value, onChange }: { value?: string; onChange: (id:
   const longTerm = goals.filter(g => g.kind === 'longTerm')
   const shortTerm = goals.filter(g => g.kind === 'shortTerm' && !g.linkedToGoalID)
   const habits = goals.filter(g => g.linkedToGoalID)
-  const habitLabel = (h: Goal) => {
+  const habitLabel = (h: GoalRef) => {
     const parent = goals.find(g => g.id === h.linkedToGoalID)
     return parent ? `${h.title} (${parent.title})` : h.title
   }
@@ -159,7 +160,7 @@ export function NotebookEditor({ notebook: original, isNew, onClose, onDeleted }
       {!isNew && (
         <>
           <VButton kind="destructive" onClick={() => { deleteNotebook(notebook.id); onClose(); onDeleted?.() }}>Delete notebook</VButton>
-          <p className="help">Notes inside this notebook won't be deleted — they'll move back to their own sections.</p>
+          <p className="help">Notes inside this notebook won't be deleted — they'll move back to Notes.</p>
         </>
       )}
     </Sheet>

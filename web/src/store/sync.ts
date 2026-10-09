@@ -2,6 +2,10 @@
 // Finance (suite/sync); this just lists Planner's data and how to read it
 // back. Keys stay under "vectis:", so devices that already sync carry on.
 //
+// Notes, notebooks and their pictures moved to Record (Oct 2026), which
+// syncs them in the same place; the journal syncs from both apps, since
+// the evening review writes it.
+//
 // Accountability: your share settings and partners list sync too. A Drive
 // partner's latest copy of their data doesn't (it changes on every refresh
 // and each device can fetch it from Drive); a partner added from a file
@@ -10,7 +14,7 @@
 import { countIn, describeCounts } from '@suite/sync/records'
 import { createSyncStore, type SyncSlice } from '@suite/sync/store'
 import {
-  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodeNote, decodeNotebook, decodePlanReview,
+  decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodePlanReview,
   decodeTask, list,
 } from '../model/decode'
 import { useData, type DataState } from './data'
@@ -39,8 +43,6 @@ export const PLANNER_SLICES: SyncSlice[] = [
   slice('appearance', Filename.appearance, 'single', decodeAppearance),
   slice('planReview', Filename.planReviewSettings, 'single', decodePlanReview),
   slice('journal', Filename.journalEntries, 'list', raw => list(raw, decodeJournalEntry)),
-  slice('notes', Filename.notes, 'list', raw => list(raw, decodeNote)),
-  slice('notebooks', Filename.notebooks, 'list', raw => list(raw, decodeNotebook)),
 ]
 
 /** Name, Drive file and auto-publish — not when it last published, which each device tracks itself. */
@@ -99,15 +101,12 @@ export const useSync = createSyncStore({
   slices: [...PLANNER_SLICES, shareSettings, partners],
   // Accountability joined sync on 9 Oct 2026, after phone and laptop were already syncing.
   addedLater: [Filename.share, Filename.partners],
-  contentFiles: [Filename.goals, Filename.calendarEvents, Filename.tasks, Filename.journalEntries, Filename.notes, Filename.notebooks],
+  contentFiles: [Filename.goals, Filename.calendarEvents, Filename.tasks, Filename.journalEntries],
   describe: records => describeCounts([
     ['goal', 'goals', countIn(records, Filename.goals)],
     ['event', 'events', countIn(records, Filename.calendarEvents)],
     ['task', 'tasks', countIn(records, Filename.tasks)],
-    ['note', 'notes', countIn(records, Filename.notes)],
     ['journal entry', 'journal entries', countIn(records, Filename.journalEntries)],
   ]),
   allEntries,
-  // Note pictures, which live outside the data above (store/attachments.ts).
-  onLive: () => import('../sync/pictures').then(m => m.start),
 })

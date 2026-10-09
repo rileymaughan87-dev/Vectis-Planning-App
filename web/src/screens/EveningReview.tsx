@@ -1,7 +1,8 @@
 // The evening review, ported from EveningReviewView.swift. What got done
 // comes first, repeated misses second, one written prompt last — the
 // order matters (leading with shortfalls works against reflection).
-// The answer goes under the day's "Daily review" heading in the journal; skipping is fine.
+// The answer goes under the day's "Daily review" heading in the journal
+// (Record's, shared through the same saved entries); skipping is fine.
 
 import { useState } from 'react'
 import { isDoneOn, missNudge } from '../model/goals'
@@ -68,7 +69,7 @@ export function EveningReview({ colors, onClose }: { colors: ThemeColors; onClos
       <div className="editor-box">
         <label htmlFor="reflection" style={{ fontStyle: 'italic', fontWeight: 500 }}>{prompt}</label>
         <textarea id="reflection" rows={5} value={text} onChange={e => setText(e.target.value)} style={{ resize: 'vertical' }} />
-        <p className="help">Optional — skipping is fine. Your answer goes under today's Daily review heading in the journal.</p>
+        <p className="help">Optional — skipping is fine. Your answer goes under today's Daily review heading in your journal in Record.</p>
       </div>
     </Sheet>
   )

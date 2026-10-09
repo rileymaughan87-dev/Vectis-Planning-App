@@ -14,19 +14,22 @@ status table in HANDOFF.md supersedes the spec where they disagree.
 ## Repo layout (Oct 2026)
 
 npm workspaces — run `npm install` once at the repo root, then
-`npm test`, `npm run build`, or `npm run dev -w web` / `-w finance` / `-w home`.
+`npm test`, `npm run build`, or `npm run dev -w web` / `-w finance` / `-w record` / `-w home`.
 
 **Vectis is the suite** (Oct 2026, Riley's call): one Home Screen icon,
 "Vectis", opening a home page with a tile per app. Each app is its own
 tool; they share design, sign-in and (where it helps) data.
 
 - `home/` — the **Vectis home page** at the site root: text tiles (no
-  logos — Riley's call) for Planner, Finance and Record (Record coming
-  next). New logos are being designed from `docs/brand-brief.md`. Forwards old
+  logos — Riley's call) for Planner, Finance and Record. New logos are being designed from `docs/brand-brief.md`. Forwards old
   `…/#partner=` links to Planner. Its manifest's scope covers the apps'
   folders, so on a phone everything opened from the icon shares storage
   and one sync sign-in.
 - `web/` — **Planner** web app (see below), now at `…/planner/`.
+- `record/` — **Record** web app at `…/record/` (Oct 2026): Journal,
+  Notebooks, Notes, taken out of Planner. Same `vectis:` saved data and
+  sync records as Planner; the shared note/journal code is in
+  `suite/src/record/` (Planner's evening review uses it).
 - `finance/` — **Finance** web app, being ported in batches from the Swift
   app at `rileymaughan87-dev/Finance-App` (cloned at `../Finance-App`).
   Live at `…/Vectis-Planning-App/finance/`. Saves under `finance:` keys in
@@ -36,7 +39,8 @@ tool; they share design, sign-in and (where it helps) data.
   appearance, backups). Change shared pieces here, never in one app
   (`suite/README.md`).
 - One GitHub Pages deploy builds them all (`.github/workflows/deploy-web.yml`):
-  home at `/`, Planner at `/planner/`, Finance at `/finance/`. Each app's
+  home at `/`, Planner at `/planner/`, Finance at `/finance/`, Record at
+  `/record/`. Each app's
   `AppShell` gets `homeHref="../"` (the grid button beside its name).
 - App icons: `suite/src/ui/appIcons.tsx` (strokes for each icon). A PNG is
   drawn from the same shapes (Vectis's `home/public/icon-1024.png`).
@@ -73,7 +77,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 
 ## Structure
 
-- **Tabs (custom bar):** Home, Goals, Daily, Long-Term, Record.
+- **Tabs (custom bar):** Home, Goals, Daily, Long-Term (Swift also has
+  Record; on the web Record is its own app).
 - **Sidebar (Swift):** People, Linked apps, Settings. **Web:** Accountability
   (with partners), Settings. (Finance was removed in
   Oct 2026 — it is moving to its own app.)
@@ -101,13 +106,15 @@ never the plain folder (opening the folder gives a scheme-less window).
   prompt, whose answer goes under that day's "Daily review" heading.
 - **Journal entries are one per day** — one document with two foldable
   sections under the headings "Journal" and "Daily review" (web, Oct 2026,
-  Riley's call). `dayDoc` (model/noteDoc.ts) shapes any day into that;
+  Riley's call). `dayDoc` (suite/src/record/noteDoc.ts) shapes any day into that;
   the evening review replaces only the Daily review section
   (`withSection`).
-- **Record tab (web):** Journal · Notebooks · Notes. Notes holds loose jots,
+- **Record app (web):** Journal · Notebooks · Notes. Notes holds loose jots,
   lists and notes together (filter by kind, grouped by recency; search
   looks in notebooks too). Journal search matches words or dates
-  (`model/journalSearch.ts`).
+  (`suite/src/record/journalSearch.ts`). Planner and Record share the
+  journal: both save `vectis:journal_entries.json`, both sync it, and
+  each takes in the other's saves (`storage` events).
 - **Long-term vs short-term goals.** Only short-term goals are daily-trackable;
   a short-term goal can link to a long-term one via `linkedToGoalID`.
 
@@ -121,11 +128,14 @@ never the plain folder (opening the folder gives a scheme-less window).
   buffer awareness and the partner view all use it.
 - Sync between devices (Firebase, opt-in in Settings) is shared code in
   `suite/src/sync/`; each app lists its slices (`web/src/store/sync.ts`,
-  `finance/src/store/sync.ts`). New saved data must be added there to sync.
+  `finance/src/store/sync.ts`, `record/src/store/sync.ts`). New saved data
+  must be added there to sync. Record syncs into Planner's records
+  (`users/{uid}/planner`) and shares its sync notes under `vectis:`.
 - The share file (`sync/shareFile.ts`) carries goals and calendar only;
   journal, notes and people never leave the device.
-- Notes and journal entries edit in one TipTap editor (`ui/editor/`);
-  their content is `body` (`model/noteDoc.ts`). Older fields (RTF,
+- Notes and journal entries edit in one TipTap editor
+  (`suite/src/record/editor/`); their content is `body`
+  (`suite/src/record/noteDoc.ts`). Older fields (RTF,
   `checklistItems`, `jotText`, journal `text`) are only read to convert
   old or imported content — never write formatting back into them.
 

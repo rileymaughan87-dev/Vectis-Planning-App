@@ -1,5 +1,6 @@
 # Builds the Vectis home page and its apps and publishes them to GitHub Pages on every push to
-# master that touches them: Vectis home at the root, Planner at /planner/, Finance at /finance/.
+# master that touches them: Vectis home at the root, Planner at /planner/, Finance at /finance/,
+# Record at /record/.
 # The Google client ID and API key (Planner's sharing) come from repository
 # secrets (Settings → Secrets and variables → Actions), so they stay out of git.
 
@@ -8,7 +9,7 @@ name: Deploy web apps
 on:
   push:
     branches: [master]
-    paths: ['home/**', 'web/**', 'finance/**', 'suite/**', 'package.json', 'package-lock.json', '.github/workflows/deploy-web.yml']
+    paths: ['home/**', 'web/**', 'finance/**', 'record/**', 'suite/**', 'package.json', 'package-lock.json', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
 
 permissions:
@@ -30,7 +31,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
-      # One install for both apps and the shared suite (npm workspaces).
+      # One install for every app and the shared suite (npm workspaces).
       - run: npm ci
       - run: npm test
       - run: npm run build -w web
@@ -42,15 +43,19 @@ jobs:
       - run: npm run build -w finance
         env:
           VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
+      - run: npm run build -w record
+        env:
+          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
       - run: npm run build -w home
       - name: Put the apps on one site
         # The Vectis home page at the root, each app in its own folder.
         run: |
           mkdir site
           cp -r home/dist/. site/
-          mkdir site/planner site/finance
+          mkdir site/planner site/finance site/record
           cp -r web/dist/. site/planner/
           cp -r finance/dist/. site/finance/
+          cp -r record/dist/. site/record/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -1,0 +1,6 @@
+/* Record's own layout. The note editor and journal styles are shared
+   (suite/src/record/record.css); the suite's design comes first. */
+
+@media (min-width: 900px) {
+  .page.record { max-width: 820px; }
+}

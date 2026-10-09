@@ -45,6 +45,21 @@
         "--strictPort"
       ],
       "port": 5175
+    },
+    {
+      "name": "record-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "record",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5176",
+        "--strictPort"
+      ],
+      "port": 5176
     }
   ]
 }

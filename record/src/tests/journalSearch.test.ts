@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { toISO } from './dates'
-import { matchesJournal } from './journalSearch'
-import type { JournalEntry } from './types'
+import { toISO } from '@suite/dates'
+import { matchesJournal } from '@suite/record/journalSearch'
+import type { JournalEntry } from '@suite/record/types'
 
 // Monday 12 October 2026.
 const day = new Date(2026, 9, 12)

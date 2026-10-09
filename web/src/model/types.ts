@@ -3,8 +3,6 @@
 // `.iso8601` strategy), weekday sets are arrays of 1 = Sunday … 7 =
 // Saturday, and day keys are "yyyy-MM-dd" in local time.
 
-import type { NoteDoc } from './noteDoc'
-
 export type ID = string
 export type ISODate = string
 
@@ -152,62 +150,9 @@ export interface VectisTask {
   scheduledDate?: ISODate
 }
 
-/**
- * One per day. Its document has two foldable sections under headings —
- * "Journal" and "Daily review" (where the evening review's answer goes);
- * see `dayDoc` in model/noteDoc.ts.
- */
-export interface JournalEntry {
-  id: ID
-  /** The day this entry is for, not necessarily when it was written. */
-  date: ISODate
-  /** The evening review's prompt, once the review has been answered. */
-  reflectionPrompt?: string
-  /** Plain text of the whole day — what search reads. */
-  text: string
-  /** The formatted day from the shared editor; see model/noteDoc.ts. */
-  body?: NoteDoc
-}
-
-export type NoteType = 'jot' | 'list' | 'classic'
-
-export interface ChecklistItem {
-  id: ID
-  text: string
-  done: boolean
-}
-
-export interface Notebook {
-  id: ID
-  title: string
-  linkedGoalID?: ID
-  createdDate: ISODate
-}
-
-/** One note; only the fields for its `type` are used. */
-export interface Note {
-  id: ID
-  type: NoteType
-  title: string
-  /** Jots only. */
-  jotText: string
-  /** Classic notes only: RTF, base64-encoded (Swift `Data`). */
-  richTextData?: string
-  /** Lists only. */
-  checklistItems: ChecklistItem[]
-  /**
-   * The formatted note from the shared editor (model/noteDoc.ts). When
-   * set it's the note's content; the fields above are only read for
-   * notes saved before it existed, such as iPhone imports.
-   */
-  body?: NoteDoc
-  /** Answers after lines ending in "=" (web only; on unless turned off for this note). */
-  mathResults: boolean
-  linkedGoalID?: ID
-  /** Unset means it sits loose in its type's section. */
-  notebookID?: ID
-  updatedDate: ISODate
-}
+// Journal entries, notes and notebooks live in the suite (Record owns them;
+// Planner's evening review writes the journal).
+export type { ChecklistItem, JournalEntry, Note, NoteType, Notebook } from '@suite/record/types'
 
 export interface CalendarHours {
   startHour: number

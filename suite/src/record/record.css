@@ -1,0 +1,237 @@
+/* The note editor, the journal and note lists: shared by Record (and
+   anything else that shows notes). Imported after suite/styles.css. */
+
+/* ---------- Journal ---------- */
+.journal-grid .day-cell { min-height: 48px; align-items: center; }
+
+.journal-grid .day-cell:disabled { opacity: 1; cursor: default; }
+
+.journal-grid .day-cell.outside { opacity: 0.4; }
+
+.journal-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ---------- Note editor ---------- */
+.note-title {
+  font-size: 24px; font-weight: 700; background: transparent; border: 0; padding: 4px 2px; letter-spacing: -0.3px;
+}
+
+.note-title:focus { border: 0; box-shadow: none; }
+
+.links-box summary { cursor: pointer; font-weight: 500; }
+
+.links-box[open] summary { margin-bottom: 4px; }
+
+.rich-note { display: flex; flex-direction: column; gap: 8px; }
+
+.note-doc {
+  min-height: 220px; padding: 12px 14px; background: var(--surface); border-radius: var(--radius-card);
+  outline: none; line-height: 1.5; overflow-wrap: anywhere; font-size: 16px;
+}
+
+.note-doc:focus { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 50%, transparent); }
+
+.note-doc > * + * { margin-top: 6px; }
+
+.note-doc p { margin: 0; }
+
+/* ---------- Pictures in notes ---------- */
+.note-attachment { position: relative; margin: 8px 0; border-radius: var(--radius-small); }
+
+.note-attachment img { display: block; max-width: 100%; max-height: 70vh; width: auto; height: auto; border-radius: var(--radius-small); background: var(--fill); }
+
+.note-attachment.is-drawing img { background: #FFFFFF; border: 0.5px solid var(--separator); }
+
+.note-attachment.is-selected img { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+.attachment-actions { display: none; position: absolute; top: 8px; right: 8px; gap: 6px; }
+
+.note-attachment.is-selected .attachment-actions { display: flex; }
+
+.attachment-actions button {
+  background: var(--surface); color: var(--primary); font-size: 13px; font-weight: 600;
+  padding: 6px 10px; border-radius: var(--radius-small); box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.attachment-actions button:last-child { color: var(--danger); }
+
+.attachment-missing { padding: 16px; font-size: 13px; color: var(--text-2); background: var(--fill); border-radius: var(--radius-small); }
+
+.scan-box { position: relative; width: 100%; max-height: 60vh; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.scan-box img, .scan-box svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.scan-box polygon { fill: color-mix(in srgb, var(--primary) 18%, transparent); stroke: var(--primary); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+
+.scan-handle {
+  position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 35%, transparent); border: 2px solid var(--primary); touch-action: none;
+}
+
+.draw-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.draw-tools .pen, .draw-tools .pen-size { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--radius-small); }
+
+.draw-tools .pen span { width: 20px; height: 20px; border-radius: 50%; }
+
+.draw-tools .pen-size span { border-radius: 50%; background: var(--text); }
+
+.draw-tools [aria-pressed='true'] { background: var(--fill); box-shadow: inset 0 0 0 1.5px var(--primary); }
+
+.draw-canvas { width: 100%; height: auto; max-height: 65vh; object-fit: contain; touch-action: none; border-radius: var(--radius-small); border: 0.5px solid var(--separator); background: #FFFFFF; }
+
+/* A maths answer after "=": the accent colour on a soft tint, so it reads as the app's, not typed text. */
+.has-math-result::after {
+  content: attr(data-math-result);
+  margin-left: 0.3em; padding: 0 5px; border-radius: var(--radius-small);
+  color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent);
+  font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; user-select: none;
+}
+
+.note-doc h1 { font-size: 26px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -0.3px; }
+
+.note-doc h2 { font-size: 20px; font-weight: 700; margin: 10px 0 0; }
+
+.note-doc h3 { font-size: 17px; font-weight: 600; margin: 8px 0 0; color: var(--text); }
+
+.note-doc pre {
+  margin: 0; padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius-small);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; white-space: pre-wrap;
+}
+
+.note-doc pre code { font: inherit; }
+
+.note-doc mark { background: color-mix(in srgb, var(--tertiary) 38%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+
+.note-doc hr { border: 0; border-top: 1.5px solid var(--separator); margin: 14px 0; }
+
+.note-doc hr.ProseMirror-selectednode { border-top-color: var(--primary); }
+
+.note-doc ul, .note-doc ol { margin: 0; padding-left: 24px; }
+
+.note-doc li > p { margin: 0; }
+
+.note-doc ul[data-style='dash'] { list-style: none; padding-left: 20px; }
+
+.note-doc ul[data-style='dash'] > li { position: relative; }
+
+.note-doc ul[data-style='dash'] > li::before { content: '–'; position: absolute; left: -16px; color: var(--text-2); }
+
+.note-doc ul[data-type='taskList'] { list-style: none; padding-left: 2px; }
+
+.note-doc ul[data-type='taskList'] ul[data-type='taskList'] { padding-left: 0; margin-top: 2px; }
+
+/* Lists nested inside a dashed list keep the dashes, as in Apple Notes. */
+.note-doc ul[data-style='dash'] ul:not([data-type='taskList']) { list-style: none; padding-left: 20px; }
+
+.note-doc ul[data-style='dash'] ul:not([data-type='taskList']) > li { position: relative; }
+
+.note-doc ul[data-style='dash'] ul:not([data-type='taskList']) > li::before { content: '–'; position: absolute; left: -16px; color: var(--text-2); }
+
+.note-doc ul[data-type='taskList'] > li { display: flex; align-items: flex-start; gap: 8px; }
+
+.note-doc ul[data-type='taskList'] > li > label { flex: none; margin-top: 2px; user-select: none; }
+
+.note-doc ul[data-type='taskList'] > li > div { flex: 1; min-width: 0; }
+
+.note-doc ul[data-type='taskList'] > li input[type='checkbox'] {
+  appearance: none; -webkit-appearance: none; width: 19px; height: 19px; margin: 0; cursor: pointer;
+  border: 1.5px solid var(--text-3); border-radius: 50%; display: grid; place-content: center; background: var(--surface);
+}
+
+.note-doc ul[data-type='taskList'] > li input[type='checkbox']:checked { border-color: var(--primary); background: var(--primary); }
+
+.note-doc ul[data-type='taskList'] > li input[type='checkbox']:checked::after {
+  content: ''; width: 8px; height: 4px; border: solid var(--on-primary); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg);
+}
+
+.note-doc ul[data-type='taskList'] > li[data-checked='true'] > div { color: var(--text-2); text-decoration: line-through; }
+
+.note-doc p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); color: var(--text-3); float: left; height: 0; pointer-events: none;
+}
+
+.note-doc .is-folded-away { display: none; }
+
+.note-doc h1, .note-doc h2, .note-doc h3 { position: relative; }
+
+.fold-toggle {
+  position: absolute; left: -2px; top: 50%; transform: translate(-100%, -50%);
+  width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-3);
+}
+
+.fold-toggle::before { content: ''; width: 6px; height: 6px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+
+.fold-toggle.is-collapsed::before { transform: rotate(-45deg); }
+
+.fold-toggle:hover { color: var(--primary); }
+
+.note-doc { padding-left: 24px; }
+
+.is-collapsed-heading::after { content: ' …'; color: var(--text-3); font-weight: 400; }
+
+.editor-toolbar {
+  display: flex; align-items: center; gap: 2px; background: var(--surface);
+  border: 0.5px solid var(--separator); border-radius: var(--radius-card); padding: 4px;
+}
+
+.editor-toolbar.inline { position: sticky; top: 0; z-index: 2; }
+
+.editor-toolbar.docked {
+  position: fixed; left: 0; right: 0; z-index: 60; border-radius: 0; border-width: 0.5px 0 0;
+  padding: 5px 6px; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.toolbar-scroll { flex: 1; min-width: 0; display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; gap: 2px; }
+
+.toolbar-scroll::-webkit-scrollbar { display: none; }
+
+.toolbar-group { display: flex; align-items: center; gap: 2px; flex: none; }
+
+.toolbar-fixed { display: flex; gap: 2px; flex: none; }
+
+.toolbar-fixed:first-child { padding-right: 4px; border-right: 0.5px solid var(--separator); }
+
+.toolbar-fixed:last-child { padding-left: 4px; border-left: 0.5px solid var(--separator); }
+
+.toolbar-sep { width: 1px; height: 22px; background: var(--separator); margin: 0 4px; flex: none; }
+
+.tool {
+  flex: none; min-width: 36px; height: 36px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-small); color: var(--text); background: transparent;
+}
+
+.tool.wide { padding: 0 9px; }
+
+.tool:hover:not(:disabled) { background: var(--fill); }
+
+.tool.is-active { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent); }
+
+.style-chip { font-size: 13px; white-space: nowrap; }
+
+.style-title { font-weight: 700; font-size: 15px; }
+
+.style-heading { font-weight: 700; }
+
+.style-subheading { font-weight: 600; }
+
+.style-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+
+@media (min-width: 700px) {
+  .sheet.fullscreen .note-doc { min-height: 360px; }
+}
+
+.editor-loading { color: var(--text-3); }
+
+/* ---------- Note lists ---------- */
+.note-row { flex-direction: row; align-items: flex-start; gap: 10px; }
+
+.note-row > svg { flex: none; margin-top: 3px; }
+
+.kind-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.kind-filter button {
+  padding: 5px 12px; font-size: 13px; border-radius: var(--radius-small);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); background: var(--surface); color: var(--text-2);
+}
+
+.kind-filter button[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #FFFFFF); }

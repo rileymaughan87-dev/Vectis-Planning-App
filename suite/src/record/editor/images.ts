@@ -2,7 +2,7 @@
 // is several MB, far more than a note needs), turned the right way up,
 // and saved as JPEG; scans are flattened and cleaned up first.
 
-import { adaptiveThreshold, applyHomography, autoLevels, homography, pageSize, toGrey, type Quad } from '../../model/scan'
+import { adaptiveThreshold, applyHomography, autoLevels, homography, pageSize, toGrey, type Quad } from '../scan'
 
 export const MAX_SIDE = 2000
 
