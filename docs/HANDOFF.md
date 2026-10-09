@@ -152,7 +152,7 @@ Authentication → Settings → Authorized domains for the live site.
   `model`-style plan in `sync/picturePlan.ts` (2 tests). Re-runs on a new
   local picture (`ATTACHMENT_SAVED`) or a notes/journal change. Spark plan:
   1 GiB stored, plenty for a few thousand ~400 KB photos.
-- **Accountability (9 Oct):** share settings (name, Drive file, auto-publish
+- **Accountability (9 Oct, confirmed on both devices):** share settings (name, Drive file, auto-publish
   — not last-published time) and the partners list sync as Planner slices.
   A Drive partner's fetched snapshot doesn't sync (each device keeps its
   own and fetches a missing one from Drive); a `file:` partner's does
