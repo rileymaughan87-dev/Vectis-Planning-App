@@ -1,7 +1,13 @@
 // Photos, scans and drawings in notes. Too big for the rest of the data's
 // localStorage, so each is a blob in this browser's IndexedDB, keyed by
 // id; a note only holds the id (an "attachment" node in its document).
-// Like everything else, it stays on this device — backups carry it over.
+// Backups carry them over, and sync between devices (sync/pictures.ts)
+// copies them to and from the cloud.
+
+/** Fired on window when a picture is saved here by this device (sync uploads it). */
+export const ATTACHMENT_SAVED = 'vectis-attachment-saved'
+/** Fired on window when a picture arrives that a note was waiting for (detail: its id). */
+export const ATTACHMENT_READY = 'vectis-attachment-ready'
 
 const DB_NAME = 'vectis-attachments'
 const STORE = 'files'
@@ -35,10 +41,17 @@ function run<T>(mode: IDBTransactionMode, f: (store: IDBObjectStore) => IDBReque
   }))
 }
 
-export async function saveAttachment(id: string, blob: Blob): Promise<void> {
+export async function saveAttachment(id: string, blob: Blob, options: { fromSync?: boolean } = {}): Promise<void> {
   await run('readwrite', s => s.put({ id, blob, createdAt: Date.now() } satisfies StoredAttachment))
   // Ask the browser not to clear these when space runs low (photos can't be rebuilt).
   navigator.storage?.persist?.().catch(() => {})
+  if (options.fromSync) {
+    // A note may be showing "not on this device" for it: show it now.
+    urls.delete(id)
+    window.dispatchEvent(new CustomEvent(ATTACHMENT_READY, { detail: id }))
+  } else {
+    window.dispatchEvent(new Event(ATTACHMENT_SAVED))
+  }
 }
 
 export const loadAttachment = (id: string) => run<StoredAttachment | undefined>('readonly', s => s.get(id))
@@ -46,6 +59,9 @@ export const loadAttachment = (id: string) => run<StoredAttachment | undefined>(
 export const deleteAttachment = (id: string) => run('readwrite', s => s.delete(id)).then(() => undefined)
 
 export const allAttachments = () => run<StoredAttachment[]>('readonly', s => s.getAll())
+
+/** Just the ids, without loading every picture. */
+export const attachmentIDs = () => run<IDBValidKey[]>('readonly', s => s.getAllKeys()).then(keys => keys.map(String))
 
 // MARK: - Showing them
 
@@ -77,22 +93,25 @@ export async function removeUnused(inUse: Set<string>, keepNewerThan = Date.now(
 
 // MARK: - Backups
 
+export async function toBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(binary)
+}
+
+export const fromBase64 = (data: string, type: string) => new Blob([Uint8Array.from(atob(data), c => c.charCodeAt(0))], { type })
+
 /** Every attachment as base64 text, for the one-file backup. */
 export async function exportAttachments(): Promise<Record<string, { type: string; data: string }>> {
   const out: Record<string, { type: string; data: string }> = {}
-  for (const a of await allAttachments()) {
-    const bytes = new Uint8Array(await a.blob.arrayBuffer())
-    let binary = ''
-    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-    out[a.id] = { type: a.blob.type, data: btoa(binary) }
-  }
+  for (const a of await allAttachments()) out[a.id] = { type: a.blob.type, data: await toBase64(a.blob) }
   return out
 }
 
 export async function importAttachments(files: Record<string, { type: string; data: string }>): Promise<void> {
   for (const [id, f] of Object.entries(files)) {
     if (typeof f?.data !== 'string') continue
-    const bytes = Uint8Array.from(atob(f.data), c => c.charCodeAt(0))
-    await saveAttachment(id, new Blob([bytes], { type: typeof f.type === 'string' ? f.type : 'image/jpeg' }))
+    await saveAttachment(id, fromBase64(f.data, typeof f.type === 'string' ? f.type : 'image/jpeg'))
   }
 }

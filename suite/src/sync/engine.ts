@@ -77,6 +77,7 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
   let known = new Map<string, SyncRecord>()
   let stopListening: (() => void) | null = null
   let stopWatching: (() => void)[] = []
+  let stopExtra: (() => void) | null = null
   let pushTimer: ReturnType<typeof setTimeout> | undefined
   const dirty = new Set<SyncSlice>()
   const allSlices = app.slices
@@ -91,8 +92,10 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
   const stop = () => {
     stopListening?.()
     for (const f of stopWatching) f()
+    stopExtra?.()
     stopListening = null
     stopWatching = []
+    stopExtra = null
     clearTimeout(pushTimer)
     dirty.clear()
     attachment.attached = false
@@ -165,6 +168,18 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
       const status = snap.metadata.fromCache ? 'offline' : snap.metadata.hasPendingWrites ? 'sending' : 'upToDate'
       useSync.setState(status === 'upToDate' ? { status, lastSyncedAt: Date.now() } : { status })
     }, error => useSync.setState({ phase: 'error', error: friendly(error) }))
+
+    // Anything else the app syncs while live (Planner's pictures).
+    const uid = auth.currentUser?.uid
+    const liveCol = col
+    if (app.onLive && uid) {
+      app.onLive()
+        .then(startExtra => {
+          // Still the same live session? (Signing out meanwhile clears col.)
+          if (col === liveCol) stopExtra = startExtra({ db, uid })
+        })
+        .catch(error => useSync.setState({ error: friendly(error) }))
+    }
   }
 
   const choose = async (side: 'device' | 'cloud', uid = auth.currentUser?.uid) => {

@@ -24,7 +24,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
-      <SyncBox useSync={useSync} what="your goals, calendar, tasks, notes and journal" notYet="Pictures in notes don't sync yet." />
+      <SyncBox useSync={useSync} what="your goals, calendar, tasks, notes (pictures too) and journal" />
 
       <EditorBox title="Plan and review">
         <Toggle label="Plan and review" checked={planReview.isEnabled} onChange={isEnabled => setPlanReview({ isEnabled })} />

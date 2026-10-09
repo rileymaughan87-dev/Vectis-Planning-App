@@ -3,8 +3,15 @@
 // Settings box shows. The Firebase side (./engine.ts) is only downloaded
 // once a device has signed in, so devices that don't sync never load it.
 
+import type { Firestore } from 'firebase/firestore'
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { SliceKind, SyncRecord } from './records'
+
+/** What extra syncing (an app's `onLive`) gets while a device is live. */
+export interface LiveContext {
+  db: Firestore
+  uid: string
+}
 
 /** One synced piece of an app's data: a list of items with ids, or one value. */
 export interface SyncSlice {
@@ -33,6 +40,11 @@ export interface SyncApp {
   describe(records: Map<string, SyncRecord>): string
   /** Everything saved locally, to set aside before taking the cloud's copy. */
   allEntries(): Record<string, string>
+  /**
+   * Extra syncing to run while live (Planner's note pictures). Loaded
+   * lazily; returns a start function, which returns how to stop.
+   */
+  onLive?: () => Promise<(ctx: LiveContext) => () => void>
 }
 
 export type SyncPhase =
