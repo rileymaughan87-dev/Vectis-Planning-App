@@ -93,7 +93,7 @@ not two, each section folding away with the heading arrow.
   text" edge). The list shows each section's text (`sectionText`); search
   ignores the two heading lines.
 
-## Sync between devices (8–9 Oct 2026) — Stages 1–3 built (Planner confirmed on phone and laptop)
+## Sync between devices (8–9 Oct 2026) — Stages 1–3 done (Planner and pictures confirmed on phone and laptop)
 
 Riley chose Firebase (over a Drive sync file, whose hourly GIS token
 would mean re-signing in on the phone). Project `planner-sync`,
