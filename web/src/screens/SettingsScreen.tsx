@@ -4,17 +4,21 @@ import { AppearanceEditor } from '@suite/ui/AppearanceEditor'
 import { Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { formatMinutes } from '../model/format'
-import { newID } from '../model/ids'
+import { paletteName } from '../model/palette'
+import type { CalendarCategory } from '../model/types'
 import { useData } from '../store/data'
 import { downloadBackup, importSwiftFiles, restoreBackup, type ImportResult } from '../sync/backup'
-import { EditorBox, Field, Sheet, Toggle, VButton } from '../ui/components'
+import { EditorBox, Field, Sheet, SummaryRow, Toggle, VButton } from '../ui/components'
+import { CategoryColoursSheet, ColourPicker } from './CategoryColours'
 import { SyncBox } from '@suite/ui/SyncBox'
 import { useSync } from '../store/sync'
 
 const toTime = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
-  const { appearance, setAppearance, planReview, setPlanReview, categories, setCategories, hours, setHours } = useData()
+  const { appearance, setAppearance, planReview, setPlanReview, categories, setCategories, addCategory, palette, setCategoryColor, hours, setHours } = useData()
+  const [colours, setColours] = useState(false)
+  const [picking, setPicking] = useState<CalendarCategory | null>(null)
   const importRef = useRef<HTMLInputElement>(null)
   const restoreRef = useRef<HTMLInputElement>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -58,11 +62,12 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 
       <EditorBox title="Categories">
+        <SummaryRow title="Category colours" summary={paletteName(palette.choice)} onClick={() => setColours(true)} />
         {categories.map(c => (
           <div key={c.id} className="row">
-            <input
-              type="color" aria-label={`${c.name} colour`} value={c.colorHex} style={{ width: 40, height: 34, padding: 2, flex: 'none' }}
-              onChange={e => setCategories(categories.map(x => (x.id === c.id ? { ...x, colorHex: e.target.value.toUpperCase() } : x)))}
+            <button
+              className="colour-swatch" aria-label={`${c.name} colour`} title="Change colour"
+              style={{ background: c.colorHex, width: 34, height: 34 }} onClick={() => setPicking(c)}
             />
             <input aria-label="Category name" value={c.name} onChange={e => setCategories(categories.map(x => (x.id === c.id ? { ...x, name: e.target.value } : x)))} />
             <button className="icon-button" aria-label={`Delete ${c.name}`} style={{ color: 'var(--danger)' }} disabled={categories.length <= 1} onClick={() => setCategories(categories.filter(x => x.id !== c.id))}>
@@ -70,11 +75,19 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         ))}
-        <button className="text-button" style={{ textAlign: 'left' }} onClick={() => setCategories([...categories, { id: newID(), name: 'New Category', colorHex: '#4A7FE8' }])}>
+        <button className="text-button" style={{ textAlign: 'left' }} onClick={() => addCategory('New Category')}>
           + Add category
         </button>
         <p className="help">Deleting a category doesn't delete events using it — they move to your first category next time the app opens.</p>
       </EditorBox>
+      {colours && <CategoryColoursSheet onClose={() => setColours(false)} />}
+      {picking && (
+        <ColourPicker
+          category={picking}
+          onClose={() => setPicking(null)}
+          onDone={hex => { if (hex !== picking.colorHex) setCategoryColor(picking.id, hex); setPicking(null) }}
+        />
+      )}
 
       <EditorBox title="Daily calendar hours">
         <div className="inline-fields">

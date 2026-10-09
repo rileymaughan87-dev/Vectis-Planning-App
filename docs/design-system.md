@@ -40,6 +40,11 @@ first-class; copy stays plain.
 
 ### Colour — content (themed)
 
+**Category colours** (Planner Settings › Category colours) are a preset —
+Index `#0068B5 #6B4C7A #3F6B4E #C9922E #D2574A #7C9473`, Studio, Garden,
+Dusk — or the user's own Custom set; they colour event blocks by
+category (`web/src/model/palette.ts`).
+
 The scheme colours `--primary`, `--secondary`, `--tertiary` (Appearance
 settings) colour **content only**: a section's pivot rule and index, goal,
 task and event blocks, progress fills, and buttons inside that section.

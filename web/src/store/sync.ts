@@ -17,6 +17,7 @@ import {
   decodeAppearance, decodeCategory, decodeEvent, decodeGoal, decodeHours, decodeJournalEntry, decodePlanReview,
   decodeTask, list,
 } from '../model/decode'
+import { decodePalette } from '../model/palette'
 import { useData, type DataState } from './data'
 import { Filename, allEntries } from './persist'
 import { decodePartners, decodeShareSettings, useShare, type Partner } from './share'
@@ -43,6 +44,7 @@ export const PLANNER_SLICES: SyncSlice[] = [
   slice('appearance', Filename.appearance, 'single', decodeAppearance),
   slice('planReview', Filename.planReviewSettings, 'single', decodePlanReview),
   slice('journal', Filename.journalEntries, 'list', raw => list(raw, decodeJournalEntry)),
+  slice('palette', Filename.categoryPalette, 'single', decodePalette),
 ]
 
 /** Name, Drive file and auto-publish — not when it last published, which each device tracks itself. */
@@ -100,7 +102,8 @@ export const useSync = createSyncStore({
   prefix: 'vectis:',
   slices: [...PLANNER_SLICES, shareSettings, partners],
   // Accountability joined sync on 9 Oct 2026, after phone and laptop were already syncing.
-  addedLater: [Filename.share, Filename.partners],
+  // Category colours joined on 10 Oct 2026.
+  addedLater: [Filename.share, Filename.partners, Filename.categoryPalette],
   contentFiles: [Filename.goals, Filename.calendarEvents, Filename.tasks, Filename.journalEntries],
   describe: records => describeCounts([
     ['goal', 'goals', countIn(records, Filename.goals)],
