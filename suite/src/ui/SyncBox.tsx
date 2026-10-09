@@ -1,10 +1,11 @@
-// "Sync between devices" in Settings: sign in with Google once per device,
-// then everything stays the same on each, live. The first time a device
-// joins, if both sides have data, you choose which to keep.
+// "Sync between devices" in an app's Settings: sign in with Google once
+// per device, then everything stays the same on each, live. The first
+// time a device joins, if both sides have data, you choose which to keep.
+// Shared by Planner and Finance; each passes its own sync store.
 
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
-import { useSync } from '../store/sync'
-import { EditorBox, VButton } from '../ui/components'
+import type { SyncStore } from '../sync/store'
+import { EditorBox, VButton } from './components'
 
 const ago = (t?: number) => {
   if (!t) return ''
@@ -12,7 +13,13 @@ const ago = (t?: number) => {
   return s < 10 ? 'just now' : s < 60 ? `${s} seconds ago` : `${Math.round(s / 60)} min ago`
 }
 
-export function SyncBox() {
+export function SyncBox({ useSync, what, notYet }: {
+  useSync: SyncStore
+  /** What stays the same on both, e.g. "your goals, calendar, tasks, notes and journal". */
+  what: string
+  /** Anything that doesn't sync yet, said plainly. */
+  notYet?: string
+}) {
   const { phase, email, status, lastSyncedAt, error, choice, signIn, signOut, choose } = useSync()
 
   if (phase === 'unavailable') return null
@@ -22,8 +29,8 @@ export function SyncBox() {
       {phase === 'signedOut' && (
         <>
           <p className="help" style={{ margin: 0 }}>
-            Sign in with Google on your phone and your laptop, and your goals, calendar, tasks, notes and journal stay the same on both — changes
-            show up on the other in a moment. Your data is kept in your own private Firebase database, readable only when signed in as you.
+            Sign in with Google on your phone and your laptop, and {what} stay the same on both — changes show up on the other in a
+            moment. Your data is kept in your own private Firebase database, readable only when signed in as you.
           </p>
           <VButton kind="primary" accent="var(--primary)" onClick={() => void signIn()}>Sign in with Google</VButton>
         </>
@@ -64,7 +71,7 @@ export function SyncBox() {
             </span>
           </div>
           <VButton onClick={() => void signOut()}>Stop syncing on this device</VButton>
-          <p className="help" style={{ margin: 0 }}>Stopping keeps everything on this device as it is; it just stops sending and receiving changes. Pictures in notes don't sync yet.</p>
+          <p className="help" style={{ margin: 0 }}>Stopping keeps everything on this device as it is; it just stops sending and receiving changes.{notYet ? ` ${notYet}` : ''}</p>
         </>
       )}
 

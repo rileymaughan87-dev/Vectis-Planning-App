@@ -64,7 +64,7 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
-## Sync between devices (8–9 Oct 2026) — Stage 1 of 3 done, confirmed on phone and laptop
+## Sync between devices (8–9 Oct 2026) — Stages 1–2 of 3 (Planner confirmed on phone and laptop)
 
 Riley chose Firebase (over a Drive sync file, whose hourly GIS token
 would mean re-signing in on the phone). Project `planner-sync`,
@@ -96,9 +96,21 @@ Authentication → Settings → Authorized domains for the live site.
   once: last save wins. 9 Oct: Riley signed in on phone then laptop; works both ways. (Untested by me with a real sign-in — no
   Java here for the Firebase emulators, and the first sign-in should be
   on the device with Riley's real data.
-- **Next:** Stage 2 Finance data (finance needs the config too), Stage 3
-  note pictures (Firestore docs; Firebase Storage may need a card).
-  Accountability partners/share settings aren't synced.
+- **Stage 2 (built, 9 Oct): Finance + shared machinery.** The sync code
+  moved to `suite/src/sync/` — `records.ts` (pure), `store.ts`
+  (`createSyncStore(app: SyncApp)`: status store, pending-edit tracking,
+  reconnect on open; keys under the app's prefix, so Planner's
+  `vectis:sync:*` carried over), `engine.ts` (lazy; `createEngine`),
+  and `suite/src/ui/SyncBox.tsx`. Each app lists its `SyncSlice`s
+  (file, list/single, get/set/decode/subscribe): `web/src/store/sync.ts`
+  (collection `planner`), `finance/src/store/sync.ts` (collection
+  `finance`: entries, goals, logged spending, pot, appearance, currency).
+  Finance reads `VITE_FIREBASE_CONFIG` from `web/.env.local` via
+  `finance/vite.config.ts` (one copy); the deploy passes the secret to
+  both builds. On the laptop both apps share the browser's sign-in (same
+  site); each Home Screen app on a phone signs in on its own.
+- **Next:** Stage 3 note pictures (Firestore docs; Firebase Storage may
+  need a card). Accountability partners/share settings aren't synced.
 
 ## Finance web app (7 Oct 2026) — F0 done
 
