@@ -152,7 +152,16 @@ Authentication → Settings → Authorized domains for the live site.
   `model`-style plan in `sync/picturePlan.ts` (2 tests). Re-runs on a new
   local picture (`ATTACHMENT_SAVED`) or a notes/journal change. Spark plan:
   1 GiB stored, plenty for a few thousand ~400 KB photos.
-- **Not synced:** accountability partners and share settings (optional).
+- **Accountability (9 Oct):** share settings (name, Drive file, auto-publish
+  — not last-published time) and the partners list sync as Planner slices.
+  A Drive partner's fetched snapshot doesn't sync (each device keeps its
+  own and fetches a missing one from Drive); a `file:` partner's does
+  (nothing to refresh from). Both devices then publish to the same Drive
+  file. Because both devices were already syncing, these were added via
+  `SyncApp.addedLater`: on a device that synced before, a slice it has
+  never synced merges in (`newToCloud`: only items the cloud has never
+  seen go up) instead of being replaced by the cloud. The engine now keeps
+  `{prefix}sync:files`. 1 test.
 
 ## Finance web app (7 Oct 2026) — F0 done
 

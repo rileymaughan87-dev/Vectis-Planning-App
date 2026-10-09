@@ -1,6 +1,6 @@
 // The shared sync records (suite/sync/records.ts), checked with Planner's data.
 import { describe as group, expect, it } from 'vitest'
-import { diff, docID, readRecord, rebuild, recordsFor, type SyncRecord } from '@suite/sync/records'
+import { diff, docID, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from '@suite/sync/records'
 import { Filename } from '../store/persist'
 
 const goals = [{ id: 'A', title: 'Read' }, { id: 'B/2', title: 'Run' }]
@@ -46,6 +46,18 @@ group('working out what to send', () => {
   it('brings a deleted item back if it reappears', () => {
     const tomb: SyncRecord = { file: Filename.goals, id: 'A', index: 0, json: '', deleted: true }
     expect(diff(new Map([['goals__A', tomb]]), Filename.goals, recordsFor(Filename.goals, 'list', [goals[0]])).size).toBe(1)
+  })
+})
+
+group('merging a slice a device has never synced', () => {
+  it("sends only items the cloud has never seen, so neither side's are lost", () => {
+    const cloud = recordsFor(Filename.partners, 'list', [{ id: 'P1', name: 'Sam' }])
+    // A partner the cloud deleted (tombstone) stays deleted.
+    cloud.set('partners__P0', { file: Filename.partners, id: 'P0', index: 0, json: '', deleted: true })
+    const here = recordsFor(Filename.partners, 'list', [{ id: 'P0', name: 'Old' }, { id: 'P1', name: 'Sam' }, { id: 'P2', name: 'Alex' }])
+    const sent = newToCloud(cloud, here)
+    expect([...sent.keys()]).toEqual(['partners__P2'])
+    expect(rebuild(new Map([...cloud, ...sent]), Filename.partners, 'list')).toEqual([{ id: 'P1', name: 'Sam' }, { id: 'P2', name: 'Alex' }])
   })
 })
 

@@ -79,8 +79,8 @@ export function AccountabilityScreen({ onClose, onOpenPartner }: { onClose: () =
     <Sheet title="Accountability" onClose={onClose} leftLabel="Done">
       <EditorBox title="Share my progress">
         <p className="help">
-          Partners see your goals, how consistently you've done them, and your calendar — read-only. Your journal, notes and people
-          stay on this device.
+          Partners see your goals, how consistently you've done them, and your calendar — read-only. Your journal and notes are
+          never shared with them.
         </p>
         <Field label="Your name, as partners see it">
           <input value={share.ownerName} onChange={e => share.setOwnerName(e.target.value)} placeholder="e.g. Riley" />

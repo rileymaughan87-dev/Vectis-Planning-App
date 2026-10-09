@@ -45,6 +45,12 @@ export interface SyncApp {
    * lazily; returns a start function, which returns how to stop.
    */
   onLive?: () => Promise<(ctx: LiveContext) => () => void>
+  /**
+   * Slices added after devices were already syncing. On a device that
+   * synced before, these merge in the first time (keeping its own items)
+   * rather than being replaced by the cloud's.
+   */
+  addedLater?: string[]
 }
 
 export type SyncPhase =
@@ -89,6 +95,8 @@ export const keys = (app: SyncApp) => ({
   /** Slices edited while sync wasn't running yet; these win over the cloud on start. */
   pending: `${app.prefix}sync:pending`,
   device: `${app.prefix}device-id`,
+  /** Slices this device has synced at least once (newer slices merge in on first sight). */
+  files: `${app.prefix}sync:files`,
   beforeSync: `${app.prefix}before-sync`,
   cloudBeforeSync: `${app.prefix}cloud-before-sync`,
 })
