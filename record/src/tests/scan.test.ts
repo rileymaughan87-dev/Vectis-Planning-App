@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adaptiveThreshold, applyHomography, autoLevels, homography, pageSize, type Quad } from './scan'
+import { adaptiveThreshold, applyHomography, autoLevels, homography, pageSize, type Quad } from '@suite/record/scan'
 
 describe('flattening a page', () => {
   // A page photographed at an angle, mapped onto a flat 200 × 300 rectangle.

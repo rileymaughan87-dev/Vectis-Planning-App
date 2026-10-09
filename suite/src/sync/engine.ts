@@ -105,7 +105,13 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
   }
 
   /** This device has now synced these slices (so later they follow the cloud). */
-  const markSynced = () => store(k.files, JSON.stringify(allSlices.map(s => s.file)))
+  // Planner and Record share these notes (same "vectis:" prefix), so each adds or clears only its own files.
+  const readList = (key: string): string[] | null => JSON.parse(localStorage.getItem(key) ?? 'null')
+  const markSynced = () => store(k.files, JSON.stringify([...new Set([...(readList(k.files) ?? []), ...allSlices.map(s => s.file)])]))
+  const clearPending = () => {
+    const rest = (readList(k.pending) ?? []).filter(f => !allSlices.some(s => s.file === f))
+    store(k.pending, rest.length ? JSON.stringify(rest) : null)
+  }
 
   /** Sends what changed in these slices. */
   const push = (slices: SyncSlice[]) => {
@@ -214,7 +220,7 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         push(allSlices)
       }
       store(k.user, uid)
-      store(k.pending, null)
+      clearPending()
       markSynced()
       goLive()
     } catch (error) {
@@ -246,7 +252,7 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         push(allSlices.filter(fromHere))
         mergeIn(allSlices.filter(s => !fromHere(s) && !seen.has(s.file)))
         pull(allSlices.filter(s => !fromHere(s)))
-        store(k.pending, null)
+        clearPending()
         markSynced()
         goLive()
         return

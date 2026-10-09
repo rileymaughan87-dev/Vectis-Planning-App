@@ -20,7 +20,7 @@ interface AppEntry {
 const APPS: AppEntry[] = [
   { name: 'Planner', what: 'Goals, your day in time blocks, and the evening review.', href: './planner/' },
   { name: 'Finance', what: 'A calm budget, a money calendar, and goals broken into payments.', href: './finance/' },
-  { name: 'Record', what: 'Journal, notebooks and notes. Moving out of Planner next.' },
+  { name: 'Record', what: 'Journal, notebooks and notes.', href: './record/' },
 ]
 
 /** The look follows Planner's colour scheme (saved in this browser under "vectis:"). */

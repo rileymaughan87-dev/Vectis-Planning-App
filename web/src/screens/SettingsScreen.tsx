@@ -95,7 +95,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
         <p className="help">
           Bring your iPhone data across: in Xcode, open Window › Devices and Simulators, select the app (Planner, or Vectis on older builds) under Installed Apps, choose
           "Download Container…", then pick the .json files from its AppData/Documents folder here. Each file replaces that part of the
-          data here (goals, events, categories, tasks, journal, notes, notebooks, settings).
+          data here (goals, events, categories, tasks, journal, settings; notes and notebooks go to Record).
         </p>
         <VButton onClick={() => importRef.current?.click()}>Import iPhone files…</VButton>
         <input

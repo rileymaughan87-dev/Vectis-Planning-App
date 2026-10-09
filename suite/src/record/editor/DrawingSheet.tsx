@@ -4,7 +4,7 @@
 
 import { Eraser, Undo2 } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { Sheet } from '../components'
+import { Sheet } from '../../ui/components'
 import { canvasOf, toBlob, type Picture } from './images'
 
 interface Stroke {

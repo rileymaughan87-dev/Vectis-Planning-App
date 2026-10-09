@@ -14,9 +14,9 @@ import {
   ListIndentIncrease, ListOrdered, Pencil, Redo2, ScanLine, SeparatorHorizontal, Strikethrough, Underline, Undo2,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react'
-import { newID } from '../../model/ids'
-import type { DocNode } from '../../model/noteDoc'
-import { loadAttachment, saveAttachment } from '../../store/attachments'
+import { newID } from '../../ids'
+import type { DocNode } from '../noteDoc'
+import { loadAttachment, saveAttachment } from '../attachments'
 import { MARKUP_EVENT, type AttachmentAttrs, type AttachmentKind, type MarkupDetail } from './attachment'
 import { DrawingSheet } from './DrawingSheet'
 import { decode, preparePhoto, type Picture } from './images'

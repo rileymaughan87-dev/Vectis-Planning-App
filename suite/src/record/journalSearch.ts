@@ -3,7 +3,7 @@
 // their days. Every word typed has to match, either the day's date or
 // what was written that day.
 
-import { addDays, dayKey, isSameDay, parseDate, startOfDay } from './dates'
+import { addDays, dayKey, isSameDay, parseDate, startOfDay } from '../dates'
 import { JOURNAL_HEADING, REVIEW_HEADING } from './noteDoc'
 import type { JournalEntry } from './types'
 

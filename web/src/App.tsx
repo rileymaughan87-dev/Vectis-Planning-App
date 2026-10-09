@@ -1,9 +1,9 @@
-// Planner's top level: the shared shell (suite/ui/AppShell) with five
+// Planner's top level: the shared shell (suite/ui/AppShell) with four
 // tabs, and the side menu's Accountability, partners and Settings. A
 // partner's view is laid over the top when one is open.
 
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
-import { CalendarClock, CalendarDays, Home, NotebookText, Settings, Target, UsersRound } from 'lucide-react'
+import { CalendarClock, CalendarDays, Home, Settings, Target, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AccountabilityScreen } from './screens/AccountabilityScreen'
 import { DailyScreen } from './screens/DailyScreen'
@@ -11,7 +11,6 @@ import { GoalsScreen } from './screens/GoalsScreen'
 import { HomeScreen } from './screens/HomeScreen'
 import { LongTermScreen } from './screens/LongTermScreen'
 import { PartnerView } from './screens/PartnerView'
-import { RecordScreen } from './screens/RecordScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { useData } from './store/data'
 import { useShare } from './store/share'
@@ -20,7 +19,7 @@ import { Sheet, VButton } from './ui/components'
 import { APP_NAME } from './ui/brand'
 import { themeColors, useApplyTheme } from './ui/theme'
 
-type Tab = 'home' | 'goals' | 'daily' | 'longTerm' | 'record'
+type Tab = 'home' | 'goals' | 'daily' | 'longTerm'
 type SidebarDestination = 'accountability' | 'settings'
 
 const tabs: ShellTab<Tab>[] = [
@@ -28,7 +27,6 @@ const tabs: ShellTab<Tab>[] = [
   { id: 'goals', title: 'Goals', icon: s => <Target size={s} /> },
   { id: 'daily', title: 'Daily', icon: s => <CalendarDays size={s} /> },
   { id: 'longTerm', title: 'Long-Term', icon: s => <CalendarClock size={s} /> },
-  { id: 'record', title: 'Record', icon: s => <NotebookText size={s} /> },
 ]
 
 /** Accountability (with partners under it), then Settings set apart. */
@@ -67,7 +65,11 @@ export default function App() {
   const colors = themeColors(appearance)
   const addPartner = useShare(s => s.addPartner)
 
-  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('vectis:ui:tab') as Tab) || 'home')
+  const [tab, setTab] = useState<Tab>(() => {
+    const saved = sessionStorage.getItem('vectis:ui:tab')
+    // Record was a tab here until it became its own app.
+    return saved === 'goals' || saved === 'daily' || saved === 'longTerm' ? saved : 'home'
+  })
   const [destination, setDestination] = useState<SidebarDestination | null>(null)
   const [partnerID, setPartnerID] = useState<string | null>(null)
   const [invite, setInvite] = useState<string | null>(null)
@@ -147,7 +149,6 @@ export default function App() {
       {tab === 'goals' && <GoalsScreen colors={colors} />}
       {tab === 'daily' && <DailyScreen colors={colors} />}
       {tab === 'longTerm' && <LongTermScreen colors={colors} />}
-      {tab === 'record' && <RecordScreen colors={colors} />}
     </AppShell>
   )
 }

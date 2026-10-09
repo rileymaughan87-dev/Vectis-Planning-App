@@ -64,6 +64,46 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Record app (9 Oct 2026) — Vectis Stage 2 of 3
+
+Record is its own app at `/record/` (`record/` workspace): bottom tabs
+Journal · Notebooks · Notes, Settings in the side menu (sync, appearance,
+backup). Planner lost its Record tab; its evening review still writes the
+day's Daily review section.
+
+- **Shared code moved to `suite/src/record/`:** the editor (`editor/`),
+  `noteDoc` (now also `journalEntryFor`), `rtf`, `math`, `scan`,
+  `journalSearch`, `attachments`, the record `types`/`decode`, the shared
+  `record.css` (editor, journal, note lists) and `backup.ts` (the one
+  "vectis-backup" file both apps make and restore, pictures included).
+  Planner's `model/noteDoc.ts`, `types.ts` and `decode.ts` re-export what
+  the evening review needs.
+- **Same data, nothing migrated.** Record keeps the `vectis:` prefix and
+  file names (`journal_entries.json`, `notes.json`, `notebooks.json`) and
+  syncs them to the same records (`users/{uid}/planner`), plus note
+  pictures (`record/src/sync/pictures.ts`). Planner still syncs the
+  journal (the review writes it); it no longer syncs notes, notebooks or
+  pictures, and no longer tidies pictures (Record does — Planner doesn't
+  load notes, so it would think every picture unused).
+- **Shared sync notes.** Both apps use `vectis:sync:user` (one sign-in) and
+  share `sync:pending` / `sync:files`; the engine now adds or clears only
+  its own files in those, so opening one app can't drop the other's
+  unsent edits.
+- **Two tabs at once:** each app listens for the other's saves
+  (`storage` events) — Planner for the journal, Record for journal,
+  notes, notebooks, goals and appearance — so neither writes back an
+  older copy.
+- Record reads Planner's goals (read only, `model/goals.ts`) to link
+  notes and notebooks to them. Appearance is shared (same file).
+- iPhone import in Planner still accepts `notes.json`/`notebooks.json`,
+  saving them as they are for Record.
+- Checked on the built site (375px and desktop): journal written in
+  Record, evening review in Planner lands in the same day's entry; note
+  editor and styles intact.
+- **Next:** Stage 3 — cross-app touches (open today's journal from the
+  review, etc.). Riley also added a design handoff
+  (`App logo direction concepts.zip`) to implement next.
+
 ## Vectis home page (9 Oct 2026) — Stage 1 of 3
 
 Riley's idea: one Home Screen icon, **Vectis**, like a folder of the apps

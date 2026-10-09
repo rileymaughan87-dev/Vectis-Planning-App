@@ -3,7 +3,7 @@
 // Tap one to select it: "Mark up" draws on it, "Remove" takes it out.
 
 import { Node, mergeAttributes } from '@tiptap/core'
-import { ATTACHMENT_READY, attachmentURL } from '../../store/attachments'
+import { ATTACHMENT_READY, attachmentURL } from '../attachments'
 
 export type AttachmentKind = 'photo' | 'scan' | 'drawing'
 

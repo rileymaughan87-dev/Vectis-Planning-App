@@ -8,10 +8,8 @@
 import { bool, isObj, list, num, nums, oneOf, optNum, optStr, record, str, strs, type Raw } from '@suite/decode'
 import { ALL_DAYS, DISTANT_PAST, toISO } from './dates'
 import { newID } from './ids'
-import { decodeDoc } from './noteDoc'
 import type {
-  CalendarCategory, CalendarEvent, CalendarHours, EventPart,
-  ChecklistItem, Goal, GoalNote, JournalEntry, Milestone, Note, Notebook, PlanReviewSettings, ScheduleVersion, VectisTask,
+  CalendarCategory, CalendarEvent, CalendarHours, EventPart, Goal, GoalNote, Milestone, PlanReviewSettings, ScheduleVersion, VectisTask,
 } from './types'
 
 export { list }
@@ -142,34 +140,8 @@ export function decodeTask(r: Raw): VectisTask | null {
   }
 }
 
-export function decodeJournalEntry(r: Raw): JournalEntry | null {
-  if (typeof r.date !== 'string') return null
-  return { id: str(r.id, newID()), date: r.date, reflectionPrompt: optStr(r.reflectionPrompt), text: str(r.text, ''), body: decodeDoc(r.body) }
-}
-
-export function decodeChecklistItem(r: Raw): ChecklistItem {
-  return { id: str(r.id, newID()), text: str(r.text, ''), done: bool(r.done, false) }
-}
-
-export function decodeNotebook(r: Raw): Notebook {
-  return { id: str(r.id, newID()), title: str(r.title, ''), linkedGoalID: optStr(r.linkedGoalID), createdDate: str(r.createdDate, now()) }
-}
-
-export function decodeNote(r: Raw): Note {
-  return {
-    id: str(r.id, newID()),
-    type: oneOf(r.type, ['jot', 'list', 'classic'] as const, 'classic'),
-    title: str(r.title, ''),
-    jotText: str(r.jotText, ''),
-    richTextData: optStr(r.richTextData),
-    checklistItems: list(r.checklistItems, decodeChecklistItem),
-    body: decodeDoc(r.body),
-    mathResults: bool(r.mathResults, true),
-    linkedGoalID: optStr(r.linkedGoalID),
-    notebookID: optStr(r.notebookID),
-    updatedDate: str(r.updatedDate, now()),
-  }
-}
+// Journal entries, notes and notebooks are decoded by the suite (they're Record's data).
+export { decodeChecklistItem, decodeJournalEntry, decodeNote, decodeNotebook } from '@suite/record/decode'
 
 export function decodeHours(v: unknown): CalendarHours {
   const r = isObj(v) ? v : {}

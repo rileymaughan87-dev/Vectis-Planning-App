@@ -1,4 +1,4 @@
-# Suite — shared by Planner and Finance
+# Suite — shared by the Vectis apps
 
 Design tokens and styles, components, and small helpers both web apps use,
 so they can't drift apart (docs/suite-rules.md). Apps import it as
@@ -12,5 +12,9 @@ so they can't drift apart (docs/suite-rules.md). Apps import it as
 - `decode.ts` — read saved JSON with a default for every field.
 - `storage.ts` — browser storage under an app's own prefix.
 - `appearance.ts` — palettes, saved appearance, applying the theme.
+- `sync/` — sync between devices (Firebase), shared by every app.
+- `record/` — notes and the journal: the editor, document model, maths,
+  scans, pictures, search, `record.css` and the shared backup. Record
+  uses all of it; Planner's evening review uses the journal parts.
 
 Change a shared piece here, never in one app only.

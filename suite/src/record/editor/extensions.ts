@@ -11,7 +11,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { evaluateLines } from '../../model/math'
+import { evaluateLines } from '../math'
 import { Attachment } from './attachment'
 
 declare module '@tiptap/core' {
