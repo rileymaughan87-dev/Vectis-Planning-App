@@ -135,7 +135,6 @@ never the plain folder (opening the folder gives a scheme-less window).
    amber above 80%, never enforced. See HANDOFF.md for the design.
 2. **Editor restyle** — built Oct 2026, awaiting device test. Shared editor
    components live in CalendarHelpers.swift.
-3. **Rest days** (spec 2.2) — optional per-goal rest days; target denominator
-   becomes days minus rest days.
+3. ~~**Rest days** (spec 2.2)~~ — built on the web (9 Oct 2026); see HANDOFF.md.
 4. **"Share my day"** — `ShareLink` summary of today's goals for an
    accountability partner via Messages. Free alternative to accounts/CloudKit.

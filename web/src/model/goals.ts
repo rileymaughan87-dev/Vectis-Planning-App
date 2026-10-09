@@ -8,7 +8,8 @@ import {
 import { newID } from './ids'
 import type { Goal, Milestone } from './types'
 
-export type GoalDayState = 'done' | 'missed' | 'notScheduled' | 'pending'
+/** `rest`: a planned rest day — a scheduled day not done, within the week's rest days. */
+export type GoalDayState = 'done' | 'rest' | 'missed' | 'notScheduled' | 'pending'
 
 export interface ResolvedSchedule {
   repeatDays: number[]
@@ -41,6 +42,7 @@ export function makeGoal(title: string, overrides: Partial<Goal> = {}): Goal {
     scheduleVersions: [],
     currentScheduleEffectiveFrom: DISTANT_PAST,
     hiddenBlockDays: [],
+    restDaysPerWeek: 0,
     ...overrides,
   }
 }
@@ -174,6 +176,45 @@ export function weeklyCompletionCount(goal: Goal, asOf: Date = new Date()): numb
   return count
 }
 
+// MARK: - Rest days (spec 2.2)
+
+/**
+ * Rest days a week. Set on the goal for chosen days; for times a week,
+ * the days beyond the target — so "daily with one rest day" and "6 times
+ * a week" are scored by the same code and can never disagree.
+ */
+export function restAllowance(goal: Goal): number {
+  if (goal.frequencyType === 'timesPerWeek') return Math.max(0, 7 - goal.timesPerWeekTarget)
+  if (goal.frequencyType === 'specificDays') return goal.restDaysPerWeek
+  return 0
+}
+
+/** A scheduled day that's over without being done (before stats start doesn't count). */
+function isUnmet(goal: Goal, day: Date, today: Date): boolean {
+  return dayKey(day) >= statsFirstDayKey(goal) && startOfDay(day) < startOfDay(today) && isScheduled(goal, day) && goal.completions[dayKey(day)] !== true
+}
+
+/**
+ * Whether an unmet day was a rest day: the week's first unmet days, up to
+ * its rest days, are rest; after that they're misses. Going over is just
+ * more misses — nothing separate is said about it.
+ */
+export function isRestDay(goal: Goal, day: Date, today: Date = new Date()): boolean {
+  const allowance = restAllowance(goal)
+  if (!allowance || !isUnmet(goal, day, today)) return false
+  let before = 0
+  for (let d = startOfWeek(day); d < startOfDay(day); d = addDays(d, 1)) if (isUnmet(goal, d, today)) before++
+  return before < allowance
+}
+
+/** Rest days still unused this week (for "1 rest day left this week"). */
+export function restDaysLeft(goal: Goal, today: Date = new Date()): number {
+  const allowance = restAllowance(goal)
+  let used = 0
+  for (let d = startOfWeek(today); d < startOfDay(today); d = addDays(d, 1)) if (isUnmet(goal, d, today)) used++
+  return Math.max(0, allowance - used)
+}
+
 /** The dates behind the history strip, oldest first. */
 export function recentDates(days = 14, today: Date = new Date()): Date[] {
   const t = startOfDay(today)
@@ -187,10 +228,12 @@ export function recentHistory(goal: Goal, days = 14, today: Date = new Date()): 
     // Before a challenge restart counts as a clean slate.
     if (dayKey(day) < from || !isScheduled(goal, day)) return 'notScheduled'
     if (goal.completions[dayKey(day)] === true) return 'done'
-    return i === days - 1 ? 'pending' : 'missed'
+    if (i === days - 1) return 'pending'
+    return isRestDay(goal, day, today) ? 'rest' : 'missed'
   })
 }
 
+/** Against the target, not the calendar: rest days aren't counted, so a week hit in full reads 6/6, not 6/7. */
 export function recentRate(goal: Goal, days = 14, today: Date = new Date()) {
   const states = recentHistory(goal, days, today)
   return {
@@ -219,6 +262,8 @@ export function consecutiveMisses(goal: Goal, today: Date = new Date()): number 
     if (dayKey(day) < from) break
     if (!isScheduled(goal, day)) continue
     if (goal.completions[dayKey(day)] === true) break
+    // A rest day was planned: it neither breaks a run of misses nor adds to one.
+    if (isRestDay(goal, day, today)) continue
     count++
   }
   return count
