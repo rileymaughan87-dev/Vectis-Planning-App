@@ -64,6 +64,35 @@ Web port batches:
    fields the web didn't know then may be missing — re-importing one file
    (after a backup) restores them. Web port of the Mac work is complete.
 
+## Vectis home page (9 Oct 2026) — Stage 1 of 3
+
+Riley's idea: one Home Screen icon, **Vectis**, like a folder of the apps
+Riley is building, each a separate tool for a separate problem but linked.
+Riley chose **one icon** and named the writing app **Record**: it takes Journal,
+Notebooks and Notes out of Planner entirely; Planner keeps the evening review,
+whose answer goes into that day's Daily review section in Record's journal
+(journal writing happens only in Record).
+
+- **Stage 1 (built):** new `home/` workspace — the Vectis home page at the
+  site root (tiles: Planner, Finance, Record "Soon"; greeting and date;
+  theme follows Planner's saved appearance; old `#partner=` links forward
+  to `planner/`). Planner moved to `/planner/` (deploy assembles `site/`:
+  home at root, `planner/`, `finance/`). `AppShell` got `homeHref` — a
+  grid button beside the wordmark back to the home page. Shared app icons
+  in `suite/src/ui/appIcons.tsx`; the Vectis icon is a lever on its
+  fulcrum, its PNG drawn by a small Python script from the same shapes.
+  Moving Planner's URL keeps its data: same origin, and on the phone the
+  old Planner icon now opens the home page inside the same Home Screen
+  app (same storage). A new Vectis icon is a new Home Screen app (fresh
+  storage): sign in to sync, choose "Use the synced data".
+- **Next:** Stage 2 — the Record app (`record/` at `/record/`): move the
+  editor, maths, pictures, journal model and Record screens into `suite/`
+  or the new app; remove the Record tab from Planner; the evening review
+  keeps writing `withSection(day, 'Daily review', …)` to the shared
+  journal (same `vectis:` keys and sync records, so both apps see one
+  journal). Stage 3 — cross-app touches (open today's journal from the
+  review, etc.).
+
 ## Rest days (9 Oct 2026) — spec 2.2
 
 `Goal.restDaysPerWeek` (default 0, decoded with a default, so nothing

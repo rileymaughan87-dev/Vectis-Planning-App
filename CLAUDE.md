@@ -14,9 +14,18 @@ status table in HANDOFF.md supersedes the spec where they disagree.
 ## Repo layout (Oct 2026)
 
 npm workspaces — run `npm install` once at the repo root, then
-`npm test`, `npm run build`, or `npm run dev -w web` / `-w finance`.
+`npm test`, `npm run build`, or `npm run dev -w web` / `-w finance` / `-w home`.
 
-- `web/` — **Planner** web app (see below).
+**Vectis is the suite** (Oct 2026, Riley's call): one Home Screen icon,
+"Vectis", opening a home page with a tile per app. Each app is its own
+tool; they share design, sign-in and (where it helps) data.
+
+- `home/` — the **Vectis home page** at the site root: tiles for Planner,
+  Finance and Record (Record coming next). Forwards old
+  `…/#partner=` links to Planner. Its manifest's scope covers the apps'
+  folders, so on a phone everything opened from the icon shares storage
+  and one sync sign-in.
+- `web/` — **Planner** web app (see below), now at `…/planner/`.
 - `finance/` — **Finance** web app, being ported in batches from the Swift
   app at `rileymaughan87-dev/Finance-App` (cloned at `../Finance-App`).
   Live at `…/Vectis-Planning-App/finance/`. Saves under `finance:` keys in
@@ -25,7 +34,11 @@ npm workspaces — run `npm install` once at the repo root, then
   (styles, `AppShell`, `MonthGrid`, components, dates, decode, storage,
   appearance, backups). Change shared pieces here, never in one app
   (`suite/README.md`).
-- One GitHub Pages deploy builds both (`.github/workflows/deploy-web.yml`).
+- One GitHub Pages deploy builds them all (`.github/workflows/deploy-web.yml`):
+  home at `/`, Planner at `/planner/`, Finance at `/finance/`. Each app's
+  `AppShell` gets `homeHref="../"` (the grid button beside its name).
+- App icons: `suite/src/ui/appIcons.tsx` (strokes for each icon). A PNG is
+  drawn from the same shapes (Vectis's `home/public/icon-1024.png`).
 
 ## Two codebases (Oct 2026)
 
@@ -39,8 +52,8 @@ npm workspaces — run `npm install` once at the repo root, then
   Accountability (sharing via Google Drive, partner view). People and
   Linked apps are deliberately left out of the web app (they need phone
   contacts and app-launching); their saved links are kept, not shown. Classic notes stay RTF so the iPhone can read them. Live at
-  https://rileymaughan87-dev.github.io/Vectis-Planning-App/ (deploys on
-  push to master). Layout must work from 360px phones to wide desktops.
+  https://rileymaughan87-dev.github.io/Vectis-Planning-App/planner/ (the
+  site root is the Vectis home page; deploys on push to master). Layout must work from 360px phones to wide desktops.
 - **`Vectis Planning/` — the Swift app, kept as a fallback.** Don't delete or
   restructure it. It needs a Mac to build, and Riley no longer has one
   (8 Oct 2026): treat it as read-only reference — never suggest Mac/Xcode

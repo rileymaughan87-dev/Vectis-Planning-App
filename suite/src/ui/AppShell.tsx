@@ -2,8 +2,9 @@
 // top-left, menu top-right opening a right-side drawer, and a custom tab
 // bar along the bottom. On wide screens the tabs and the menu's contents
 // sit together in a permanent sidebar instead, and the top bar goes.
+// A grid button beside the wordmark goes back to the Vectis home page.
 
-import { Menu, X } from 'lucide-react'
+import { LayoutGrid, Menu, X } from 'lucide-react'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 
 export interface ShellTab<T extends string> {
@@ -27,7 +28,14 @@ export function AppShell<T extends string>(props: {
   children: ReactNode
   /** Sheets and overlays, drawn above everything. */
   overlays?: ReactNode
+  /** The Vectis home page (all the apps), relative to this app. */
+  homeHref?: string
 }) {
+  const home = props.homeHref && (
+    <a className="icon-button home-link" href={props.homeHref} aria-label="All apps (Vectis)" title="All apps">
+      <LayoutGrid size={18} />
+    </a>
+  )
   const [drawerOpen, setDrawerOpen] = useState(false)
   const close = () => setDrawerOpen(false)
   const title = props.tabs.find(t => t.id === props.tab)?.title ?? ''
@@ -35,7 +43,7 @@ export function AppShell<T extends string>(props: {
   return (
     <div className="app">
       <aside className="rail" aria-label="Navigation">
-        <div className="rail-head"><span className="wordmark">{props.appName}</span></div>
+        <div className="rail-head">{home}<span className="wordmark">{props.appName}</span></div>
         <nav aria-label="Sections">
           {props.tabs.map(t => (
             <button key={t.id} className="rail-tab" aria-current={props.tab === t.id ? 'page' : undefined} onClick={() => props.onTab(t.id)}>
@@ -51,7 +59,7 @@ export function AppShell<T extends string>(props: {
       <div className="main">
         <header className="topbar">
           <div className="topbar-row">
-            <span className="wordmark">{props.appName}</span>
+            <span className="row" style={{ gap: 4 }}>{home}<span className="wordmark">{props.appName}</span></span>
             <button className="icon-button menu-button" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
               <Menu size={22} />
             </button>

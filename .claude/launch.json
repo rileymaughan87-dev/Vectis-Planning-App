@@ -30,6 +30,21 @@
         "--strictPort"
       ],
       "port": 5174
+    },
+    {
+      "name": "vectis-home",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "home",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "port": 5175
     }
   ]
 }
