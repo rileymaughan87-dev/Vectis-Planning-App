@@ -2,6 +2,27 @@
    anything else that shows notes). Imported after suite/styles.css. */
 
 /* ---------- Journal ---------- */
+/* A day: its number in the serif over the weekday, then which heading has
+   writing and two lines of it. */
+.journal-row {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 12px; width: 100%; text-align: left;
+  padding: 16px 0; border-bottom: 1px solid var(--rule-soft);
+}
+
+.journal-day { display: flex; flex-direction: column; gap: 2px; }
+
+.journal-day-number { font-family: var(--font-serif); font-size: 30px; line-height: 1; }
+
+.journal-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.journal-heading { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 19px; }
+
+.journal-clamp { font-size: 14px; line-height: 1.45; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+@media (hover: hover) {
+  .journal-row:hover .journal-heading { color: var(--brand); }
+}
+
 .journal-grid .day-cell { min-height: 48px; align-items: center; }
 
 .journal-grid .day-cell:disabled { opacity: 1; cursor: default; }
