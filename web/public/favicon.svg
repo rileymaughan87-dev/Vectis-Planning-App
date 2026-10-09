@@ -1,7 +1,0 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <!-- Planner icon: suite blue square, thin black ring, and the lever tick
-       breaking out of the ring at the top right (matches PlannerIcon1024.png). -->
-  <rect width="1024" height="1024" fill="#0068B5"/>
-  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
-  <path d="M306 340 Q 380 570 510 762 Q 640 520 786 272" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>

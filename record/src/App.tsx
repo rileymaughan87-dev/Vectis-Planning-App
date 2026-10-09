@@ -3,7 +3,7 @@
 
 import { themeColors, useApplyTheme } from '@suite/appearance'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
-import { BookOpen, NotebookPen, Settings, StickyNote } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { RecordScreen, type Section } from './screens/RecordScreen'
@@ -11,9 +11,9 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { useData } from './store/data'
 
 const tabs: ShellTab<Section>[] = [
-  { id: 'journal', title: 'Journal', icon: s => <NotebookPen size={s} /> },
-  { id: 'notebooks', title: 'Notebooks', icon: s => <BookOpen size={s} /> },
-  { id: 'notes', title: 'Notes', icon: s => <StickyNote size={s} /> },
+  { id: 'journal', title: 'Journal' },
+  { id: 'notebooks', title: 'Notebooks' },
+  { id: 'notes', title: 'Notes' },
 ]
 
 function savedTab(): Section {

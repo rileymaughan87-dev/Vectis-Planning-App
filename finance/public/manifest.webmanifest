@@ -5,10 +5,14 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F2F2F7",
-  "theme_color": "#0068B5",
+  "background_color": "#F2EFE8",
+  "theme_color": "#F2EFE8",
   "shortcuts": [
-    { "name": "Log spending", "short_name": "Log", "url": "./?log" }
+    {
+      "name": "Log spending",
+      "short_name": "Log",
+      "url": "./?log"
+    }
   ],
   "icons": [
     {
@@ -18,9 +22,14 @@
       "purpose": "any"
     },
     {
-      "src": "favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
     }
   ]
 }

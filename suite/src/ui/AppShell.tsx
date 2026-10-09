@@ -2,16 +2,19 @@
 // top-left, menu top-right opening a right-side drawer, and a custom tab
 // bar along the bottom. On wide screens the tabs and the menu's contents
 // sit together in a permanent sidebar instead, and the top bar goes.
-// A grid button beside the wordmark goes back to the Vectis home page.
+// "00" beside the wordmark — the Vectis home page's index — goes back
+// there. Tabs carry their index (01, 02…) over the name, no icons.
 
-import { LayoutGrid, Menu, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useState, type CSSProperties, type ReactNode } from 'react'
 
 export interface ShellTab<T extends string> {
   id: T
   title: string
-  icon: (size: number) => ReactNode
 }
+
+/** 1 → "01". */
+export const indexLabel = (n: number) => String(n).padStart(2, '0')
 
 export function AppShell<T extends string>(props: {
   appName: string
@@ -32,9 +35,7 @@ export function AppShell<T extends string>(props: {
   homeHref?: string
 }) {
   const home = props.homeHref && (
-    <a className="icon-button home-link" href={props.homeHref} aria-label="All apps (Vectis)" title="All apps">
-      <LayoutGrid size={18} />
-    </a>
+    <a className="home-link" href={props.homeHref} aria-label="All apps (Vectis)" title="All apps">00</a>
   )
   const [drawerOpen, setDrawerOpen] = useState(false)
   const close = () => setDrawerOpen(false)
@@ -45,9 +46,9 @@ export function AppShell<T extends string>(props: {
       <aside className="rail" aria-label="Navigation">
         <div className="rail-head">{home}<span className="wordmark">{props.appName}</span></div>
         <nav aria-label="Sections">
-          {props.tabs.map(t => (
+          {props.tabs.map((t, i) => (
             <button key={t.id} className="rail-tab" aria-current={props.tab === t.id ? 'page' : undefined} onClick={() => props.onTab(t.id)}>
-              {t.icon(18)}
+              <span className="index" aria-hidden="true">{indexLabel(i + 1)}</span>
               {t.title}
             </button>
           ))}
@@ -59,9 +60,9 @@ export function AppShell<T extends string>(props: {
       <div className="main">
         <header className="topbar">
           <div className="topbar-row">
-            <span className="row" style={{ gap: 4 }}>{home}<span className="wordmark">{props.appName}</span></span>
+            <span className="brand-row">{home}<span className="wordmark">{props.appName}</span></span>
             <button className="icon-button menu-button" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
-              <Menu size={22} />
+              <span className="menu-lines" aria-hidden="true"><span /><span /><span /></span>
             </button>
           </div>
           {/* Read by screen readers; not shown, per the design system. */}
@@ -71,9 +72,9 @@ export function AppShell<T extends string>(props: {
         <main className={`content ${props.contentClassName ?? ''}`}>{props.children}</main>
 
         <nav className="tabbar" aria-label="Sections">
-          {props.tabs.map(t => (
+          {props.tabs.map((t, i) => (
             <button key={t.id} className="tab" aria-current={props.tab === t.id ? 'page' : undefined} onClick={() => props.onTab(t.id)}>
-              {t.icon(19)}
+              <span className="index" aria-hidden="true">{indexLabel(i + 1)}</span>
               {t.title}
             </button>
           ))}
@@ -85,8 +86,8 @@ export function AppShell<T extends string>(props: {
           <div className="sidebar-backdrop" onClick={close} />
           <aside className="sidebar" aria-label="Menu">
             <div className="sidebar-head">
-              <button className="icon-button" style={{ color: 'var(--text-2)' }} onClick={close} aria-label="Close menu"><X size={20} /></button>
               <span className="wordmark">{props.appName}</span>
+              <button className="icon-button" style={{ color: 'var(--text)', marginRight: -8 }} onClick={close} aria-label="Close menu"><X size={20} /></button>
             </div>
             {props.menu(close)}
           </aside>

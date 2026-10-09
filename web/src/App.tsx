@@ -3,7 +3,7 @@
 // partner's view is laid over the top when one is open.
 
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
-import { CalendarClock, CalendarDays, Home, Settings, Target, UsersRound } from 'lucide-react'
+import { Settings, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AccountabilityScreen } from './screens/AccountabilityScreen'
 import { DailyScreen } from './screens/DailyScreen'
@@ -23,10 +23,10 @@ type Tab = 'home' | 'goals' | 'daily' | 'longTerm'
 type SidebarDestination = 'accountability' | 'settings'
 
 const tabs: ShellTab<Tab>[] = [
-  { id: 'home', title: 'Home', icon: s => <Home size={s} /> },
-  { id: 'goals', title: 'Goals', icon: s => <Target size={s} /> },
-  { id: 'daily', title: 'Daily', icon: s => <CalendarDays size={s} /> },
-  { id: 'longTerm', title: 'Long-Term', icon: s => <CalendarClock size={s} /> },
+  { id: 'home', title: 'Home' },
+  { id: 'goals', title: 'Goals' },
+  { id: 'daily', title: 'Daily' },
+  { id: 'longTerm', title: 'Long-Term' },
 ]
 
 /** Accountability (with partners under it), then Settings set apart. */

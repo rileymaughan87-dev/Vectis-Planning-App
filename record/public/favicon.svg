@@ -1,7 +1,0 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <!-- Record icon: suite blue square, thin black ring, and a line of
-       handwriting running off the page at the top right (matches icon-1024.png). -->
-  <rect width="1024" height="1024" fill="#0068B5"/>
-  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
-  <path d="M268 640 C 360 420, 430 760, 530 570 S 690 320, 806 268" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>

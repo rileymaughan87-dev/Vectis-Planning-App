@@ -50,7 +50,7 @@ on its own and at a glance.
 
 ---
 
-## 3. The current visual system (keep, evolve, or deliberately break)
+## 3. The visual system: Index (Oct 2026)
 
 ### Colour
 
@@ -71,62 +71,50 @@ Fixed meaning colours (never themed): income green `#2B8A3E`, expense red
 
 ### Character
 
-Squared-off, calm, bordered. Solid fills, thin borders, small corner radii.
-No glossy gradients, no translucent "glass", no floating pill shapes.
+**The "Index" style (chosen Oct 2026).** Precise, crafted, engineered and
+led by type, while staying calm. Paper `#F2EFE8` and ink `#15171B`, with
+suite blue for the frame. Square corners, 1px rules, no shadows, no
+pills, no glass. Full detail: `docs/design-system.md`.
 
 ### Wordmark
 
-Each app's name in a **system serif, italic, medium weight**, in the suite
-blue — e.g. *Vectis*, *Planner*, *Finance*.
+Each app's name in **Newsreader italic, weight 500**, in suite blue —
+*Vectis*, *Planner*, *Finance*, *Record*. Indexes and metadata are in
+**IBM Plex Mono**; text in **IBM Plex Sans**.
 
-### Today's icon recipe
+### The icon recipe (Index)
 
-All current icons share one recipe:
+Each app is an entry in a numbered set:
 
-- a solid suite-blue square,
-- a thin black ring,
-- one thick, round-capped black stroke that **breaks out of the ring at the
-  top right** (a little "escaping the circle" moment — momentum, leverage).
+| App | Index | Letters |
+|---|---|---|
+| Vectis | 00 | Ve |
+| Planner | 01 | Pl |
+| Finance | 02 | Fi |
+| Record | 03 | Re |
 
-| Icon | Its stroke |
-|---|---|
-| Vectis | A lever resting on a small triangular fulcrum |
-| Planner | A tick (the "lever tick") |
-| Finance | A rising line |
-| Record | A line of handwriting running off the page |
+A **new app takes the next number and its first two letters** (its
+small version: the first letter).
 
-The current SVGs (1024 × 1024), for reference:
+- **Full icon** (1024, for the Home Screen): paper `#F2EFE8`; the index
+  in IBM Plex Mono 500, 92px, suite blue at x150 y228; the two letters in
+  Newsreader italic 500, 520px, ink, centred at x500 on a baseline at
+  y700; a 22px blue **pivot rule** at y790 from x150 to the right edge,
+  with a 26px-radius dot at x150 — the lever.
+- **Small version** (48px and below — favicons, tabs): one letter
+  (Newsreader italic 600, 700px, centred x512, baseline y700) over a
+  heavier rule (76px at y850 from x170, dot radius 76). The index and
+  second letter are dropped; they turn to mush that small.
+- Opaque, full-bleed squares with no drawn corners; iOS and browsers
+  round them.
 
-```svg
-<!-- Vectis -->
-<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" fill="#0068B5"/>
-  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
-  <path d="M262 664 L832 284" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round"/>
-  <path d="M440 560 L372 690 L508 690 Z" fill="#000"/>
-</svg>
+The finished PNGs (drawn with the real fonts) are in each app's
+`public/`: `icon-1024.png`, `favicon-32.png`, `favicon-16.png`. For a
+scalable SVG, outline the text first with both fonts installed — the
+handoff's SVGs hold live text and are reference only.
 
-<!-- Planner -->
-<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" fill="#0068B5"/>
-  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
-  <path d="M306 340 Q 380 570 510 762 Q 640 520 786 272" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-
-<!-- Finance -->
-<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" fill="#0068B5"/>
-  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
-  <path d="M284 655 L444 495 L565 600 L792 266" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-
-<!-- Record -->
-<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1024" height="1024" fill="#0068B5"/>
-  <circle cx="512" cy="512" r="378" fill="none" stroke="#000" stroke-width="34"/>
-  <path d="M268 640 C 360 420, 430 760, 530 570 S 690 320, 806 268" fill="none" stroke="#000" stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-```
+*(Before Oct 2026 the icons were a blue square with a thin black ring and
+one thick stroke breaking out of it at the top right.)*
 
 ---
 
@@ -159,9 +147,6 @@ The current SVGs (1024 × 1024), for reference:
 
 ## 6. What to ask the design tool for
 
-1. Three or four **directions** for the Vectis mark, each with the same idea
-   applied to Planner, Finance and Record, so the family is visible.
-2. Each direction shown at **1024 px**, at **60 px** (Home Screen) and at
-   **32 px** (favicon), on light and dark backgrounds.
-3. A one-line rationale per direction tying it back to the lever / small
-   effort, big movement premise.
+The Index direction is chosen. For a new app: its icon in the recipe
+above at **1024 px**, **60 px** and **32 px** (small version), on light
+and dark backgrounds, with the next index number.
