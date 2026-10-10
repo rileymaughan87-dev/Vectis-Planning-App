@@ -8,6 +8,7 @@ import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
 import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
+import { AccountsScreen } from './screens/AccountsScreen'
 import { BudgetScreen } from './screens/BudgetScreen'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
@@ -15,9 +16,10 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
 import { useSettings } from './store/settings'
 
-type Tab = 'budget' | 'calendar' | 'goals'
+type Tab = 'accounts' | 'budget' | 'calendar' | 'goals'
 
 const tabs: ShellTab<Tab>[] = [
+  { id: 'accounts', title: 'Accounts' },
   { id: 'budget', title: 'Budget' },
   { id: 'calendar', title: 'Calendar' },
   { id: 'goals', title: 'Goals' },
@@ -26,7 +28,7 @@ const tabs: ShellTab<Tab>[] = [
 export default function App() {
   const appearance = useSettings(s => s.appearance)
   useApplyTheme(appearance)
-  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab) || 'budget')
+  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab) || 'accounts')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [quickLog, setQuickLog] = useState(() => new URLSearchParams(location.search).has('log'))
   const closeQuickLog = () => {
@@ -69,6 +71,7 @@ export default function App() {
         {quickLog && <LogSpendingSheet onClose={closeQuickLog} />}
       </>}
     >
+      {tab === 'accounts' && <AccountsScreen />}
       {tab === 'budget' && <BudgetScreen />}
       {tab === 'calendar' && <CalendarScreen />}
       {tab === 'goals' && <GoalsScreen />}

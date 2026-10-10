@@ -694,3 +694,5 @@ textarea.writing { font-family: var(--font-serif); font-size: 17px; line-height:
 }
 
 .sync-choice button:hover { background: var(--surface-3); }
+
+.sync-choice button[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--brand); background: var(--surface-raised); }

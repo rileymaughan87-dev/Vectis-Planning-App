@@ -6,9 +6,11 @@
 import { isObj, optStr } from '@suite/decode'
 import { countIn, describeCounts } from '@suite/sync/records'
 import { createSyncStore, type SyncSlice } from '@suite/sync/store'
+import { decodeAccounts, decodeAudits } from '../model/accounts'
 import { decodeFinanceEvents } from '../model/entries'
 import { decodeGoals } from '../model/goals'
 import { decodePot, decodeSpendingEntries } from '../model/spending'
+import { useAccounts } from './accounts'
 import { useEntries } from './entries'
 import { useGoals } from './goals'
 import { Filename, storage } from './persist'
@@ -37,6 +39,8 @@ const FINANCE_SLICES: SyncSlice[] = [
   slice(useGoals, 'goals', Filename.financeGoals, 'list', decodeGoals),
   slice(useSpending, 'entries', Filename.spendingEntries, 'list', decodeSpendingEntries),
   slice(useSpending, 'pot', Filename.spendingPot, 'single', decodePot),
+  slice(useAccounts, 'accounts', Filename.accounts, 'list', decodeAccounts),
+  slice(useAccounts, 'audits', Filename.accountAudits, 'list', decodeAudits),
   // The currency choice is saved as { currency } — kept in that shape so both devices read it the same way.
   {
     file: Filename.preferences,
@@ -55,11 +59,14 @@ export const useSync = createSyncStore({
   collection: 'finance',
   prefix: 'finance:',
   slices: FINANCE_SLICES,
-  contentFiles: [Filename.financeEvents, Filename.financeGoals, Filename.spendingEntries],
+  contentFiles: [Filename.financeEvents, Filename.financeGoals, Filename.spendingEntries, Filename.accounts],
+  // Accounts joined on 10 Oct 2026, after devices were already syncing.
+  addedLater: [Filename.accounts, Filename.accountAudits],
   describe: records => describeCounts([
     ['entry', 'entries', countIn(records, Filename.financeEvents)],
     ['goal', 'goals', countIn(records, Filename.financeGoals)],
     ['logged spend', 'logged spends', countIn(records, Filename.spendingEntries)],
+    ['account', 'accounts', countIn(records, Filename.accounts)],
   ]),
   allEntries: storage.allEntries,
 })
