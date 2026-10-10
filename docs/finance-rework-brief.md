@@ -183,6 +183,40 @@ pivot rules; they differ in what carries the picture.
 
 ---
 
+## Decided direction (10 Oct 2026, Riley)
+
+Months were the wrong unit: Riley is paid monthly from this month, a small
+payment early in the month and the main one on the 30th, which a
+calendar month books into the wrong month. So:
+
+- **Balances are the truth.** Accounts are all optional — current,
+  savings, credit card, loans/other debt; each person adds only what they
+  want to see. Balances are **audited** whenever Riley likes (no
+  reminder; the app shows how long since the last audit). An audit
+  compares the real balance with what was expected; a gap becomes one
+  "everyday spending" (or "extra in") entry with one tap.
+- **Logging is optional.** Day-to-day purchases can be logged for a
+  sharper picture between audits, never required.
+- **Plan forward from today, not by month.** Recurring pay and bills
+  become a "coming up" list from the real balance. Headline: **safe to
+  spend until the next payday** (+ per day) = current balance − bills
+  due before then − planned saving/set-asides − a **cushion** (a set
+  amount Riley chooses). Pay that lands on the 30th starts the next
+  stretch; it never props up the current one. A warning (information,
+  not alarm) if the balance would dip low before payday.
+- **Months are history.** Each audit saves a snapshot; over time these
+  show savings rising and debt falling, month by month — real, not
+  planned.
+- **Goals sit on real balances**: savings goals on savings accounts (or
+  named pots within them), debts on card/loan balances, set-asides as
+  earmarked money safe to spend leaves alone.
+- Existing data carries over: recurring entries become "coming up";
+  goals keep working; the weekly pot can stay as an optional limit.
+
+Build in stages: (1) accounts and audits, with snapshots; (2) the
+forward view and safe to spend as the new main screen; (3) progress over
+time, goals on balances, fast setup, and retiring the month screens.
+
 ## 6. Questions to settle
 
 1. **A:** Safe to spend, every pound a job, or calm plan?
