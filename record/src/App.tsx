@@ -1,5 +1,5 @@
-// Record's top level: the suite's shared shell with three tabs — Journal
-// (where it opens), Notebooks and Notes — and Settings in the side menu.
+// Record's top level: the suite's shared shell with four tabs — Journal
+// (where it opens), Notebooks, Notes and Papers — and Settings in the side menu.
 // Links from the other apps (suite/links.ts) open a journal day or a
 // goal's notes.
 
@@ -17,12 +17,13 @@ const tabs: ShellTab<Section>[] = [
   { id: 'journal', title: 'Journal' },
   { id: 'notebooks', title: 'Notebooks' },
   { id: 'notes', title: 'Notes' },
+  { id: 'papers', title: 'Papers' },
 ]
 
 function savedTab(): Section {
   try {
     const saved = sessionStorage.getItem('record:ui:tab')
-    return saved === 'notebooks' || saved === 'notes' ? saved : 'journal'
+    return saved === 'notebooks' || saved === 'notes' || saved === 'papers' ? saved : 'journal'
   } catch {
     return 'journal'
   }

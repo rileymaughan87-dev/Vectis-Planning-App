@@ -24,8 +24,9 @@ import { Sheet, VButton } from '@suite/ui/components'
 import { goalsDoneOn } from '../model/goals'
 import { useData } from '../store/data'
 import { NoteEditor, NoteTypePicker, NotebookEditor, newNote, newNotebook } from './NoteEditors'
+import { PapersSection } from './PapersScreen'
 
-export type Section = 'journal' | 'notebooks' | 'notes'
+export type Section = 'journal' | 'notebooks' | 'notes' | 'papers'
 
 export function RecordScreen({ section, colors, link }: { section: Section; colors: ThemeColors; link?: RecordLink | null }) {
   const [picking, setPicking] = useState<{ notebookID?: string } | null>(null)
@@ -51,6 +52,7 @@ export function RecordScreen({ section, colors, link }: { section: Section; colo
         </div>
       )}
 
+      {section === 'papers' && <PapersSection />}
       {section === 'journal' && <JournalSection colors={colors} openDay={link?.kind === 'journal' ? link.date : undefined} />}
       {section === 'notebooks' && <NotebooksSection colors={colors} onOpen={setOpenNotebookID} />}
       {section === 'notes' && (

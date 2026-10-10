@@ -82,7 +82,7 @@ export function start({ db, uid }: LiveContext): () => void {
   // A new picture here, or a note here that now uses one from elsewhere.
   window.addEventListener(ATTACHMENT_SAVED, schedule)
   const stopNotes = useData.subscribe((s, p) => {
-    if (s.notes !== p.notes || s.journal !== p.journal) schedule()
+    if (s.notes !== p.notes || s.journal !== p.journal || s.papers !== p.papers) schedule()
   })
 
   return () => {

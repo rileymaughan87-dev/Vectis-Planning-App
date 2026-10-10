@@ -5,6 +5,7 @@
 
 import { Extension, wrappingInputRule, type Editor } from '@tiptap/core'
 import Highlight from '@tiptap/extension-highlight'
+import TextAlign from '@tiptap/extension-text-align'
 import { BulletList, TaskItem, TaskList } from '@tiptap/extension-list'
 import { Placeholder } from '@tiptap/extensions'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -136,6 +137,61 @@ const FoldableSections = Extension.create({
   },
 })
 
+// MARK: - Section focus (papers)
+
+export const focusKey = new PluginKey<number | null>('vectis-section-focus')
+
+/** The heading a position sits under, as an index into the document's top-level blocks. */
+export function sectionAt(doc: PMNode, pos: number): number | null {
+  let found: number | null = null
+  doc.forEach((node, offset, index) => {
+    if (offset <= pos && node.type.name === 'heading') found = index
+  })
+  return found
+}
+
+/**
+ * Section focus: only one heading's section shows (its subheadings
+ * included); everything else steps out of view until focus ends. A view
+ * choice — nothing in the paper changes.
+ */
+const SectionFocus = Extension.create({
+  name: 'sectionFocus',
+  addProseMirrorPlugins() {
+    return [new Plugin<number | null>({
+      key: focusKey,
+      state: {
+        init: () => null,
+        apply: (tr, old) => {
+          const meta = tr.getMeta(focusKey) as number | null | undefined
+          if (meta !== undefined) return meta
+          return old
+        },
+      },
+      props: {
+        decorations: state => {
+          const index = focusKey.getState(state)
+          if (index === null || index === undefined || index >= state.doc.childCount) return null
+          const heading = state.doc.child(index)
+          if (heading.type.name !== 'heading') return null
+          const end = sectionEnd(state.doc, index, heading.attrs.level as number)
+          const decorations: Decoration[] = []
+          state.doc.forEach((node, offset, i) => {
+            if (i < index || i >= end) decorations.push(Decoration.node(offset, offset + node.nodeSize, { class: 'is-out-of-focus' }))
+          })
+          return DecorationSet.create(state.doc, decorations)
+        },
+      },
+    })]
+  },
+})
+
+/** Focus on the section the cursor's in, or (null) show the whole paper again. */
+export function setSectionFocus(editor: Editor, on: boolean) {
+  const index = on ? sectionAt(editor.state.doc, editor.state.selection.from) : null
+  editor.view.dispatch(editor.state.tr.setMeta(focusKey, index).setMeta('addToHistory', false))
+}
+
 // MARK: - Maths
 
 export const mathKey = new PluginKey<{ enabled: boolean; decorations: DecorationSet }>('vectis-math')
@@ -185,7 +241,8 @@ const MathResults = Extension.create<{ enabled: boolean }>({
   },
 })
 
-export function editorExtensions(placeholder: string, math = true) {
+export function editorExtensions(placeholder: string, math = true, variant: 'note' | 'paper' = 'note') {
+  const paper = variant === 'paper'
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
@@ -200,8 +257,10 @@ export function editorExtensions(placeholder: string, math = true) {
     Highlight,
     Placeholder.configure({ placeholder }),
     FoldableSections,
-    MathResults.configure({ enabled: math }),
-    Attachment,
+    MathResults.configure({ enabled: math && !paper }),
+    Attachment.configure({ layout: paper }),
+    // Papers: text alignment, and focusing on one section at a time.
+    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus] : []),
   ]
 }
 

@@ -262,3 +262,103 @@
 }
 
 .kind-filter button[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #FFFFFF); }
+
+/* ---------- Papers ---------- */
+.paper-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
+
+.paper-row .grow { display: flex; flex-direction: column; gap: 2px; }
+
+.paper-row-title { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 19px; }
+
+/* A paper fills the screen: a slim bar, then the page. */
+.paper-page { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; background: var(--bg); }
+
+.paper-bar {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+  padding: env(safe-area-inset-top) 16px 0; min-height: 56px; border-bottom: 1px solid var(--separator); background: var(--bg);
+}
+
+.paper-back { justify-self: start; white-space: nowrap; }
+
+.paper-modes { border-bottom: 0; }
+
+.paper-modes button { flex: none; padding: 8px 14px; }
+
+.paper-status { justify-self: end; white-space: nowrap; }
+
+.paper-scroll { flex: 1; overflow-y: auto; padding: 24px 16px 140px; }
+
+/* The page itself, in the paper's own font, size and spacing; margins as set (narrower on a phone). */
+.paper-sheet {
+  max-width: 8.5in; margin: 0 auto; background: var(--surface-raised); border: 1px solid var(--separator);
+  padding: var(--paper-margin); font-family: var(--paper-font); font-size: var(--paper-size); color: var(--text);
+  display: flex; flex-direction: column; gap: 0.5em;
+}
+
+.paper-sheet[hidden] { display: none; }
+
+.paper-title-block { line-height: var(--paper-spacing); }
+
+.paper-title {
+  font: inherit; font-weight: 600; font-size: 1.15em; text-align: center; background: transparent; border: 0; padding: 0.25em 0; width: 100%;
+}
+
+.paper-sheet .rich-note { gap: 0; }
+
+.paper-sheet .note-doc {
+  min-height: 50vh; padding: 0; background: transparent; box-shadow: none; font-size: 1em; line-height: var(--paper-spacing);
+}
+
+.paper-sheet .note-doc > * + * { margin-top: 0; }
+
+.paper-sheet .note-doc p { text-indent: var(--paper-indent); }
+
+.paper-sheet .note-doc h1, .paper-sheet .note-doc h2, .paper-sheet .note-doc h3 { font-family: inherit; letter-spacing: 0; margin: 0.6em 0 0.2em; }
+
+.paper-sheet .note-doc h1 { font-size: 1.35em; }
+
+.paper-sheet .note-doc h2 { font-size: 1.15em; }
+
+.paper-sheet .note-doc h3 { font-size: 1em; font-style: italic; }
+
+/* Section focus: everything outside the section steps out of view. */
+.note-doc .is-out-of-focus { display: none; }
+
+.paper-toolbar.inline { position: sticky; top: -24px; z-index: 5; margin: 0 calc(-1 * min(var(--paper-margin), 20px)) 0.75em; }
+
+.paper-format { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; counter-reset: section; }
+
+/* Pictures in a paper: on their own line, sized and placed, never floating. */
+.note-attachment[data-size='small'] img { max-width: 33%; }
+
+.note-attachment[data-size='half'] img { max-width: 50%; }
+
+.note-attachment[data-align='center'] img { margin-left: auto; margin-right: auto; }
+
+.note-attachment[data-align='right'] img { margin-left: auto; }
+
+.attachment-caption {
+  display: block; width: 100%; margin-top: 4px; background: transparent; border: 0; padding: 2px 0;
+  font: inherit; font-size: 0.85em; font-style: italic; color: var(--text-2); text-align: center; text-indent: 0;
+}
+
+.note-attachment[data-align='left'] .attachment-caption { text-align: left; }
+
+.note-attachment[data-align='right'] .attachment-caption { text-align: right; }
+
+.attachment-caption[hidden] { display: none; }
+
+.attachment-actions { flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 16px); }
+
+.attachment-actions button.is-on { background: var(--primary); color: var(--on-primary, #fff); }
+
+@media (max-width: 699px) {
+  .paper-scroll { padding: 0 0 140px; }
+  .paper-sheet { border: 0; border-bottom: 1px solid var(--separator); padding: 20px 22px; }
+  .paper-bar { grid-template-columns: auto 1fr auto; }
+  .paper-modes { justify-self: center; }
+}
+
+@media print {
+  .paper-bar, .editor-toolbar { display: none !important; }
+}

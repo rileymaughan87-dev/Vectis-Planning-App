@@ -9,6 +9,8 @@ export const Filename = {
   journalEntries: 'journal_entries.json',
   notes: 'notes.json',
   notebooks: 'notebooks.json',
+  /** Web only: school papers (model/papers.ts). */
+  papers: 'papers.json',
   /** Planner's; Record only reads it, to link notes to goals. */
   goals: 'goals.json',
   /** Shared with Planner, so both look the same. */
