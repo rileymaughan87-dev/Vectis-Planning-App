@@ -165,5 +165,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 2. **Editor restyle** — built Oct 2026, awaiting device test. Shared editor
    components live in CalendarHelpers.swift.
 3. ~~**Rest days** (spec 2.2)~~ — built on the web (9 Oct 2026); see HANDOFF.md.
-4. **"Share my day"** — `ShareLink` summary of today's goals for an
-   accountability partner via Messages. Free alternative to accounts/CloudKit.
+4. ~~**"Share my day"**~~ — dropped (10 Oct 2026, Riley's call):
+   Accountability partners already cover it.
+
+Also decided (10 Oct 2026): **light mode only** for the Index style — no
+dark pass planned. Finance data is being re-entered by hand.

@@ -63,8 +63,9 @@ Rules:
   `#D2574A`, "still an estimate" amber `#D6862C`, destructive red and
   warning orange stay fixed.
 - Text on a coloured fill switches between white and ink for contrast.
-- **Dark mode** isn't designed for the Index style yet: the earlier dark
-  colours stay until a dark pass is done. Don't invent one.
+- **Light mode is the design** (Riley's call, Oct 2026). There's no dark
+  Index style planned; the earlier dark colours remain only for anyone
+  choosing Dark or System in Appearance. Don't invent one.
 
 ### Typography
 
