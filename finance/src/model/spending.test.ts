@@ -1,6 +1,5 @@
 import { toISO } from '@suite/dates'
 import { describe, expect, it } from 'vitest'
-import { monthBudget, monthSummary, typicalMonth } from './budget'
 import { makeFinanceEvent, runningRepeatingFlexible, weeklyFlexibleEstimate } from './entries'
 import { decodePot, flexibleForMonth, recentNotes, weekStatus, type SpendingEntry, type SpendingPot, type Week } from './spending'
 
@@ -33,16 +32,6 @@ describe('a month of flexible spending', () => {
     expect(f.planned).toBeCloseTo((140 / 7) * 23)
     expect(flexibleForMonth(entries, pot, day(2026, 9, 1), day(2026, 10, 8)).planned).toBe(0)
     expect(flexibleForMonth(entries, { ...pot, isActive: false }, day(2026, 10, 1), day(2026, 10, 8)).planned).toBe(0)
-  })
-
-  it('flows into the month summary and the budget lines', () => {
-    const today = day(2026, 10, 8)
-    const s = monthSummary([], [], day(2026, 10, 1), { entries, pot }, today)
-    expect(s.flexible).toBeCloseTo(51.5 + 20 * 23)
-    expect(s.flexiblePlanned).toBeCloseTo(460)
-    const b = monthBudget([], [], day(2026, 10, 1), { entries, pot }, n => `£${n}`, today)
-    expect(b.flexible[0]).toMatchObject({ id: 'pot', title: 'Weekly pot', detail: '£51.5 spent · about £460 still to come' })
-    expect(typicalMonth([], [], day(2026, 10, 1), pot).spending).toBeCloseTo(140 * 52 / 12)
   })
 })
 

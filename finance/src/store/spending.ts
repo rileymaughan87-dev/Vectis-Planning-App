@@ -39,7 +39,7 @@ useSpending.subscribe((state, prev) => {
   if (state.pot !== prev.pot) storage.saveRaw(Filename.spendingPot, state.pot)
 })
 
-/** Both together, for the budget and calendar totals. */
+/** Logged spending and the pot together. */
 export const useLogged = () => {
   const entries = useSpending(s => s.entries)
   const pot = useSpending(s => s.pot)

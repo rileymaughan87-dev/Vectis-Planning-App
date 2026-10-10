@@ -86,6 +86,30 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance rework — Stage 3 of 3: progress, goals on balances, Plan (10 Oct 2026)
+
+The rework is done: Finance is now Now · Accounts · Plan · Calendar · Goals.
+
+- **Progress over time** (Accounts → "Over time"): `monthlyStanding`
+  takes each account's latest check by each month's end — savings saved,
+  cards/loans owed — with the change month to month and since the first
+  check. Built only from checks (real, not planned).
+- **Goals on real balances:** `FinanceGoal.accountID` (savings accounts
+  for saving/set-asides, cards/loans for debts; "Measured on" in the goal
+  editor). `onBalance` adjusts the goal so what's paid matches the
+  account's expected balance (savings: saved; debts: still owed, interest
+  included), so progress, the plan and "done around" follow reality.
+  Goal payments now also move money *into* a linked savings account (and
+  off a linked debt) when working out what a check should show; every
+  goal payment still leaves the main current account.
+- **Plan** replaces Budget: the weekly pot, then Money in, Bills and
+  Flexible — every entry still to come (`running`), with how often and
+  when it's next, and a monthly total; "Add pay and bills in one go"
+  (`QuickSetupSheet`: pay plus common UK bills, amount and day of the
+  month → monthly entries). A remembered "budget" tab opens Plan.
+- **Removed (month-based):** BudgetScreen, LeftOverTrend, `model/budget.ts`
+  and its tests, Calendar's month totals.
+
 ## Finance rework — Stage 2 of 3: Now and safe to spend (10 Oct 2026)
 
 - `finance/src/model/forward.ts` (tested): payday = next arrival of the

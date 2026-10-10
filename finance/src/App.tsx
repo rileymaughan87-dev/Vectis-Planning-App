@@ -1,5 +1,5 @@
 // Finance's top level: the suite's shared shell with its tabs — Now
-// (where it opens: safe to spend until payday), Accounts, Budget, Calendar
+// (where it opens: safe to spend until payday), Accounts, Plan, Calendar
 // and Goals — and Settings in the side menu.
 // Opening the app with "?log" goes straight to logging spending (the
 // home-screen shortcut on Android, or a bookmark anywhere).
@@ -11,19 +11,19 @@ import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { AccountsScreen } from './screens/AccountsScreen'
 import { NowScreen } from './screens/NowScreen'
-import { BudgetScreen } from './screens/BudgetScreen'
+import { PlanScreen } from './screens/PlanScreen'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
 import { useSettings } from './store/settings'
 
-type Tab = 'now' | 'accounts' | 'budget' | 'calendar' | 'goals'
+type Tab = 'now' | 'accounts' | 'plan' | 'calendar' | 'goals'
 
 const tabs: ShellTab<Tab>[] = [
   { id: 'now', title: 'Now' },
   { id: 'accounts', title: 'Accounts' },
-  { id: 'budget', title: 'Budget' },
+  { id: 'plan', title: 'Plan' },
   { id: 'calendar', title: 'Calendar' },
   { id: 'goals', title: 'Goals' },
 ]
@@ -31,7 +31,7 @@ const tabs: ShellTab<Tab>[] = [
 export default function App() {
   const appearance = useSettings(s => s.appearance)
   useApplyTheme(appearance)
-  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab) || 'now')
+  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab | 'budget' | null)?.replace('budget', 'plan') as Tab || 'now')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [quickLog, setQuickLog] = useState(() => new URLSearchParams(location.search).has('log'))
   const closeQuickLog = () => {
@@ -76,7 +76,7 @@ export default function App() {
     >
       {tab === 'now' && <NowScreen onGo={choose} />}
       {tab === 'accounts' && <AccountsScreen />}
-      {tab === 'budget' && <BudgetScreen />}
+      {tab === 'plan' && <PlanScreen />}
       {tab === 'calendar' && <CalendarScreen />}
       {tab === 'goals' && <GoalsScreen />}
     </AppShell>
