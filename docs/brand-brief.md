@@ -109,7 +109,11 @@ small version: the first letter).
   round them.
 
 The finished PNGs (drawn with the real fonts) are in each app's
-`public/`: `icon-1024.png`, `favicon-32.png`, `favicon-16.png`. For a
+`public/`: `icon-1024.png` (with `icon-512.png` and `icon-192.png` scaled
+from it, for Windows and Android installs), `favicon-32.png`,
+`favicon-16.png`. The manifests and pages ask for them with `?v=2`. Raise
+that number whenever an icon changes, so installed apps pick up the new
+one (Windows keeps the old icon otherwise). For a
 scalable SVG, outline the text first with both fonts installed — the
 handoff's SVGs hold live text and are reference only.
 
