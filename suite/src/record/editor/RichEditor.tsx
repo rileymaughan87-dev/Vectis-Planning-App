@@ -7,11 +7,16 @@
 // Pictures: a photo from the library or camera, a scanned page, or a
 // drawing, each kept on the device (store/attachments.ts) with only its
 // id in the note.
+//
+// Papers use a quieter variant: just bold, italic, underline, alignment,
+// the heading level, a picture and section focus — everything else (font,
+// size, spacing) is set once in the paper's Format tab.
 
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import {
-  Bold, Camera, ChevronsDownUp, ChevronsUpDown, Highlighter, Image as ImageIcon, Italic, KeyboardOff, List, ListChecks, ListIndentDecrease,
-  ListIndentIncrease, ListOrdered, Pencil, Redo2, ScanLine, SeparatorHorizontal, Strikethrough, Underline, Undo2,
+  AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Camera, ChevronsDownUp, ChevronsUpDown, Focus, Highlighter, Image as ImageIcon, Italic,
+  KeyboardOff, List, ListChecks, ListIndentDecrease, ListIndentIncrease, ListOrdered, Pencil, Redo2, ScanLine, SeparatorHorizontal, Strikethrough,
+  Underline, Undo2,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react'
 import { newID } from '../../ids'
@@ -21,7 +26,7 @@ import { MARKUP_EVENT, type AttachmentAttrs, type AttachmentKind, type MarkupDet
 import { DrawingSheet } from './DrawingSheet'
 import { decode, preparePhoto, type Picture } from './images'
 import { ScanSheet } from './ScanSheet'
-import { PARAGRAPH_STYLES, applyStyle, canIndent, currentStyle, editorExtensions, indent, mathKey } from './extensions'
+import { PARAGRAPH_STYLES, applyStyle, canIndent, currentStyle, editorExtensions, focusKey, indent, mathKey, setSectionFocus } from './extensions'
 
 export function RichEditor(props: {
   initial: DocNode
@@ -31,11 +36,14 @@ export function RichEditor(props: {
   autofocus?: boolean
   /** Show answers after lines ending in "=" (on unless the note turned it off). */
   math?: boolean
+  /** A paper: the quiet toolbar, alignment, picture layout and section focus. */
+  variant?: 'note' | 'paper'
 }) {
   const { onChange } = props
   const math = props.math ?? true
+  const paper = props.variant === 'paper'
   const editor = useEditor({
-    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math),
+    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math, props.variant),
     content: props.initial,
     autofocus: props.autofocus ? 'end' : false,
     editorProps: {
@@ -55,7 +63,7 @@ export function RichEditor(props: {
 
   return (
     <div className="rich-note" ref={rootRef}>
-      <EditorToolbar editor={editor} pictures={pictures} />
+      {paper ? <PaperToolbar editor={editor} pictures={pictures} /> : <EditorToolbar editor={editor} pictures={pictures} />}
       <EditorContent editor={editor} />
       {pictures.elements}
     </div>
@@ -311,6 +319,88 @@ function EditorToolbar({ editor, pictures }: { editor: Editor; pictures: Picture
             {groups[g]}
           </div>
         ))}
+      </div>
+      {touch && (
+        <div className="toolbar-fixed">
+          <Tool label="Hide keyboard" onPress={run(() => { editor.commands.blur(); (document.activeElement as HTMLElement | null)?.blur() })}>
+            <KeyboardOff size={17} />
+          </Tool>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** The paper's toolbar: only what's needed while writing. */
+function PaperToolbar({ editor, pictures }: { editor: Editor; pictures: Pictures }) {
+  const touch = useIsTouch()
+  const s = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      focused: e.isFocused,
+      style: currentStyle(e),
+      bold: e.isActive('bold'),
+      italic: e.isActive('italic'),
+      underline: e.isActive('underline'),
+      align: (['left', 'center', 'right', 'justify'] as const).find(a => e.isActive({ textAlign: a })) ?? 'left',
+      focusOn: focusKey.getState(e.state) !== null && focusKey.getState(e.state) !== undefined,
+      canUndo: e.can().undo(),
+      canRedo: e.can().redo(),
+    }),
+  })
+  const inset = useKeyboardInset(touch && s.focused)
+  // On a phone it only shows while typing (and while a section's in focus, to step out of it).
+  if (touch && !s.focused && !s.focusOn) return null
+
+  const run = (f: () => void) => (e: { preventDefault: () => void }) => {
+    e.preventDefault()
+    f()
+  }
+  const chain = () => editor.chain().focus()
+  const align = (a: 'left' | 'center' | 'right' | 'justify') => run(() => chain().setTextAlign(a).run())
+  const levels: { id: 'body' | 'heading' | 'subheading'; label: string }[] = [
+    { id: 'body', label: 'Text' }, { id: 'heading', label: 'Heading' }, { id: 'subheading', label: 'Subheading' },
+  ]
+
+  return (
+    <div className={`editor-toolbar paper-toolbar ${touch ? 'docked' : 'inline'}`} style={touch ? { bottom: inset } : undefined} role="toolbar" aria-label="Formatting">
+      <div className="toolbar-fixed">
+        <Tool label="Undo" disabled={!s.canUndo} onPress={run(() => chain().undo().run())}><Undo2 size={17} /></Tool>
+        <Tool label="Redo" disabled={!s.canRedo} onPress={run(() => chain().redo().run())}><Redo2 size={17} /></Tool>
+      </div>
+      <div className="toolbar-scroll">
+        <div className="toolbar-group">
+          {levels.map(l => (
+            <Tool key={l.id} label={l.label} wide active={s.style === l.id} onPress={run(() => applyStyle(editor, l.id))}>
+              <span className={`style-chip style-${l.id}`}>{l.label}</span>
+            </Tool>
+          ))}
+        </div>
+        <div className="toolbar-group">
+          <span className="toolbar-sep" aria-hidden="true" />
+          <Tool label="Bold" active={s.bold} onPress={run(() => chain().toggleBold().run())}><Bold size={17} /></Tool>
+          <Tool label="Italic" active={s.italic} onPress={run(() => chain().toggleItalic().run())}><Italic size={17} /></Tool>
+          <Tool label="Underline" active={s.underline} onPress={run(() => chain().toggleUnderline().run())}><Underline size={17} /></Tool>
+        </div>
+        <div className="toolbar-group">
+          <span className="toolbar-sep" aria-hidden="true" />
+          <Tool label="Align left" active={s.align === 'left'} onPress={align('left')}><AlignLeft size={17} /></Tool>
+          <Tool label="Centre" active={s.align === 'center'} onPress={align('center')}><AlignCenter size={17} /></Tool>
+          <Tool label="Align right" active={s.align === 'right'} onPress={align('right')}><AlignRight size={17} /></Tool>
+          <Tool label="Justify" active={s.align === 'justify'} onPress={align('justify')}><AlignJustify size={17} /></Tool>
+        </div>
+        <div className="toolbar-group">
+          <span className="toolbar-sep" aria-hidden="true" />
+          <Tool label="Add a picture" click onPress={() => pictures.pickPhoto()}><ImageIcon size={17} /></Tool>
+          {touch && <Tool label="Take a photo" click onPress={() => pictures.takePhoto()}><Camera size={17} /></Tool>}
+          <Tool
+            label={s.focusOn ? 'Show the whole paper' : 'Focus on this section'}
+            active={s.focusOn}
+            onPress={run(() => setSectionFocus(editor, !s.focusOn))}
+          >
+            <Focus size={17} />
+          </Tool>
+        </div>
       </div>
       {touch && (
         <div className="toolbar-fixed">

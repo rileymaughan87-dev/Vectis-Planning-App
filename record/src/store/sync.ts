@@ -11,6 +11,7 @@ import { list } from '@suite/decode'
 import { decodeJournalEntry, decodeNote, decodeNotebook } from '@suite/record/decode'
 import { countIn, describeCounts } from '@suite/sync/records'
 import { createSyncStore, type SyncSlice } from '@suite/sync/store'
+import { decodePapers } from '../model/papers'
 import { useData, type DataState } from './data'
 import { Filename, storage } from './persist'
 
@@ -35,12 +36,16 @@ export const useSync = createSyncStore({
     slice('journal', Filename.journalEntries, 'list', raw => list(raw, decodeJournalEntry)),
     slice('notes', Filename.notes, 'list', raw => list(raw, decodeNote)),
     slice('notebooks', Filename.notebooks, 'list', raw => list(raw, decodeNotebook)),
+    slice('papers', Filename.papers, 'list', decodePapers),
     slice('appearance', Filename.appearance, 'single', decodeAppearance),
   ],
-  contentFiles: [Filename.journalEntries, Filename.notes, Filename.notebooks],
+  contentFiles: [Filename.journalEntries, Filename.notes, Filename.notebooks, Filename.papers],
+  // Papers joined on 10 Oct 2026, after devices were already syncing.
+  addedLater: [Filename.papers],
   describe: records => describeCounts([
     ['note', 'notes', countIn(records, Filename.notes)],
     ['notebook', 'notebooks', countIn(records, Filename.notebooks)],
+    ['paper', 'papers', countIn(records, Filename.papers)],
     ['journal entry', 'journal entries', countIn(records, Filename.journalEntries)],
   ]),
   allEntries: storage.allEntries,

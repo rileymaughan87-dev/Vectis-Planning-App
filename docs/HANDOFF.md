@@ -86,6 +86,32 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Record: Papers — Stage 1 of 3 (10 Oct 2026)
+
+Design: `docs/record-rework-brief.md` ("Decided: Papers").
+
+- **Papers tab** in Record (Journal · Notebooks · Notes · Papers):
+  `record/src/model/papers.ts` (tested) — title, body (NoteDoc), format
+  (font, pt size, line spacing, margins, first-line indent, page numbers,
+  citation style, title details). `papers.json` under `vectis:`, synced
+  (`addedLater`); pictures in papers count as in use (never tidied away)
+  and sync. A new paper copies the last paper's format.
+- **A page of its own** (`PaperPage`): Write and Format modes, word count,
+  autosave (600 ms after typing, and on leaving/hiding the page; a blank
+  new paper isn't kept). Write stays mounted while Format is open so the
+  editor never reloads stale content. Desktop shows a letter-sized sheet
+  with the chosen margins; phones get full width with 22px margins.
+- **Editor `variant="paper"`:** a quiet toolbar (Text / Heading /
+  Subheading, bold, italic, underline, left/centre/right/justify, add a
+  picture, take a photo on touch, section focus). Text alignment
+  (`@tiptap/extension-text-align`). `SectionFocus` hides everything
+  outside the cursor's section (view only). Maths answers off.
+- **Pictures stay put:** attachment attrs `size` (small/half/full),
+  `align` (left/center/right), `caption`; controls show on the selected
+  picture in papers. They're blocks in the text flow, never floating.
+- Next: Stage 2 — Plan (outline, notes per section, word targets, ideas)
+  and the always-open Research panel linked to headings.
+
 ## Finance rework — Stage 3 of 3: progress, goals on balances, Plan (10 Oct 2026)
 
 The rework is done: Finance is now Now · Accounts · Plan · Calendar · Goals.

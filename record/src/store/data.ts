@@ -13,6 +13,7 @@ import { docToPlainText, wrapDoc, type DocNode } from '@suite/record/noteDoc'
 import type { JournalEntry, Note, Notebook } from '@suite/record/types'
 import { create } from 'zustand'
 import { decodeGoalRefs, type GoalRef } from '../model/goals'
+import { decodePapers, type Paper } from '../model/papers'
 import { sampleNotes } from '../model/sample'
 import { Filename, storage } from './persist'
 
@@ -20,6 +21,7 @@ export interface DataState {
   journal: JournalEntry[]
   notes: Note[]
   notebooks: Notebook[]
+  papers: Paper[]
   appearance: AppearanceSettings
   /** Planner's goals, read only. */
   goals: GoalRef[]
@@ -35,6 +37,9 @@ interface Actions {
   saveNotebook(notebook: Notebook): void
   /** Keeps its notes — they go back to Notes. */
   deleteNotebook(id: string): void
+  /** Adds or replaces a paper, stamping it as just edited. */
+  savePaper(paper: Paper): void
+  deletePaper(id: string): void
   setAppearance(patch: Partial<AppearanceSettings>): void
   replace(patch: Partial<DataState>): void
 }
@@ -46,6 +51,7 @@ const read: { [K in keyof DataState]: () => DataState[K] } = {
     return saved === undefined ? sampleNotes() : list(saved, decodeNote)
   },
   notebooks: () => list(storage.loadRaw(Filename.notebooks), decodeNotebook),
+  papers: () => decodePapers(storage.loadRaw(Filename.papers)),
   appearance: () => decodeAppearance(storage.loadRaw(Filename.appearance)),
   goals: () => decodeGoalRefs(storage.loadRaw(Filename.goals)),
 }
@@ -54,6 +60,7 @@ const fileFor: Record<keyof DataState, string> = {
   journal: Filename.journalEntries,
   notes: Filename.notes,
   notebooks: Filename.notebooks,
+  papers: Filename.papers,
   appearance: Filename.appearance,
   goals: Filename.goals,
 }
@@ -65,6 +72,7 @@ export const useData = create<DataState & Actions>()(set => ({
   journal: read.journal(),
   notes: read.notes(),
   notebooks: read.notebooks(),
+  papers: read.papers(),
   appearance: read.appearance(),
   goals: read.goals(),
 
@@ -89,6 +97,13 @@ export const useData = create<DataState & Actions>()(set => ({
       notebooks: s.notebooks.filter(b => b.id !== id),
       notes: s.notes.map(n => (n.notebookID === id ? { ...n, notebookID: undefined } : n)),
     })),
+
+  savePaper: paper =>
+    set(s => {
+      const stamped = { ...paper, updatedDate: toISO(new Date()) }
+      return { papers: s.papers.some(p => p.id === paper.id) ? s.papers.map(p => (p.id === paper.id ? stamped : p)) : [...s.papers, stamped] }
+    }),
+  deletePaper: id => set(s => ({ papers: s.papers.filter(p => p.id !== id) })),
 
   setAppearance: patch => set(s => ({ appearance: { ...s.appearance, ...patch } })),
   replace: patch => set(patch),
