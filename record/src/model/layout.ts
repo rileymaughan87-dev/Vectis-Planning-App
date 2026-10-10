@@ -2,8 +2,8 @@
 // shared by the preview, printing and the Word export, so they can't
 // disagree.
 //
-//   APA (7th, student)  a title page; the paper starts on a new page with
-//                       its title (bold, centred); References on its own page.
+//   APA (7th, student)  a title page; the paper starts on a new page (the
+//                       title isn't repeated there); References on its own page.
 //   MLA (9th)           no title page: name, instructor, course and date
 //                       top left, then the title centred; "Surname 1" in the
 //                       page header; Works Cited on its own page.
@@ -59,8 +59,7 @@ export function finished(paper: Paper, doc: DocNode): Finished {
   }
   return {
     titlePage: { title, lines: filled([f.name, f.institution, f.course, f.teacher, date]) },
-    // APA repeats the title above the writing; Harvard's title page is enough.
-    bodyTitle: style === 'apa' && title ? { text: title, bold: true } : undefined,
+    // The title page carries the title; it isn't repeated above the writing (Riley's call — APA would repeat it).
     body,
     references,
     runningHead: '',

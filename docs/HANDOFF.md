@@ -98,8 +98,8 @@ Riley's follow-ups to Stage 3. Updated where Stage 3 below disagrees.
   (tested) decides each style's pages, and the preview, printing and the
   Word export all use it.
   - **APA:** a title page (title bold, then name, institution, course,
-    instructor, date), then the paper on a new page with its title bold
-    and centred.
+    instructor, date), then the paper on a new page. The title is not
+    repeated above the writing (Riley's call, though APA 7 repeats it).
   - **MLA:** no title page. The header (name, instructor, course, date)
     sits top left, then the title centred and not bold; "Surname 1" in the
     page header.
