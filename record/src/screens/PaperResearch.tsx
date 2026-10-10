@@ -25,6 +25,8 @@ export function ResearchPanel(props: {
   sections: Section[]
   onChange: (research: ResearchItem[]) => void
   onClose: () => void
+  /** While writing: put a citation (or the quote and its citation) where the cursor is. */
+  onCite?: (item: ResearchItem, withQuote: boolean) => void
 }) {
   const [kind, setKind] = useState<ResearchKind>('quote')
   const [text, setText] = useState('')
@@ -118,6 +120,7 @@ export function ResearchPanel(props: {
 
         <div className="research-list">
           {props.research.length === 0 && <p className="help">Keep quotes, links and ideas here as you read. Link each to a section to use it there.</p>}
+          {props.research.length > 0 && !props.onCite && <p className="help">In Write, each quote and link can be cited straight into the paper.</p>}
           {props.research.length > 0 && shown.length === 0 && <p className="help">Nothing here with these filters.</p>}
           {shown.map(r => (
             <div key={r.id} className="research-item">
@@ -131,6 +134,12 @@ export function ResearchPanel(props: {
               {r.kind !== 'quote' && r.text && <p className="research-text">{r.text}</p>}
               {sourceLabel(r.source) && r.kind === 'quote' && (
                 <span className="caption2">{sourceLabel(r.source)}{r.source.page ? `, p. ${r.source.page}` : ''}</span>
+              )}
+              {props.onCite && r.kind !== 'idea' && (
+                <div className="row" style={{ gap: 6 }}>
+                  {r.kind === 'quote' && <VButton small accent="var(--primary)" onClick={() => props.onCite!(r, true)}>Quote + cite</VButton>}
+                  <VButton small accent="var(--primary)" onClick={() => props.onCite!(r, false)}>Cite</VButton>
+                </div>
               )}
               <div className="row" style={{ gap: 6 }}>
                 {sectionSelect(r.sectionID && sectionName(r.sectionID) !== undefined ? r.sectionID : '', v => patch(r.id, { sectionID: v || undefined }), 'Section')}

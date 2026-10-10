@@ -461,6 +461,39 @@
   .paper-modes { justify-self: center; }
 }
 
+/* A citation: part of the sentence, a quiet tint so it's clear it's one piece. */
+.citation { border-radius: 2px; background: color-mix(in srgb, var(--primary) 8%, transparent); padding: 0 1px; white-space: nowrap; }
+
+.citation.is-selected { outline: 2px solid var(--primary); }
+
+/* The reference list under the paper, each entry with a hanging indent. */
+.paper-references { margin-top: 2em; line-height: var(--paper-spacing); }
+
+.paper-references h2 { font: inherit; font-weight: 700; text-align: center; margin: 0 0 0.5em; }
+
+.paper-references.style-mla h2 { font-weight: 400; }
+
+.paper-references.style-harvard h2 { text-align: left; }
+
+.paper-references p { margin: 0; padding-left: 0.5in; text-indent: -0.5in; overflow-wrap: anywhere; }
+
+/* Printing a paper (and so saving it as a PDF): only the page, as it should look on paper. */
 @media print {
-  .paper-bar, .editor-toolbar { display: none !important; }
+  body.printing-paper .rail, body.printing-paper .topbar, body.printing-paper .tabbar,
+  body.printing-paper .page.record > :not(.paper-page),
+  body.printing-paper .paper-bar, body.printing-paper .editor-toolbar, body.printing-paper .research-panel,
+  body.printing-paper .fold-toggle, body.printing-paper .attachment-actions { display: none !important; }
+  body.printing-paper, body.printing-paper .app, body.printing-paper .main, body.printing-paper .content,
+  body.printing-paper .paper-page, body.printing-paper .paper-body, body.printing-paper .paper-scroll {
+    position: static !important; display: block !important; height: auto !important; overflow: visible !important;
+    background: #fff !important; padding: 0 !important; margin: 0 !important;
+  }
+  body.printing-paper .paper-sheet { border: 0; padding: 0; max-width: none; background: #fff; color: #000; }
+  /* Folded or out-of-focus sections still print; notes from Plan don't. */
+  body.printing-paper .is-folded-away, body.printing-paper .is-out-of-focus { display: block !important; }
+  body.printing-paper .has-section-note::after, body.printing-paper .is-collapsed-heading::after { content: none !important; }
+  body.printing-paper .attachment-caption:placeholder-shown { display: none; }
+  body.printing-paper .citation { background: none; }
+  body.printing-paper .paper-references { break-before: page; }
+  body.printing-paper .paper-title::placeholder { color: transparent; }
 }
