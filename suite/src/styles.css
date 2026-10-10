@@ -30,6 +30,8 @@
   --rule-strong: #c9c3b6;
   --grid-line: #ddd8cd;
   --mark-off: #b9b4a8;
+  /* A chosen row lifted off the page. */
+  --surface-raised: #ffffff;
   --fill: rgba(21, 23, 27, 0.06);
   --overlay: rgba(21, 23, 27, 0.4);
   --warning: #e8890c;
@@ -46,45 +48,54 @@
   color-scheme: light;
 }
 
-/* Dark mode isn't designed for the Index style yet (Riley chose light
-   first): these keep the earlier dark colours until a dark pass is done. */
+/* Index, dark (Oct 2026): ink for the page, paper for the words, and a
+   lighter suite blue so the frame still reads. Follows the device when
+   Appearance is on System; Light or Dark there overrides it. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --surface-3: #3a3a3c;
-    --surface-tab: #1c1c1e;
-    --text: #ffffff;
-    --text-2: rgba(235, 235, 245, 0.6);
-    --text-3: rgba(235, 235, 245, 0.3);
-    --separator: rgba(84, 84, 88, 0.6);
-    --rule-soft: rgba(84, 84, 88, 0.45);
-    --rule-strong: rgba(235, 235, 245, 0.3);
-    --grid-line: rgba(84, 84, 88, 0.6);
-    --mark-off: rgba(235, 235, 245, 0.3);
-    --fill: rgba(120, 120, 128, 0.32);
+    --brand: #5aa2e6;
+    --brand-dark: #8cc0f0;
+    --bg: #141619;
+    --surface: #1c1f23;
+    --surface-2: #1c1f23;
+    --surface-3: #262a2f;
+    --surface-tab: #181a1d;
+    --surface-raised: #262a2f;
+    --text: #ece8df;
+    --text-2: #a4a29b;
+    --text-3: #74767b;
+    --separator: #34373c;
+    --rule-soft: #2a2d32;
+    --rule-strong: #4a4e54;
+    --grid-line: #2b2e33;
+    --mark-off: #5e6166;
+    --fill: rgba(236, 232, 223, 0.07);
     --overlay: rgba(0, 0, 0, 0.6);
+    --danger: #e5574b;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #000000;
-  --surface: #1c1c1e;
-  --surface-2: #2c2c2e;
-  --surface-3: #3a3a3c;
-  --surface-tab: #1c1c1e;
-  --text: #ffffff;
-  --text-2: rgba(235, 235, 245, 0.6);
-  --text-3: rgba(235, 235, 245, 0.3);
-  --separator: rgba(84, 84, 88, 0.6);
-  --rule-soft: rgba(84, 84, 88, 0.45);
-  --rule-strong: rgba(235, 235, 245, 0.3);
-  --grid-line: rgba(84, 84, 88, 0.6);
-  --mark-off: rgba(235, 235, 245, 0.3);
-  --fill: rgba(120, 120, 128, 0.32);
+  --brand: #5aa2e6;
+  --brand-dark: #8cc0f0;
+  --bg: #141619;
+  --surface: #1c1f23;
+  --surface-2: #1c1f23;
+  --surface-3: #262a2f;
+  --surface-tab: #181a1d;
+  --surface-raised: #262a2f;
+  --text: #ece8df;
+  --text-2: #a4a29b;
+  --text-3: #74767b;
+  --separator: #34373c;
+  --rule-soft: #2a2d32;
+  --rule-strong: #4a4e54;
+  --grid-line: #2b2e33;
+  --mark-off: #5e6166;
+  --fill: rgba(236, 232, 223, 0.07);
   --overlay: rgba(0, 0, 0, 0.6);
+  --danger: #e5574b;
   color-scheme: dark;
 }
 
@@ -648,7 +659,7 @@ textarea.writing { font-family: var(--font-serif); font-size: 17px; line-height:
   padding: 7px 12px; border: 1px solid var(--separator); background: var(--surface);
 }
 
-.preset-row[aria-checked='true'] { border-color: var(--brand); background: #fff; }
+.preset-row[aria-checked='true'] { border-color: var(--brand); background: var(--surface-raised); }
 
 .preset-name { font-size: 15px; font-weight: 500; }
 
@@ -660,7 +671,7 @@ textarea.writing { font-family: var(--font-serif); font-size: 17px; line-height:
 
 .colour-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); font-size: 15px; }
 
-.colour-swatch { width: 20px; height: 20px; border-radius: 2px; flex: none; border: 1px solid rgba(0, 0, 0, 0.12); }
+.colour-swatch { width: 20px; height: 20px; border-radius: 2px; flex: none; border: 1px solid var(--rule-strong); }
 
 .colour-preview { height: 56px; border-radius: 2px; border: 1px solid; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
 

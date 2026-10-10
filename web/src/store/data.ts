@@ -288,11 +288,15 @@ useData.subscribe((state, prev) => {
 
 // Record (or Planner in another tab) saved the journal: take it in, so the
 // evening review never writes back an older copy over it.
+// The look too: it's shared by every app (Finance changes it as well).
 window.addEventListener('storage', e => {
-  if (e.key !== `vectis:${Filename.journalEntries}`) return
+  const journal = e.key === `vectis:${Filename.journalEntries}`
+  const appearance = e.key === `vectis:${Filename.appearance}`
+  if (!journal && !appearance) return
   fromElsewhere = true
   try {
-    useData.setState({ journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry) })
+    if (journal) useData.setState({ journal: list(loadRaw(Filename.journalEntries), decodeJournalEntry) })
+    else useData.setState({ appearance: decodeAppearance(loadRaw(Filename.appearance)) })
   } finally {
     fromElsewhere = false
   }

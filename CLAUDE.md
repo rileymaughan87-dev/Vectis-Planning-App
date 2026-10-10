@@ -168,5 +168,8 @@ never the plain folder (opening the folder gives a scheme-less window).
 4. ~~**"Share my day"**~~ — dropped (10 Oct 2026, Riley's call):
    Accountability partners already cover it.
 
-Also decided (10 Oct 2026): **light mode only** for the Index style — no
-dark pass planned. Finance data is being re-entered by hand.
+Also (10 Oct 2026): the Index style has a **dark mode** that follows the
+device (Appearance: Light / Dark / System), and **one appearance setting
+for every app** — all read and write `vectis:appearance.json`
+(`loadSharedAppearance` in `suite/src/appearance.ts`); it syncs with
+Planner's data, not Finance's. Finance data is being re-entered by hand.

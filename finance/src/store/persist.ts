@@ -5,7 +5,6 @@ import { createBackups } from '@suite/backup'
 import { createStorage } from '@suite/storage'
 
 export const Filename = {
-  appearance: 'appearance.json',
   financeEvents: 'finance_events.json',
   financeGoals: 'finance_goals.json',
   spendingEntries: 'spending_entries.json',

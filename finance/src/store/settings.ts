@@ -1,7 +1,7 @@
-// Finance's appearance — its own copy, since each app installed on a
-// phone keeps its own storage anyway — and the currency amounts show in.
+// Finance's appearance — the suite's shared one, so changing the look here
+// changes it in every app — and the currency amounts show in.
 
-import { decodeAppearance, type AppearanceSettings } from '@suite/appearance'
+import { loadSharedAppearance, onSharedAppearanceChange, saveSharedAppearance, type AppearanceSettings } from '@suite/appearance'
 import { isObj, optStr } from '@suite/decode'
 import { create } from 'zustand'
 import { regionCurrency } from '../model/money'
@@ -18,7 +18,7 @@ interface SettingsState {
 const savedPrefs = storage.loadRaw(Filename.preferences)
 
 export const useSettings = create<SettingsState>()(set => ({
-  appearance: decodeAppearance(storage.loadRaw(Filename.appearance)),
+  appearance: loadSharedAppearance(),
   currencyOverride: isObj(savedPrefs) ? optStr(savedPrefs.currency) : undefined,
   setAppearance: patch => set(s => ({ appearance: { ...s.appearance, ...patch } })),
   setCurrency: code => set({ currencyOverride: code }),
@@ -27,7 +27,19 @@ export const useSettings = create<SettingsState>()(set => ({
 /** The currency to show amounts in. */
 export const useCurrency = () => useSettings(s => s.currencyOverride ?? regionCurrency())
 
+/** Set while taking in another app's change, so it isn't written straight back. */
+let fromElsewhere = false
+
+onSharedAppearanceChange(appearance => {
+  fromElsewhere = true
+  try {
+    useSettings.setState({ appearance })
+  } finally {
+    fromElsewhere = false
+  }
+})
+
 useSettings.subscribe((state, prev) => {
-  if (state.appearance !== prev.appearance) storage.saveRaw(Filename.appearance, state.appearance)
+  if (state.appearance !== prev.appearance && !fromElsewhere) saveSharedAppearance(state.appearance)
   if (state.currencyOverride !== prev.currencyOverride) storage.saveRaw(Filename.preferences, { currency: state.currencyOverride })
 })

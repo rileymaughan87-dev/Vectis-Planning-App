@@ -86,6 +86,21 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Dark mode and one look for every app (10 Oct 2026)
+
+- Index dark palette in `suite/src/styles.css` (tokens in
+  design-system.md); System follows the device, Light/Dark override.
+- One appearance for all apps: Planner, Record, Finance and the home
+  page all read and write `vectis:appearance.json` and take in each
+  other's changes (`storage` events). Finance used its own
+  `finance:appearance.json` — read once as a fallback, no longer written,
+  and Finance no longer syncs appearance (Planner and Record sync it in
+  `users/{uid}/planner`; two synced copies would overwrite each other).
+- The status bar (`theme-color`) now takes the page colour (paper or
+  ink), not the scheme's primary colour.
+- Checked on the built site: Dark chosen in Finance shows in Planner,
+  Record and home; System chosen in Planner shows in Finance.
+
 ## Record Stage 3: links between the apps (10 Oct 2026)
 
 - `suite/src/links.ts`: Record opens `#journal=YYYY-MM-DD` (that day's
@@ -123,7 +138,7 @@ except the two noted under part 2 and 3.
   lost `icon`); Segmented is an underline selector; the Vectis home page
   rebuilt to its mock (fixed paper and blue, no longer themed); new icons
   in every app's `public/` (`favicon.svg` replaced by `favicon-16/32.png`),
-  manifests and `theme-color` now paper `#F2EFE8`. (No dark pass planned — Riley prefers light.) Dark mode keeps the old
+  manifests and `theme-color` now paper `#F2EFE8`. (Dark mode came later the same day — see above.) Dark mode keeps the old
   dark colours (not designed yet). iOS asset catalogues untouched — the
   Swift apps are read-only.
 - **Part 2 (built, 10 Oct 2026):** screen by screen against the mocks.
@@ -683,9 +698,6 @@ Still to verify on device (carried over plus new):
 
 - **Share my day** — dropped (10 Oct 2026). Accountability partners
   (shared Drive file, partner view) already do this job.
-- **A dark Index style** — not planned (10 Oct 2026). Riley likes the app
-  in light mode; the old dark colours remain only for "Dark" / "System"
-  in Appearance.
 
 - **People and Linked apps on the web** — left out (6 Oct 2026). They rely
   on phone contacts and launching other apps. The Swift app keeps them.
