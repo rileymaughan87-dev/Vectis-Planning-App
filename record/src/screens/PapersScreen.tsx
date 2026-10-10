@@ -12,7 +12,7 @@ import { RichEditor } from '@suite/record/editor/LazyRichEditor'
 import { isDocEmpty, textToDoc, wrapDoc, type DocNode } from '@suite/record/noteDoc'
 import { EditorBox, Field, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { setCitationText, type CitationAttrs } from '@suite/record/editor/citationText'
-import { BookMarked, ChevronLeft, Download, Eye, FileText, Plus } from 'lucide-react'
+import { BookMarked, ChevronLeft, Download, Eye, FileText, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { Editor } from '@tiptap/react'
 import {
@@ -37,6 +37,7 @@ const editedText = (iso: string) => {
 
 export function PapersSection() {
   const papers = useData(s => s.papers)
+  const deletePaper = useData(s => s.deletePaper)
   const [open, setOpen] = useState<Paper | null>(null)
   const sorted = [...papers].sort((a, b) => b.updatedDate.localeCompare(a.updatedDate))
   // A new paper takes its format from the one you set up most recently.
@@ -55,13 +56,23 @@ export function PapersSection() {
       ) : (
         <div>
           {sorted.map(p => (
-            <button key={p.id} className="paper-row" onClick={() => setOpen(p)}>
-              <FileText size={16} className="muted" />
-              <span className="grow" style={{ minWidth: 0 }}>
-                <span className="paper-row-title ellipsis">{p.title || 'Untitled paper'}</span>
-                <span className="mono muted">{paperWords(p).toLocaleString()} words · {editedText(p.updatedDate)}</span>
-              </span>
-            </button>
+            <div key={p.id} className="paper-row">
+              <button className="paper-row-open" onClick={() => setOpen(p)}>
+                <FileText size={16} className="muted" />
+                <span className="grow" style={{ minWidth: 0 }}>
+                  <span className="paper-row-title ellipsis">{p.title || 'Untitled paper'}</span>
+                  <span className="mono muted">{paperWords(p).toLocaleString()} words · {editedText(p.updatedDate)}</span>
+                </span>
+              </button>
+              <button
+                className="icon-button paper-row-delete"
+                onClick={() => confirm(`Delete “${p.title || 'Untitled paper'}”? This can't be undone.`) && deletePaper(p.id)}
+                aria-label={`Delete ${p.title || 'Untitled paper'}`}
+                title="Delete paper"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           ))}
         </div>
       )}

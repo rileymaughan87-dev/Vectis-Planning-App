@@ -127,6 +127,14 @@ Riley's follow-ups to Stage 3. Updated where Stage 3 below disagrees.
     and lets the printer paginate.
 - The title page is a full letter-shaped sheet, centred, with the title on
   the fourth line (sizes use `cqw`, so long sheets still grow).
+- **Deleting from the list:** a bin button on each paper in the list (asks
+  first).
+- **Writing after a picture:** adding a picture moves the cursor to the line
+  below it, making the line if needed (`writeAfter` in
+  `editor/attachment.ts`). Enter on a selected picture does the same
+  (`PictureKeys`, priority 1000, ahead of the editor's own Enter). Clicking
+  the empty rest of the last page writes at the end. That widget has
+  `stopEvent`, or the editor re-selects the nearest picture on mouse-up.
 - **Live word counts:** the total (and target) above the writing, plus each
   section's count beside its heading ("120 / 250", blue once met; the
   `SectionCounts` editor extension with `sectionTargets`). Format → "Show

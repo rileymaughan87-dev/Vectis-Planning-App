@@ -12,6 +12,7 @@
 // the heading level, a picture and section focus — everything else (font,
 // size, spacing) is set once in the paper's Format tab.
 
+import { NodeSelection } from '@tiptap/pm/state'
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import {
   AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Camera, ChevronsDownUp, ChevronsUpDown, Focus, Highlighter, Image as ImageIcon, Italic,
@@ -22,7 +23,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type Ref
 import { newID } from '../../ids'
 import type { DocNode } from '../noteDoc'
 import { loadAttachment, saveAttachment } from '../attachments'
-import { MARKUP_EVENT, type AttachmentAttrs, type AttachmentKind, type MarkupDetail } from './attachment'
+import { MARKUP_EVENT, writeAfter, type AttachmentAttrs, type AttachmentKind, type MarkupDetail } from './attachment'
 import { DrawingSheet } from './DrawingSheet'
 import { decode, preparePhoto, type Picture } from './images'
 import { ScanSheet } from './ScanSheet'
@@ -104,10 +105,10 @@ function usePictures(editor: Editor, rootRef: RefObject<HTMLDivElement | null>) 
     const attrs: AttachmentAttrs = { id, kind, width: picture.width, height: picture.height }
     const at = Math.min(insertAt.current, editor.state.doc.content.size)
     editor.chain().focus().insertContentAt(at, { type: 'attachment', attrs }).run()
-    // Always somewhere to keep typing after a picture at the very end.
-    if (editor.state.doc.lastChild?.type.name === 'attachment') {
-      editor.chain().insertContentAt(editor.state.doc.content.size, { type: 'paragraph' }).run()
-    }
+    // Carry on writing on the line below the picture (made if there isn't one).
+    const sel = editor.state.selection
+    const pos = sel instanceof NodeSelection ? sel.from : editor.state.doc.resolve(sel.from).before()
+    if (editor.state.doc.nodeAt(pos)?.type.name === 'attachment') writeAfter(editor, pos)
     insertAt.current = editor.state.selection.to
   }
 

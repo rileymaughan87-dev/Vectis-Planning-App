@@ -13,7 +13,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { evaluateLines } from '../math'
-import { Attachment } from './attachment'
+import { Attachment, PictureKeys } from './attachment'
 import { Citation } from './citation'
 import { PageBreaks } from './pageBreaks'
 
@@ -345,6 +345,7 @@ export function editorExtensions(
     FoldableSections,
     MathResults.configure({ enabled: math && !paper }),
     Attachment.configure({ layout: paper }),
+    PictureKeys,
     // Papers: text alignment, focusing on one section at a time, notes and counts by headings, citations, page breaks.
     ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus, SectionNotes.configure({ notes: sectionNotes }), SectionCounts.configure({ targets: sectionTargets }), Citation, PageBreaks] : []),
   ]

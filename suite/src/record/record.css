@@ -264,7 +264,13 @@
 .kind-filter button[aria-pressed='true'] { background: var(--primary); border-color: var(--primary); color: var(--on-primary, #FFFFFF); }
 
 /* ---------- Papers ---------- */
-.paper-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
+.paper-row { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule-soft); }
+
+.paper-row-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 0; }
+
+.paper-row-delete { color: var(--text-3); }
+
+.paper-row-delete:hover { color: var(--danger); }
 
 .paper-row .grow { display: flex; flex-direction: column; gap: 2px; }
 
