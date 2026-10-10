@@ -121,6 +121,48 @@ plan") · a note can link to another note.
 
 ---
 
+## Decided: Papers (10 Oct 2026, Riley)
+
+A fourth part of Record — **Journal · Notebooks · Notes · Papers** — for
+school papers: written on the laptop, read and edited on the phone,
+synced like notes. Simplicity and focus while writing; organisation
+before and after.
+
+- **A page of its own** for each paper, saving as you type.
+- **Write** — just the words. Minimal toolbar: bold, italic, underline,
+  text alignment, heading level, picture. Headings fold (as in the
+  journal); **section focus** shows only the section being written.
+- **Format** — set once, then hidden in its own tab: font, size, line
+  spacing, margins, first-line indent, title details (name, course,
+  teacher, date), page numbers, citation style. Applies to the page and
+  to exports.
+- **Pictures stay put** — blocks in the flow of text, never floating or
+  wrapping (unlike Word's anchored objects): size (small / half / full),
+  position (left / centre / right) and an optional caption. Exported to
+  Word "in line with text", so they stay put there too.
+- **Plan (draft mode)** — an outline of headings and subheadings to add,
+  reorder and fold; a note under each on what it needs to say (shown
+  faintly while writing that section); word targets per section and for
+  the paper; an ideas board.
+- **Research** — always one tap away (a side panel on the laptop, a
+  sheet on the phone): quotes, links and notes, each linkable to a
+  heading to use later; each source holds its details (author, title,
+  year, publisher, link, page) for citing.
+- **Citations** — APA, MLA or Harvard (chosen in Format): insert an
+  in-text citation from a source; the reference list builds itself.
+- **After writing** — word counts per section against targets, the
+  outline to check the flow, then **export to Word (.docx) and PDF, or
+  print**.
+
+Stages:
+1. **Papers and the writing page** — the Papers tab, a paper's page with
+   autosave and sync, Write with the minimal toolbar and fixed pictures,
+   Format, folding headings and section focus.
+2. **Plan and Research** — the outline with notes and targets, the ideas
+   board, the always-open Research panel linked to headings.
+3. **Citations and export** — sources as citations in APA/MLA/Harvard,
+   the automatic reference list, Word and PDF export, print.
+
 ## 5. Suggested stages
 
 1. **Writing surface and safety:** A1 page with autosave, serif column,
