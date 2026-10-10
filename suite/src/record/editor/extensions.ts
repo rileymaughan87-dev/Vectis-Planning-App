@@ -14,6 +14,7 @@ import StarterKit from '@tiptap/starter-kit'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { evaluateLines } from '../math'
 import { Attachment } from './attachment'
+import { Citation } from './citation'
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -295,7 +296,7 @@ export function editorExtensions(placeholder: string, math = true, variant: 'not
     MathResults.configure({ enabled: math && !paper }),
     Attachment.configure({ layout: paper }),
     // Papers: text alignment, and focusing on one section at a time.
-    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus, SectionNotes.configure({ notes: sectionNotes })] : []),
+    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus, SectionNotes.configure({ notes: sectionNotes }), Citation] : []),
   ]
 }
 

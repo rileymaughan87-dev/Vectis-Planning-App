@@ -3,18 +3,23 @@
 // focus at a time — and saves as you type. Format holds everything that's
 // set once (font, size, spacing, margins, title details) and stays out of
 // the way. Plan is the draft: the outline, what each section should say,
-// word targets. Research — quotes, links, ideas — is open from any mode.
+// word targets. Research — quotes, links, ideas — is open from any mode,
+// and cites into the paper; the reference list builds itself. Export
+// gives a Word document, or prints (and so a PDF).
 
 import { parseDate } from '@suite/dates'
 import { RichEditor } from '@suite/record/editor/LazyRichEditor'
 import { docToPlainText, isDocEmpty, textToDoc, wrapDoc, type DocNode } from '@suite/record/noteDoc'
-import { EditorBox, Field, Segmented, Toggle, VButton } from '@suite/ui/components'
-import { BookMarked, ChevronLeft, FileText, Plus } from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { EditorBox, Field, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
+import { setCitationText, type CitationAttrs } from '@suite/record/editor/citationText'
+import { BookMarked, ChevronLeft, Download, FileText, Plus } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import type { Editor } from '@tiptap/react'
 import {
   MARGINS, PAPER_FONTS, newPaper, paperWords, titleLines, wordCount, type CitationStyle, type LineSpacing, type Margins, type Paper, type PaperFont,
   type PaperFormat, type ResearchItem, type SectionPlan,
 } from '../model/papers'
+import { REFERENCES_HEADING, citedIDs, inText, referenceList } from '../model/citations'
 import { ensureSectionIds, outlineOf } from '../model/outline'
 import { useData } from '../store/data'
 import { PlanPanel } from './PaperPlan'
@@ -103,6 +108,18 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const latest = useRef({ title, format, plan, target, research })
   latest.current = { title, format, plan, target, research }
+  const editorRef = useRef<Editor | null>(null)
+  const onEditor = useCallback((e: Editor | null) => { editorRef.current = e }, [])
+  // Which sources are cited, so the reference list redraws when one's added or removed.
+  const [cited, setCited] = useState(() => citedIDs(initial).join())
+  const [exporting, setExporting] = useState(false)
+
+  // How citations read: the paper's style and its research.
+  const citation = useCallback((a: CitationAttrs) => {
+    const r = research.find(x => x.id === a.sourceId)
+    return r ? inText(format.citationStyle, r.source, a.page || r.source.page) : '(source removed)'
+  }, [research, format.citationStyle])
+  useEffect(() => setCitationText(citation), [citation])
 
   /** Saves now. A brand-new paper with nothing in it isn't kept. */
   const flush = () => {
@@ -187,6 +204,7 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
         </div>
         <span className="paper-bar-end">
           <span className="mono muted paper-status">{status === 'saving' ? 'Saving…' : `${words.toLocaleString()} words`}</span>
+          <button className="icon-button research-toggle" onClick={() => setExporting(true)} aria-label="Export" title="Export"><Download size={18} /></button>
           <button className={`icon-button research-toggle ${researchOpen ? 'is-on' : ''}`} onClick={() => setResearchOpen(o => !o)} aria-pressed={researchOpen} aria-label="Research" title="Research">
             <BookMarked size={18} />{research.length > 0 && <span className="research-count">{research.length}</span>}
           </button>
@@ -230,12 +248,15 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
             label="Paper"
             placeholder="Start writing…"
             autofocus={docVersion === 0 && !original.title && isDocEmpty(initial)}
+            onEditor={onEditor}
             onChange={doc => {
               docRef.current = doc
               setWords(wordCount(docToPlainText(doc)))
+              setCited(citedIDs(doc).join())
               soon()
             }}
           />
+          <References paper={{ ...original, format, research }} doc={docRef.current} cited={cited} />
         </article>
         {mode === 'format' && (
           <FormatPanel
@@ -254,9 +275,122 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
           />
         )}
       </div>
-      {researchOpen && <ResearchPanel research={research} sections={sections} onChange={changeResearch} onClose={() => setResearchOpen(false)} />}
+      {researchOpen && (
+        <ResearchPanel
+          research={research}
+          sections={sections}
+          onChange={changeResearch}
+          onClose={() => setResearchOpen(false)}
+          onCite={mode === 'write' ? (item, withQuote) => {
+            const editor = editorRef.current
+            if (!editor) return
+            const cite = { type: 'citation', attrs: { sourceId: item.id, page: '' } }
+            // A space first, unless the cursor's already after one (or at the start of a line).
+            const { from, $from } = editor.state.selection
+            const before = $from.parentOffset > 0 ? editor.state.doc.textBetween(from - 1, from, '', ' ') : ' '
+            const gap = /\s/.test(before) ? '' : ' '
+            editor.chain().focus().insertContent(withQuote
+              ? [{ type: 'text', text: `${gap}“${item.text}” ` }, cite, { type: 'text', text: ' ' }]
+              : [...(gap ? [{ type: 'text', text: gap }] : []), cite]).run()
+            // On a phone Research covers the page: step back to see it.
+            if (!matchMedia('(min-width: 1000px)').matches) setResearchOpen(false)
+          } : undefined}
+        />
+      )}
+      {exporting && (
+        <ExportSheet
+          onClose={() => setExporting(false)}
+          onWord={async () => {
+            flush()
+            const { paperToDocx } = await import('../export/paperDocx')
+            const paper = { ...original, title: title.trim(), format, plan, target, research }
+            download(await paperToDocx(paper, docRef.current, citation), `${fileName(title)}.docx`)
+          }}
+          onPrint={() => {
+            flush()
+            setExporting(false)
+            setResearchOpen(false)
+            setMode('write')
+            // Once Write is showing: the page's own margins and numbering, then the browser's print (and Save as PDF).
+            setTimeout(() => printPaper(format), 50)
+          }}
+        />
+      )}
       </div>
     </div>
+  )
+}
+
+/** The reference list under the paper: every cited source, in the paper's style. */
+function References({ paper, doc, cited }: { paper: Paper; doc: DocNode; cited: string }) {
+  const entries = cited ? referenceList(paper.format.citationStyle, doc, paper.research) : []
+  if (!entries.length) return null
+  const style = paper.format.citationStyle
+  return (
+    <section className={`paper-references style-${style}`} aria-label={REFERENCES_HEADING[style]}>
+      <h2>{REFERENCES_HEADING[style]}</h2>
+      {entries.map((e, i) => (
+        <p key={i}>{e.map((s, j) => (s.italic ? <i key={j}>{s.text}</i> : <span key={j}>{s.text}</span>))}</p>
+      ))}
+    </section>
+  )
+}
+
+const fileName = (title: string) => (title.trim() || 'Paper').replace(/[\\/:*?"<>|]+/g, '').slice(0, 80)
+
+function download(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 2000)
+}
+
+/** Prints the paper alone, with its margins and page numbers; "Save as PDF" in the print dialog makes a PDF. */
+function printPaper(f: PaperFormat) {
+  const style = document.createElement('style')
+  const surname = f.citationStyle === 'mla' ? (f.name.trim().split(/\s+/).at(-1) ?? '') : ''
+  style.textContent = `@page { size: letter; margin: ${MARGINS[f.margins].inches}in;${
+    f.pageNumbers ? ` @top-right { content: "${surname ? `${surname.replace(/"/g, '')} ` : ''}" counter(page); font-family: ${PAPER_FONTS.find(x => x.id === f.font)?.css}; font-size: ${f.size}pt; }` : ''
+  } }`
+  document.head.append(style)
+  document.body.classList.add('printing-paper')
+  const done = () => {
+    style.remove()
+    document.body.classList.remove('printing-paper')
+    window.removeEventListener('afterprint', done)
+  }
+  window.addEventListener('afterprint', done)
+  window.print()
+}
+
+function ExportSheet({ onClose, onWord, onPrint }: { onClose: () => void; onWord: () => Promise<void>; onPrint: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <Sheet title="Export" compact onClose={onClose}>
+      <VButton kind="primary" accent="var(--primary)" disabled={busy} onClick={async () => {
+        setBusy(true)
+        setError(null)
+        try {
+          await onWord()
+          onClose()
+        } catch {
+          setError("The Word file couldn't be made. Try again, or print to PDF instead.")
+        } finally {
+          setBusy(false)
+        }
+      }}>
+        {busy ? 'Making the Word file…' : 'Word document (.docx)'}
+      </VButton>
+      <VButton accent="var(--primary)" onClick={onPrint}>Print, or save as PDF</VButton>
+      <p className="help">
+        The Word file keeps your font, spacing, margins, headings, pictures, citations and reference list. To make a PDF, choose
+        “Save as PDF” in the print window.
+      </p>
+      {error && <div className="notice error">{error}</div>}
+    </Sheet>
   )
 }
 
@@ -313,7 +447,7 @@ function FormatPanel({ format: f, onChange, onDelete, canDelete }: { format: Pap
           <option value="mla">MLA (9th edition)</option>
           <option value="harvard">Harvard</option>
         </select>
-        <p className="help">Used for sources and the reference list, coming with Research.</p>
+        <p className="help">How citations from Research read in the text, and the reference list at the end.</p>
       </EditorBox>
 
       {canDelete && <VButton kind="destructive" onClick={onDelete}>Delete paper</VButton>}

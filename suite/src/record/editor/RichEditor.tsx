@@ -40,6 +40,8 @@ export function RichEditor(props: {
   variant?: 'note' | 'paper'
   /** A paper's notes per section (by heading id), shown faintly under each heading. */
   sectionNotes?: Record<string, string>
+  /** The editor, once it's ready (a paper inserts citations from Research into it). */
+  onEditor?: (editor: Editor | null) => void
 }) {
   const { onChange } = props
   const math = props.math ?? true
@@ -56,6 +58,12 @@ export function RichEditor(props: {
 
   const rootRef = useRef<HTMLDivElement>(null)
   const pictures = usePictures(editor, rootRef)
+
+  const { onEditor } = props
+  useEffect(() => {
+    onEditor?.(editor)
+    return () => onEditor?.(null)
+  }, [editor, onEditor])
 
   // Turning maths on or off redraws the answers without touching the text or the undo history.
   useEffect(() => {

@@ -86,6 +86,37 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Record: Papers — Stage 3 of 3: citations and export (10 Oct 2026)
+
+Papers is complete: Plan · Write · Format, Research, citations, export.
+
+- **Citations** (`record/src/model/citations.ts`, tested): APA 7, MLA 9,
+  Harvard — in-text `inText` ((Smith, 2019, p. 42) · (Smith 42) ·
+  (Smith 2019, p. 42); two authors joined, three+ "et al.", no author →
+  title, no year → n.d.) and `referenceEntry` (title italic). Authors are
+  typed freely; nothing is guessed.
+- In the editor a citation is an inline atom (`editor/citation.ts`,
+  attrs `sourceId`, `page`) whose text comes from `setCitationText`
+  (`editor/citationText.ts`, kept apart so the page can set it without
+  loading the editor) — changing the style or a source redraws every one.
+  Research (in Write) has **Cite** and **Quote + cite**, inserted at the
+  cursor (a space added when needed).
+- **Reference list** under the paper: cited sources only, each once,
+  alphabetical, hanging indent; heading References / Works Cited /
+  Reference list.
+- **Export** (bar button): **Word** — `record/src/export/paperDocx.ts`
+  with `docx` 9.7.1 (pinned; loaded only on export, own chunk): font,
+  size, spacing, indent, margins, Heading 1–3 styles (black, paper font),
+  marks and alignment, pictures inline with size/position/caption,
+  citations as text, title details and title, page numbers top right
+  (MLA: surname first), references on a new page with hanging indents.
+  Tested by unzipping a generated file (`paperDocx.test.ts`, jszip).
+  **Print / PDF** — `printPaper` adds an `@page` rule (margins, page
+  numbers via margin boxes where the browser supports them) and
+  `body.printing-paper`; print CSS shows only the page, unfolds sections,
+  hides notes, toolbars and empty captions, references on a new page.
+  Save as PDF from the print dialog.
+
 ## Record: Papers — Stage 2 of 3: Plan and Research (10 Oct 2026)
 
 - **Plan** (first mode; a new paper opens on it): `record/src/model/outline.ts`
