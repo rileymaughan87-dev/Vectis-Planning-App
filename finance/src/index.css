@@ -2,12 +2,6 @@
 
 .finance-month .section-body { gap: 10px; }
 
-.totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-
-.total { background: var(--surface); border: 1px solid var(--separator); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-
-.total strong { font-family: var(--font-serif); font-weight: 400; font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
 .confirm-notice {
   display: flex; flex-direction: column; gap: 2px; text-align: left;
   background: color-mix(in srgb, #D6862C 12%, var(--surface));
@@ -46,6 +40,24 @@
 
 .payday-rows { display: flex; flex-direction: column; margin-top: 8px; padding-top: 10px; border-top: 1.5px solid var(--brand); }
 
+/* ---------- Plan: pay and bills in one go ---------- */
+.setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) 96px 56px; gap: 6px 8px; align-items: center; }
+
+/* ---------- Over time ---------- */
+.over-time-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
+
+.over-time-summary > div { display: flex; flex-direction: column; gap: 2px; }
+
+.over-time { display: flex; flex-direction: column; }
+
+.over-time-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--rule-soft); }
+
+.over-time-bars { display: flex; flex-direction: column; gap: 6px; }
+
+.over-time-bar { display: flex; flex-direction: column; gap: 2px; }
+
+.over-time-bar > span:first-child { display: block; height: 6px; min-width: 2px; }
+
 /* ---------- Accounts ---------- */
 /* Where you stand: three serif figures side by side. */
 .standing { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 12px; }
@@ -61,60 +73,22 @@
 /* ---------- Budget ---------- */
 .num { font-variant-numeric: tabular-nums; }
 
-.budget-columns, .budget-col { display: flex; flex-direction: column; gap: 14px; }
-
 /* "£64.20 left": the amount in the serif, the word in italic. */
 .headline-suffix { font-style: italic; font-size: 24px; color: var(--text-2); }
-
-.difference { display: flex; flex-direction: column; gap: 2px; }
-
-.difference .headline-number { font-size: 36px; line-height: 1.1; }
-
-.comparison { display: flex; flex-direction: column; gap: 5px; font-size: 14px; }
 
 .comparison-track { height: 6px; background: var(--rule-soft); overflow: hidden; margin-top: 4px; }
 
 .comparison-track > div { height: 100%; }
 
-.typical-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 2px; }
-
 .budget-line { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 0; font-size: 15px; border-bottom: 1px solid var(--rule-soft); }
-
-.trend { display: flex; flex-direction: column; gap: 8px; }
-
-.trend-chart { position: relative; max-width: 480px; }
-
-.trend-chart svg { width: 100%; height: auto; display: block; overflow: visible; }
-
-.trend-axis { font-family: var(--font-mono); font-size: 9px; fill: var(--text-2); }
-
-.trend-axis.selected { fill: var(--text); font-weight: 700; }
-
-.trend-tip {
-  position: absolute; top: -6px; transform: translate(-50%, -100%); pointer-events: none;
-  background: var(--surface); border: 1px solid var(--separator);
-  padding: 4px 8px; font-size: 12px; white-space: nowrap;
-  display: flex; flex-direction: column;
-}
-
-.trend-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
-
-.trend-table th { font-family: var(--font-mono); font-size: 10px; font-weight: 400; text-transform: uppercase; color: var(--text-2); text-align: right; padding: 0 8px 4px; }
-
-.trend-table td { text-align: right; padding: 6px 8px; cursor: pointer; }
-
-.trend-table th:first-child, .trend-table td:first-child { text-align: left; }
-
-.trend-table tr.selected td { font-weight: 600; background: var(--fill); }
 
 /* ---------- Weekly pot ---------- */
 .week-switch { margin: -6px 0 -4px; }
 
 .pot-summary { display: flex; flex-direction: column; gap: 4px; }
 
-/* Wide screens: the month and its list side by side; goal sections and budget in columns. */
+/* Wide screens: the month and its list side by side; goal sections in columns. */
 @media (min-width: 900px) {
-  .budget-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 16px; }
   .finance-calendar { display: grid; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); align-items: start; gap: 40px; }
   /* Room for names on a wide screen, as well as the day's amount. */
   .money-grid .day-item, .money-grid .day-more { display: flex; }

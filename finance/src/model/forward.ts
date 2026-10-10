@@ -16,8 +16,8 @@ import { addDays, addMonths, daysBetween, dayKey, startOfDay } from '@suite/date
 import { expectedBalance, movementsBetween, spendingAccount, type Account, type Audit, type MoneyData, type Movement } from './accounts'
 import { occurrencesInMonth, type FinanceEvent } from './entries'
 
-/** Roughly what an entry brings in a month, to compare pay that comes at different rates. */
-function monthly(event: FinanceEvent): number {
+/** Roughly what an entry comes to in a month, to compare amounts that come at different rates. */
+export function monthly(event: FinanceEvent): number {
   if (!event.repeats) return event.amount
   return event.frequency === 'weekly' ? (event.amount * 52) / 12 : event.frequency === 'fortnightly' ? (event.amount * 26) / 12 : event.amount
 }
@@ -45,6 +45,23 @@ export function mainPay(events: FinanceEvent[], chosenID: string | undefined, to
 /** Pay you could pick as your main pay: any that's still coming. */
 export const payOptions = (events: FinanceEvent[], today: Date = new Date()) =>
   events.filter(e => e.entryType === 'income' && nextOccurrence(e, today))
+
+export interface Running {
+  event: FinanceEvent
+  /** The next time it happens (today counts). */
+  next: Date
+}
+
+/** Every entry still to happen — repeating ones still going and one-offs still ahead — soonest first. */
+export function running(events: FinanceEvent[], today: Date = new Date()): Running[] {
+  const yesterday = addDays(startOfDay(today), -1)
+  return events
+    .flatMap(event => {
+      const next = nextOccurrence(event, yesterday)
+      return next ? [{ event, next }] : []
+    })
+    .sort((a, b) => a.next.getTime() - b.next.getTime())
+}
 
 export type Forward =
   | { kind: 'noAccount' }

@@ -1,7 +1,8 @@
 // Accounts and audits: what's expected since the last audit, and gaps.
 import { toISO } from '@suite/dates'
 import { describe, expect, it } from 'vitest'
-import { describeGap, expectedBalance, history, standing, type Account, type Audit, type MoneyData } from './accounts'
+import { describeGap, expectedBalance, history, monthlyStanding, onBalance, standing, type Account, type Audit, type MoneyData } from './accounts'
+import { amountRemaining, makeGoal, progress } from './goals'
 import { makeFinanceEvent } from './entries'
 import type { SpendingEntry } from './spending'
 
@@ -53,5 +54,39 @@ describe('accounts and audits', () => {
     const more: Audit[] = [...audits, { id: 's1', accountID: 'sav', date: toISO(day(1)), balance: 500 }, { id: 's2', accountID: 'sav', date: toISO(day(8)), balance: 650 }]
     expect(standing([current, card, savings], more)).toEqual({ have: 1850, owe: 100 })
     expect(history(more, 'sav').map(h => h.change)).toEqual([150, undefined])
+  })
+})
+
+describe('goals on real balances, and progress over time', () => {
+  const loan: Account = { id: 'loan', name: 'Loan', kind: 'loan', createdDate: toISO(day(1)), primary: false }
+  const accounts = [current, savings, loan]
+
+  it('measures a savings goal on its account, counting payments made into it since the check', () => {
+    const goal = makeGoal({ title: 'Holiday', kind: 'savings', targetAmount: 1000, accountID: 'sav', paymentAmount: 100, firstPaymentDate: toISO(day(5, 0)), payments: { '2026-10-05': 100 } })
+    const checks: Audit[] = [{ id: 's', accountID: 'sav', date: toISO(day(1)), balance: 500 }]
+    const d: MoneyData = { accounts, events: [], goals: [goal], spending: [] }
+    // 500 at the check + the 100 paid in on the 5th.
+    expect(expectedBalance(savings, checks, d, day(6))!.expected).toBe(600)
+    const real = onBalance(goal, accounts, checks, d, day(6))
+    expect(progress(real)).toBe(0.6)
+    // ...and it left the current account.
+    expect(expectedBalance(current, [{ id: 'c', accountID: 'cur', date: toISO(day(1)), balance: 900 }], d, day(6))!.expected).toBe(800)
+  })
+
+  it('measures a debt on what is still owed', () => {
+    const goal = makeGoal({ title: 'Car', kind: 'debt', targetAmount: 3000, accountID: 'loan', payments: {} })
+    const checks: Audit[] = [{ id: 'l', accountID: 'loan', date: toISO(day(2)), balance: 2400 }]
+    expect(amountRemaining(onBalance(goal, accounts, checks, { accounts, events: [], goals: [goal], spending: [] }, day(6)))).toBe(2400)
+  })
+
+  it('shows where things stood at the end of each month, from checks only', () => {
+    const checks: Audit[] = [
+      { id: '1', accountID: 'sav', date: toISO(new Date(2026, 7, 10)), balance: 400 },
+      { id: '2', accountID: 'loan', date: toISO(new Date(2026, 7, 12)), balance: 3000 },
+      { id: '3', accountID: 'sav', date: toISO(new Date(2026, 9, 3)), balance: 650 },
+      { id: '4', accountID: 'loan', date: toISO(new Date(2026, 9, 4)), balance: 2700 },
+    ]
+    const months = monthlyStanding(accounts, checks, day(10))
+    expect(months.map(m => [m.month.getMonth(), m.saved, m.owed])).toEqual([[7, 400, 3000], [8, 400, 3000], [9, 650, 2700]])
   })
 })

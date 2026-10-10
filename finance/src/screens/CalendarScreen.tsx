@@ -1,11 +1,8 @@
-// The Calendar tab, from FinanceView.swift: a month grid of money in and
-// out, then the month's totals and everything in date order. Amber marks
-// an amount still running on an estimate, or a goal payment whose day has
-// come; tap it to put the real figure in.
-//
-// New compared with the iPhone app: the month's totals and full list sit
-// under the grid (there it was one "still free" line), and anything
-// waiting for a real amount is called out at the top.
+// The Calendar tab, from FinanceView.swift: a month grid with one amount
+// per day, then everything in the month in date order. Amber marks an
+// amount still running on an estimate, or a goal payment whose day has
+// come; tap it to put the real figure in. (Month totals went in the
+// Finance rework: what's safe to spend is on Now, what happened on Accounts.)
 
 import { dayKey, isSameDay } from '@suite/dates'
 import { SectionBox, Sheet, VButton } from '@suite/ui/components'
@@ -13,14 +10,12 @@ import { MonthGrid } from '@suite/ui/MonthGrid'
 import { startOfMonth } from '@suite/months'
 import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { monthSummary } from '../model/budget'
 import { lineItemsInMonth, repeatText, type LineItem } from '../model/entries'
 import { goalPaymentsInMonth, isDue, kindInfo, type GoalPayment } from '../model/goals'
-import { amountText, formatMoney, formatMoneyWhole, formatSigned, parseAmount } from '../model/money'
+import { amountText, formatMoney, formatSigned, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
 import { useCurrency } from '../store/settings'
-import { useLogged } from '../store/spending'
 import { EXPENSE, INCOME, UNCONFIRMED } from '../ui/semantic'
 import { EntryEditor, type EntryEditorTarget } from './EntryEditor'
 import { GoalPaymentSheet, type PaymentTarget } from './GoalSheets'
@@ -59,7 +54,6 @@ const wholeNumber = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 
 export function CalendarScreen() {
   const events = useEntries(s => s.events)
   const goals = useGoals(s => s.goals)
-  const logged = useLogged()
   const currency = useCurrency()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
@@ -74,10 +68,6 @@ export function CalendarScreen() {
   const rowsOn = (d: Date) => rowsIn(d).filter(r => isSameDay(rowDate(r), d))
 
   const rows = rowsIn(month)
-  // The same figures as the Budget tab (model/budget.ts), so they always agree.
-  const summary = monthSummary(events, goals, month, logged)
-  const saving = summary.goalSavings
-  const left = summary.leftOver
   const today = new Date()
   const waiting = rows.filter(r => (r.kind === 'entry' ? !r.item.confirmed && r.item.date <= today : isDue(r.payment, today)))
 
@@ -134,18 +124,6 @@ export function CalendarScreen() {
             <strong>{waiting.length} amount{waiting.length === 1 ? '' : 's'} to confirm</strong>
             <span className="caption">Still the estimate or plan — tap to put in what really happened.</span>
           </button>
-        )}
-
-        <div className="totals">
-          <Total label="In" value={formatMoneyWhole(summary.income, currency)} color={INCOME} />
-          <Total label="Out" value={formatMoneyWhole(summary.spending, currency)} color={EXPENSE} />
-          <Total label={left < 0 ? 'Short by' : 'Left over'} value={formatMoneyWhole(Math.abs(left), currency)} color={left < 0 ? EXPENSE : undefined} />
-        </div>
-        {saving > 0 && (
-          <div className="row spread caption" style={{ padding: '0 2px' }}>
-            <span>{formatMoneyWhole(saving, currency)} to saving and set-asides</span>
-            <span>Still free <strong style={{ color: left - saving < 0 ? EXPENSE : 'var(--text)' }}>{left - saving < 0 ? '−' : ''}{formatMoneyWhole(Math.abs(left - saving), currency)}</strong></span>
-          </div>
         )}
 
         {rows.length === 0 ? (
@@ -218,15 +196,6 @@ function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency:
   )
 }
 
-
-function Total({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="total">
-      <span className="mono muted">{label}</span>
-      <strong style={{ color }}>{value}</strong>
-    </div>
-  )
-}
 
 function EntryRow({ item, currency, showDate, onClick }: { item: LineItem; currency: string; showDate?: boolean; onClick: () => void }) {
   const { event, date, amount, confirmed } = item

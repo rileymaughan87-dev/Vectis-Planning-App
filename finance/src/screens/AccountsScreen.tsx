@@ -8,7 +8,7 @@ import { EditorBox, Field, SectionBox, Segmented, Sheet, Toggle, VButton } from 
 import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
 import {
-  ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, sinceText, spendingAccount, standing,
+  ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, monthlyStanding, sinceText, spendingAccount, standing,
   type Account, type AccountKind, type GapNote, type MoneyData,
 } from '../model/accounts'
 import { amountText, formatMoney, parseAmount } from '../model/money'
@@ -83,6 +83,8 @@ export function AccountsScreen() {
             ))}
             <VButton accent="var(--brand)" onClick={() => setEditing({})}><Plus size={16} /> Add an account</VButton>
           </SectionBox>
+
+          <OverTime money={money} />
         </>
       )}
 
@@ -98,6 +100,60 @@ export function AccountsScreen() {
       )}
       {auditing && <AuditSheet account={auditing} money={money} data={data} onClose={() => setAuditing(null)} />}
     </div>
+  )
+}
+
+/**
+ * Month by month, from checks: what's saved and what's owed at the end of
+ * each month, and the change since the month before. Real, not planned —
+ * it fills in as you check your balances.
+ */
+function OverTime({ money }: { money: (n: number) => string }) {
+  const { accounts, audits } = useAccounts()
+  const months = monthlyStanding(accounts, audits)
+  const hasSavings = accounts.some(a => a.kind === 'savings')
+  const hasDebt = accounts.some(a => accountKindInfo[a.kind].owed)
+  if (!months.length || (!hasSavings && !hasDebt)) return null
+  const first = months[0]
+  const last = months[months.length - 1]
+  const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${money(Math.abs(n))}`
+  const monthName = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' })
+  const max = Math.max(...months.map(m => Math.max(m.saved, m.owed)), 1)
+
+  return (
+    <SectionBox title="Over time" accent="var(--brand)" subtitle={months.length > 1 ? `Since ${monthName(first.month)}` : undefined}>
+      {months.length > 1 && (
+        <div className="over-time-summary">
+          {hasSavings && <div><span className="mono muted">Savings</span><span className="standing-figure">{signed(last.saved - first.saved)}</span></div>}
+          {hasDebt && <div><span className="mono muted">Owed</span><span className="standing-figure">{signed(last.owed - first.owed)}</span></div>}
+        </div>
+      )}
+      <div className="over-time">
+        {[...months].reverse().slice(0, 12).map((m, i, list) => {
+          const before = list[i + 1]
+          return (
+            <div key={m.month.toISOString()} className="over-time-row">
+              <span className="mono muted">{monthName(m.month)}</span>
+              <span className="over-time-bars">
+                {hasSavings && (
+                  <span className="over-time-bar">
+                    <span style={{ width: `${(m.saved / max) * 100}%`, background: 'var(--primary)' }} />
+                    <span className="caption2">{money(m.saved)} saved{before ? ` · ${signed(m.saved - before.saved)}` : ''}</span>
+                  </span>
+                )}
+                {hasDebt && (
+                  <span className="over-time-bar">
+                    <span style={{ width: `${(m.owed / max) * 100}%`, background: 'var(--tertiary)' }} />
+                    <span className="caption2">{money(m.owed)} owed{before ? ` · ${signed(m.owed - before.owed)}` : ''}</span>
+                  </span>
+                )}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <p className="help" style={{ margin: 0 }}>Where things stood at each month's end, from your checks.</p>
+    </SectionBox>
   )
 }
 

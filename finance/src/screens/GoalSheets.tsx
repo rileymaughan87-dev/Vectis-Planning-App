@@ -12,6 +12,8 @@ import {
   type GoalPayment,
 } from '../model/goals'
 import { amountText, formatMoney, parseAmount } from '../model/money'
+import { accountKindInfo, goalAccounts } from '../model/accounts'
+import { useAccounts } from '../store/accounts'
 import { useGoals } from '../store/goals'
 import { useCurrency } from '../store/settings'
 
@@ -36,6 +38,8 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
   const [frequency, setFrequency] = useState<GoalFrequency>(original?.frequency ?? 'monthly')
   const [firstDate, setFirstDate] = useState(dayKey(original ? parseDate(original.firstPaymentDate) : new Date()))
   const [targetDate, setTargetDate] = useState(original?.targetDate)
+  const accounts = useAccounts(s => s.accounts)
+  const [accountID, setAccountID] = useState(original?.accountID)
   const [paymentSheet, setPaymentSheet] = useState<PaymentTarget | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -52,7 +56,10 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
     weekday: frequency === 'weekly' ? first.getDay() + 1 : undefined,
     firstPaymentDate: toISO(first),
     targetDate,
+    // Only an account that suits the kind (a debt can't sit on a savings account).
+    accountID: goalAccounts(accounts, kind).some(a => a.id === accountID) ? accountID : undefined,
   }
+  const linkable = goalAccounts(accounts, kind)
   const plan = schedule(draft)
   const planned = plan.filter(p => !p.confirmed)
   const recorded = plan.filter(p => p.confirmed).reverse()
@@ -92,6 +99,20 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
           )}
         </div>
       </EditorBox>
+
+      {linkable.length > 0 && (
+        <EditorBox title="Measured on" accent={info.accent}>
+          <select value={draft.accountID ?? ''} onChange={e => setAccountID(e.target.value || undefined)} aria-label="Account">
+            <option value="">Not linked — count payments made</option>
+            {linkable.map(a => <option key={a.id} value={a.id}>{a.name || accountKindInfo[a.kind].label}</option>)}
+          </select>
+          <p className="help">
+            {kind === 'debt'
+              ? "Linked, what's left comes from the account's checked balance — interest and extra payments included."
+              : 'Linked, progress comes from what’s really in the account when you check it. Payments go into it.'}
+          </p>
+        </EditorBox>
+      )}
 
       <EditorBox title="Payments" accent={info.accent}>
         <Segmented<GoalFrequency>

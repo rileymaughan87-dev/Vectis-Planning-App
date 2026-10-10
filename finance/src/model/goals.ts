@@ -46,6 +46,12 @@ export interface FinanceGoal {
   firstPaymentDate: ISODate
   /** What was actually paid, by day key. 0 = skipped. */
   payments: Record<string, number>
+  /**
+   * The account it's measured on (web only, Finance rework stage 3): a
+   * savings account for saving or a set-aside, a card or loan for a debt.
+   * Then progress comes from the account's checked balance.
+   */
+  accountID?: string
 }
 
 export interface GoalPayment {
@@ -73,6 +79,7 @@ export function decodeGoal(r: Raw): FinanceGoal {
     weekday: optNum(r.weekday),
     firstPaymentDate: str(r.firstPaymentDate, toISO(startOfDay(new Date()))),
     payments: record(r.payments, x => optNum(x)),
+    accountID: optStr(r.accountID),
   }
 }
 

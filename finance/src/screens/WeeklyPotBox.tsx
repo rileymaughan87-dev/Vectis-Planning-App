@@ -1,4 +1,4 @@
-// The top of the Budget page: a week's flexible spending against the pot,
+// The top of the Plan page: a week's flexible spending against the pot,
 // with the quick-log button. About *now* by default, whatever month the
 // rest of the page shows. New compared with the iPhone app: what's left
 // spread over the days still to come, and stepping back to earlier weeks.

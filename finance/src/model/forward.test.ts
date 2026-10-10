@@ -3,7 +3,7 @@ import { toISO } from '@suite/dates'
 import { describe, expect, it } from 'vitest'
 import type { Account, Audit } from './accounts'
 import { makeFinanceEvent } from './entries'
-import { forward, mainPay, nextOccurrence } from './forward'
+import { forward, mainPay, nextOccurrence, running } from './forward'
 
 const day = (d: number, h = 12) => new Date(2026, 9, d, h)
 const current: Account = { id: 'cur', name: 'Current', kind: 'current', createdDate: toISO(day(1)), primary: true }
@@ -47,5 +47,12 @@ describe('the forward view', () => {
   it('asks for an account, then a first check', () => {
     expect(forward({ ...data, accounts: [] }, { cushion: 0 }, day(10)).kind).toBe('noAccount')
     expect(forward({ ...data, audits: [] }, { cushion: 0 }, day(10)).kind).toBe('notChecked')
+  })
+})
+
+describe("what's running", () => {
+  it('lists repeating entries by their next date, and drops one-offs that have passed', () => {
+    const gone = makeFinanceEvent({ title: 'Old gift', entryType: 'expense', amount: 20, date: toISO(day(1, 0)) })
+    expect(running([salary, rent, gone], day(10)).map(r => [r.event.title, r.next.getDate()])).toEqual([['Rent', 20], ['Salary', 30]])
   })
 })

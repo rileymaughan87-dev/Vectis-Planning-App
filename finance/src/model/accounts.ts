@@ -133,6 +133,15 @@ export function movementsBetween(account: Account, data: MoneyData, after: Date,
   const isSpending = spendingAccount(data.accounts)?.id === account.id
   const out: Movement[] = []
 
+  // Goal payments into a linked savings account, or off a linked card or loan.
+  for (const g of data.goals) {
+    if (g.accountID !== account.id) continue
+    const sign = g.kind === 'debt' ? -1 : 1
+    for (const p of schedule(g)) {
+      if (inRange(p.date) && p.amount > 0) out.push({ date: p.date, title: g.title || 'Goal payment', amount: sign * p.amount, estimate: !p.confirmed })
+    }
+  }
+
   if (isSpending) {
     for (let m = new Date(after.getFullYear(), after.getMonth(), 1); m <= upTo; m = addMonths(m, 1)) {
       for (const item of lineItemsInMonth(data.events, m)) {
@@ -179,6 +188,71 @@ export function describeGap(account: Account, actual: number, expected: number):
   // Unlogged spending: less money than expected, or more owed than expected.
   const unlogged = owed ? diff > 0 : diff < 0
   return { size: Math.abs(diff), unlogged }
+}
+
+// MARK: - Goals on real balances
+
+/**
+ * A goal measured on its linked account: the same goal, adjusted so that
+ * what's been paid matches the account — saved so far for saving and
+ * set-asides, what's still owed for a debt. Everything that reads a goal
+ * (progress, the plan, "done around") then follows the real balance.
+ * Unlinked, or before the account's first check, it's unchanged.
+ */
+export function onBalance(goal: FinanceGoal, accounts: Account[], audits: Audit[], data: MoneyData, today: Date = new Date()): FinanceGoal {
+  const account = accounts.find(a => a.id === goal.accountID)
+  if (!account) return goal
+  const exp = expectedBalance(account, audits, data, today)
+  if (!exp) return goal
+  const recorded = Object.values(goal.payments).reduce((a, b) => a + b, 0)
+  if (goal.kind === 'debt') return { ...goal, targetAmount: round2(Math.max(exp.expected, 0) + recorded) }
+  return { ...goal, startingAmount: round2(exp.expected - recorded) }
+}
+
+/** Accounts a goal of this kind can sit on. */
+export const goalAccounts = (accounts: Account[], kind: FinanceGoal['kind']) =>
+  accounts.filter(a => (kind === 'debt' ? accountKindInfo[a.kind].owed : a.kind === 'savings'))
+
+// MARK: - Over time
+
+export interface MonthStanding {
+  /** The first of the month. */
+  month: Date
+  /** Savings accounts, at their last check by the month's end. */
+  saved: number
+  /** Cards and loans. */
+  owed: number
+  /** Every account you have money in. */
+  have: number
+}
+
+/**
+ * Month by month from your first check: where each account stood at its
+ * latest check by the end of that month. Built only from checks, so it's
+ * what really happened, not the plan.
+ */
+export function monthlyStanding(accounts: Account[], audits: Audit[], today: Date = new Date()): MonthStanding[] {
+  const mine = audits.filter(a => accounts.some(acc => acc.id === a.accountID))
+  if (!mine.length) return []
+  const first = mine.map(a => parseDate(a.date)).reduce((a, b) => (a < b ? a : b))
+  const out: MonthStanding[] = []
+  for (let m = new Date(first.getFullYear(), first.getMonth(), 1); m <= today; m = addMonths(m, 1)) {
+    const end = addMonths(m, 1)
+    let saved = 0
+    let owed = 0
+    let have = 0
+    for (const acc of accounts) {
+      const last = auditsFor(mine, acc.id).find(a => parseDate(a.date) < end)
+      if (!last) continue
+      if (accountKindInfo[acc.kind].owed) owed += last.balance
+      else {
+        have += last.balance
+        if (acc.kind === 'savings') saved += last.balance
+      }
+    }
+    out.push({ month: m, saved: round2(saved), owed: round2(owed), have: round2(have) })
+  }
+  return out
 }
 
 // MARK: - Where things stand
