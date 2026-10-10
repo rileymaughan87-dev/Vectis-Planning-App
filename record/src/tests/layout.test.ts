@@ -18,10 +18,10 @@ const paper = (f: Partial<PaperFormat>): Paper => ({
 })
 
 describe('the finished paper', () => {
-  it('APA: a title page, the title again above the writing, headings left out', () => {
+  it('APA: a title page, no repeated title, headings left out', () => {
     const p = finished(paper({ citationStyle: 'apa' }), doc)
     expect(p.titlePage).toEqual({ title: 'The Age of Steam', lines: ['Riley Maughan', 'BYU', 'HIST 101', 'Dr Lee', '10 October 2026'] })
-    expect(p.bodyTitle).toEqual({ text: 'The Age of Steam', bold: true })
+    expect(p.bodyTitle).toBeUndefined()
     expect(p.body.map(n => n.type)).toEqual(['paragraph'])
     expect(p.references?.heading).toBe('References')
     expect(p.runningHead).toBe('')

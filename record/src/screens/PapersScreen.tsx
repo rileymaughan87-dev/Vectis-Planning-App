@@ -268,7 +268,7 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
                 {field('date', today)}
               </div>
             )}
-            {style !== 'harvard' && titleInput}
+            {style === 'mla' && titleInput}
             <RichEditor
               key={docVersion}
               initial={docRef.current}
