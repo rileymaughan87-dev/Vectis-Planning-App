@@ -86,6 +86,28 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance rework — Stage 2 of 3: Now and safe to spend (10 Oct 2026)
+
+- `finance/src/model/forward.ts` (tested): payday = next arrival of the
+  main pay (`paydayEntryID`, else the biggest repeating pay still
+  coming); safe to spend = main current account's expected balance now
+  + pay before payday − bills, planned spending and goal payments before
+  payday − cushion; per day; a dip warning if the running balance falls
+  below the cushion before payday. Pay landing *on* payday is listed as
+  the start of the next stretch, never counted in this one. Without any
+  pay it looks 30 days ahead.
+- New **Now** tab (first; Finance opens on it): until payday (days and
+  date), safe to spend with "about £N a day", a short breakdown, when
+  the balance was last checked, Log spending, this week's pot if on, and
+  "Payday and cushion". Coming up: everything before payday, then the
+  payday rows. Before there's an account / a first check it says what
+  to do and links to Accounts.
+- Cushion and payday live in `preferences.json` with the currency
+  (synced), editable from Now and in Settings ("Safe to spend").
+- Next: Stage 3 — progress over time (savings up, debt down from
+  checks), goals on real balances, faster setup, and retiring the month
+  screens (Budget's long scroll).
+
 ## Finance rework — Stage 1 of 3: accounts and checks (10 Oct 2026)
 
 Direction and research: `docs/finance-rework-brief.md` ("Decided

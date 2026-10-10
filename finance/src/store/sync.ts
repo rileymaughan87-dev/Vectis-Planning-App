@@ -3,7 +3,6 @@
 // Planner's, so the two apps never touch each other's data. The look is
 // shared by every app and syncs with Planner's data, not here.
 
-import { isObj, optStr } from '@suite/decode'
 import { countIn, describeCounts } from '@suite/sync/records'
 import { createSyncStore, type SyncSlice } from '@suite/sync/store'
 import { decodeAccounts, decodeAudits } from '../model/accounts'
@@ -14,7 +13,7 @@ import { useAccounts } from './accounts'
 import { useEntries } from './entries'
 import { useGoals } from './goals'
 import { Filename, storage } from './persist'
-import { useSettings } from './settings'
+import { decodePreferences, preferencesOf, useSettings } from './settings'
 import { useSpending } from './spending'
 
 /** A slice backed by one field of a zustand store. */
@@ -41,15 +40,18 @@ const FINANCE_SLICES: SyncSlice[] = [
   slice(useSpending, 'pot', Filename.spendingPot, 'single', decodePot),
   slice(useAccounts, 'accounts', Filename.accounts, 'list', decodeAccounts),
   slice(useAccounts, 'audits', Filename.accountAudits, 'list', decodeAudits),
-  // The currency choice is saved as { currency } — kept in that shape so both devices read it the same way.
+  // Currency, cushion and payday, saved together as preferences.json.
   {
     file: Filename.preferences,
     kind: 'single',
-    get: () => ({ currency: useSettings.getState().currencyOverride }),
-    set: value => useSettings.setState({ currencyOverride: (value as { currency?: string }).currency }),
-    decode: raw => ({ currency: isObj(raw) ? optStr(raw.currency) : undefined }),
+    get: () => preferencesOf(useSettings.getState()),
+    set: value => {
+      const p = value as ReturnType<typeof decodePreferences>
+      useSettings.setState({ currencyOverride: p.currency, cushion: p.cushion, paydayEntryID: p.paydayEntryID })
+    },
+    decode: decodePreferences,
     subscribe: onChange => useSettings.subscribe((s, p) => {
-      if (s.currencyOverride !== p.currencyOverride) onChange()
+      if (s.currencyOverride !== p.currencyOverride || s.cushion !== p.cushion || s.paydayEntryID !== p.paydayEntryID) onChange()
     }),
   },
 ]

@@ -8,6 +8,7 @@ import { CURRENCIES, regionCurrency } from '../model/money'
 import { useSync } from '../store/sync'
 import { backups } from '../store/persist'
 import { useSettings } from '../store/settings'
+import { SafeToSpendSettings } from './NowScreen'
 
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
   const { appearance, setAppearance, currencyOverride, setCurrency } = useSettings()
@@ -17,6 +18,8 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
       <SyncBox useSync={useSync} what="your entries, goals, logged spending and weekly pot" />
+
+      <SafeToSpendSettings />
 
       <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 

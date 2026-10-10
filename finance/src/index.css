@@ -38,6 +38,14 @@
 
 .money-legend .swatch { width: 7px; height: 7px; }
 
+/* ---------- Now ---------- */
+.safe { display: flex; flex-direction: column; gap: 4px; }
+
+/* How safe to spend is made up: a few quiet ledger lines. */
+.breakdown { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--text-2); padding: 8px 0; border-top: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft); }
+
+.payday-rows { display: flex; flex-direction: column; margin-top: 8px; padding-top: 10px; border-top: 1.5px solid var(--brand); }
+
 /* ---------- Accounts ---------- */
 /* Where you stand: three serif figures side by side. */
 .standing { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 12px; }
