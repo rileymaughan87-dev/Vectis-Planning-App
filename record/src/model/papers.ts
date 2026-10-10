@@ -6,7 +6,7 @@
 // Saved as papers.json under "vectis:" (web only), synced with Record.
 
 import { toISO, type ISODate } from '@suite/dates'
-import { bool, isObj, list, num, oneOf, str, type Raw } from '@suite/decode'
+import { bool, isObj, list, num, oneOf, optNum, optStr, record, str, type Raw } from '@suite/decode'
 import { newID } from '@suite/ids'
 import { decodeDoc, docToPlainText, textToDoc, wrapDoc, type NoteDoc } from '@suite/record/noteDoc'
 
@@ -49,11 +49,46 @@ export interface PaperFormat {
   date: string
 }
 
+/** What a section is for, set in Plan: a note on what it needs to say, and a word target. */
+export interface SectionPlan {
+  note: string
+  target?: number
+}
+
+export type ResearchKind = 'quote' | 'link' | 'idea'
+
+/** Where something came from — enough to cite it (stage 3). */
+export interface SourceDetails {
+  author: string
+  title: string
+  year: string
+  publisher: string
+  url: string
+  page: string
+}
+
+/** One thing kept while researching: a quote, a link or an idea, optionally meant for a section. */
+export interface ResearchItem {
+  id: string
+  kind: ResearchKind
+  /** The quote itself, what the link is, or the idea. */
+  text: string
+  source: SourceDetails
+  /** The section (heading `sid`) it's meant for, if chosen. */
+  sectionID?: string
+  createdDate: ISODate
+}
+
 export interface Paper {
   id: string
   title: string
   body?: NoteDoc
   format: PaperFormat
+  /** A word target for the whole paper. */
+  target?: number
+  /** Notes and targets per section, by heading `sid`. */
+  plan: Record<string, SectionPlan>
+  research: ResearchItem[]
   createdDate: ISODate
   updatedDate: ISODate
 }
@@ -84,6 +119,30 @@ export function decodeFormat(v: unknown): PaperFormat {
   }
 }
 
+export const EMPTY_SOURCE: SourceDetails = { author: '', title: '', year: '', publisher: '', url: '', page: '' }
+
+function decodeSource(v: unknown): SourceDetails {
+  const r: Raw = isObj(v) ? v : {}
+  return {
+    author: str(r.author, ''), title: str(r.title, ''), year: str(r.year, ''), publisher: str(r.publisher, ''), url: str(r.url, ''), page: str(r.page, ''),
+  }
+}
+
+function decodeResearch(r: Raw): ResearchItem {
+  return {
+    id: str(r.id, newID()),
+    kind: oneOf(r.kind, ['quote', 'link', 'idea'] as const, 'idea'),
+    text: str(r.text, ''),
+    source: decodeSource(r.source),
+    sectionID: optStr(r.sectionID),
+    createdDate: str(r.createdDate, toISO(new Date())),
+  }
+}
+
+function decodePlan(v: unknown): Record<string, SectionPlan> {
+  return record(v, x => (isObj(x) ? { note: str(x.note, ''), target: optNum(x.target) } : undefined))
+}
+
 function decodePaper(r: Raw): Paper {
   const now = toISO(new Date())
   return {
@@ -91,9 +150,21 @@ function decodePaper(r: Raw): Paper {
     title: str(r.title, ''),
     body: decodeDoc(r.body),
     format: decodeFormat(r.format),
+    target: optNum(r.target),
+    plan: decodePlan(r.plan),
+    research: list(r.research, decodeResearch),
     createdDate: str(r.createdDate, now),
     updatedDate: str(r.updatedDate, now),
   }
+}
+
+/** "Smith, 2020", "Smith", or the link or title — a short label for where something came from. */
+export function sourceLabel(s: SourceDetails): string {
+  const who = s.author.trim().split(/[,;]| and /)[0]?.trim()
+  if (who) return s.year.trim() ? `${who}, ${s.year.trim()}` : who
+  if (s.title.trim()) return s.title.trim()
+  if (s.url.trim()) return s.url.trim().replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
+  return ''
 }
 
 export const decodePapers = (v: unknown) => list(v, decodePaper)
@@ -101,7 +172,10 @@ export const decodePapers = (v: unknown) => list(v, decodePaper)
 /** A new paper, taking its format from the last one you set up (title details and all) — set once, really once. */
 export function newPaper(previous?: Paper): Paper {
   const now = toISO(new Date())
-  return { id: newID(), title: '', body: wrapDoc(textToDoc('')), format: { ...(previous?.format ?? DEFAULT_FORMAT) }, createdDate: now, updatedDate: now }
+  return {
+    id: newID(), title: '', body: wrapDoc(textToDoc('')), format: { ...(previous?.format ?? DEFAULT_FORMAT) }, plan: {}, research: [],
+    createdDate: now, updatedDate: now,
+  }
 }
 
 /** Words in a paper's text. */

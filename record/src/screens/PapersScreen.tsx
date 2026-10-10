@@ -2,19 +2,23 @@
 // keeps to the words — a quiet toolbar, headings that fold, one section in
 // focus at a time — and saves as you type. Format holds everything that's
 // set once (font, size, spacing, margins, title details) and stays out of
-// the way. Plan and Research come next (docs/record-rework-brief.md).
+// the way. Plan is the draft: the outline, what each section should say,
+// word targets. Research — quotes, links, ideas — is open from any mode.
 
 import { parseDate } from '@suite/dates'
 import { RichEditor } from '@suite/record/editor/LazyRichEditor'
 import { docToPlainText, isDocEmpty, textToDoc, wrapDoc, type DocNode } from '@suite/record/noteDoc'
 import { EditorBox, Field, Segmented, Toggle, VButton } from '@suite/ui/components'
-import { ChevronLeft, FileText, Plus } from 'lucide-react'
+import { BookMarked, ChevronLeft, FileText, Plus } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   MARGINS, PAPER_FONTS, newPaper, paperWords, titleLines, wordCount, type CitationStyle, type LineSpacing, type Margins, type Paper, type PaperFont,
-  type PaperFormat,
+  type PaperFormat, type ResearchItem, type SectionPlan,
 } from '../model/papers'
+import { ensureSectionIds, outlineOf } from '../model/outline'
 import { useData } from '../store/data'
+import { PlanPanel } from './PaperPlan'
+import { ResearchPanel } from './PaperResearch'
 
 const editedText = (iso: string) => {
   const d = parseDate(iso)
@@ -59,7 +63,8 @@ export function PapersSection() {
   )
 }
 
-type Mode = 'write' | 'format'
+type Mode = 'plan' | 'write' | 'format'
+const MODE_LABEL: Record<Mode, string> = { plan: 'Plan', write: 'Write', format: 'Format' }
 
 /** CSS for the page: the chosen font, size and spacing, and the margins (narrower on a phone). */
 function pageStyle(f: PaperFormat): CSSProperties {
@@ -78,25 +83,34 @@ function pageStyle(f: PaperFormat): CSSProperties {
  */
 export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose: () => void }) {
   const { savePaper, deletePaper } = useData()
-  const [mode, setMode] = useState<Mode>('write')
+  const [initial] = useState(() => original.body?.doc ?? textToDoc(''))
+  const exists = useRef(useData.getState().papers.some(p => p.id === original.id))
+  // A brand-new paper starts in Plan: sketch first, then write.
+  const [mode, setMode] = useState<Mode>(() => (!exists.current && isDocEmpty(initial) ? 'plan' : 'write'))
   const [title, setTitle] = useState(original.title)
   const [format, setFormat] = useState(original.format)
-  const [initial] = useState(() => original.body?.doc ?? textToDoc(''))
-  const docRef = useRef<DocNode>(initial)
+  const [plan, setPlan] = useState(original.plan)
+  const [target, setTarget] = useState(original.target)
+  const [research, setResearch] = useState(original.research)
+  const [researchOpen, setResearchOpen] = useState(false)
+  const docRef = useRef<DocNode>(mode === 'plan' ? ensureSectionIds(initial) : initial)
+  // Plan changes the paper's headings outside the editor; the editor starts afresh from them when you go back to Write.
+  const [planDoc, setPlanDoc] = useState<DocNode>(docRef.current)
+  const [docVersion, setDocVersion] = useState(0)
+  const planChanged = useRef(false)
   const [words, setWords] = useState(() => wordCount(docToPlainText(initial)))
   const [status, setStatus] = useState<'saved' | 'saving'>('saved')
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const latest = useRef({ title, format })
-  latest.current = { title, format }
-  const exists = useRef(useData.getState().papers.some(p => p.id === original.id))
+  const latest = useRef({ title, format, plan, target, research })
+  latest.current = { title, format, plan, target, research }
 
   /** Saves now. A brand-new paper with nothing in it isn't kept. */
   const flush = () => {
     clearTimeout(timer.current)
-    const { title: t, format: f } = latest.current
-    const blank = !t.trim() && isDocEmpty(docRef.current)
+    const { title: t, format: f, plan: pl, target: tg, research: rs } = latest.current
+    const blank = !t.trim() && isDocEmpty(docRef.current) && !rs.length
     if (blank && !exists.current) return setStatus('saved')
-    savePaper({ ...original, title: t.trim(), format: f, body: wrapDoc(docRef.current) })
+    savePaper({ ...original, title: t.trim(), format: f, plan: pl, target: tg, research: rs, body: wrapDoc(docRef.current) })
     exists.current = true
     setStatus('saved')
   }
@@ -121,6 +135,41 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
     setFormat(f => ({ ...f, ...p }))
     soon()
   }
+
+  const go = (next: Mode) => {
+    if (next === 'plan') {
+      // Every heading gets its id before planning (a new one means the editor restarts with it).
+      const withIDs = ensureSectionIds(docRef.current)
+      if (withIDs !== docRef.current) {
+        docRef.current = withIDs
+        planChanged.current = true
+        soon()
+      }
+      setPlanDoc(docRef.current)
+    } else if (planChanged.current) {
+      planChanged.current = false
+      setDocVersion(v => v + 1)
+    }
+    setMode(next)
+  }
+  const planDocChange = (doc: DocNode) => {
+    docRef.current = doc
+    setPlanDoc(doc)
+    planChanged.current = true
+    setWords(wordCount(docToPlainText(doc)))
+    soon()
+  }
+  const patchPlan = (sid: string, p: Partial<SectionPlan>) => {
+    setPlan(all => ({ ...all, [sid]: { ...(all[sid] ?? { note: '' }), ...p } }))
+    planChanged.current = true
+    soon()
+  }
+  const changeResearch = (r: ResearchItem[]) => {
+    setResearch(r)
+    soon()
+  }
+  const notes = Object.fromEntries(Object.entries(plan).map(([sid, p]) => [sid, p.note]))
+  const sections = outlineOf(mode === 'plan' ? planDoc : docRef.current)
   const close = () => {
     flush()
     onClose()
@@ -130,16 +179,35 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
   return (
     <div className="paper-page" role="dialog" aria-label={title || 'Untitled paper'}>
       <header className="paper-bar">
-        <button className="text-button paper-back" onClick={close}><ChevronLeft size={18} style={{ verticalAlign: -4 }} /> Papers</button>
+        <button className="text-button paper-back" onClick={close} aria-label="Back to papers"><ChevronLeft size={18} style={{ verticalAlign: -4 }} /><span className="paper-back-label"> Papers</span></button>
         <div className="paper-modes segmented" role="group" aria-label="Mode">
-          {(['write', 'format'] as const).map(m => (
-            <button key={m} aria-pressed={mode === m} onClick={() => setMode(m)}>{m === 'write' ? 'Write' : 'Format'}</button>
+          {(['plan', 'write', 'format'] as const).map(m => (
+            <button key={m} aria-pressed={mode === m} onClick={() => go(m)}>{MODE_LABEL[m]}</button>
           ))}
         </div>
-        <span className="mono muted paper-status">{status === 'saving' ? 'Saving…' : `${words.toLocaleString()} words`}</span>
+        <span className="paper-bar-end">
+          <span className="mono muted paper-status">{status === 'saving' ? 'Saving…' : `${words.toLocaleString()} words`}</span>
+          <button className={`icon-button research-toggle ${researchOpen ? 'is-on' : ''}`} onClick={() => setResearchOpen(o => !o)} aria-pressed={researchOpen} aria-label="Research" title="Research">
+            <BookMarked size={18} />{research.length > 0 && <span className="research-count">{research.length}</span>}
+          </button>
+        </span>
       </header>
 
+      <div className="paper-body">
       <div className="paper-scroll">
+        {mode === 'plan' && (
+          <PlanPanel
+            doc={planDoc}
+            totalWords={words}
+            plan={plan}
+            target={target}
+            research={research}
+            onDoc={planDocChange}
+            onPlan={patchPlan}
+            onTarget={t => { setTarget(t); soon() }}
+            onOpenResearch={() => setResearchOpen(true)}
+          />
+        )}
         {/* Write stays mounted while Format is open, so the editor (and its undo history) carries on where it was. */}
         <article className="paper-sheet" style={pageStyle(format)} hidden={mode !== 'write'}>
           {lines.length > 0 && (
@@ -155,11 +223,13 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
             aria-label="Title"
           />
           <RichEditor
-            initial={initial}
+            key={docVersion}
+            initial={docRef.current}
+            sectionNotes={notes}
             variant="paper"
             label="Paper"
             placeholder="Start writing…"
-            autofocus={!original.title && isDocEmpty(initial)}
+            autofocus={docVersion === 0 && !original.title && isDocEmpty(initial)}
             onChange={doc => {
               docRef.current = doc
               setWords(wordCount(docToPlainText(doc)))
@@ -176,13 +246,15 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
               clearTimeout(timer.current)
               exists.current = false
               deletePaper(original.id)
-              latest.current = { title: '', format }
+              latest.current = { title: '', format, plan: {}, target: undefined, research: [] }
               docRef.current = textToDoc('')
               onClose()
             }}
             canDelete={exists.current}
           />
         )}
+      </div>
+      {researchOpen && <ResearchPanel research={research} sections={sections} onChange={changeResearch} onClose={() => setResearchOpen(false)} />}
       </div>
     </div>
   )

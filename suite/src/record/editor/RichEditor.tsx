@@ -38,12 +38,14 @@ export function RichEditor(props: {
   math?: boolean
   /** A paper: the quiet toolbar, alignment, picture layout and section focus. */
   variant?: 'note' | 'paper'
+  /** A paper's notes per section (by heading id), shown faintly under each heading. */
+  sectionNotes?: Record<string, string>
 }) {
   const { onChange } = props
   const math = props.math ?? true
   const paper = props.variant === 'paper'
   const editor = useEditor({
-    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math, props.variant),
+    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math, props.variant, props.sectionNotes),
     content: props.initial,
     autofocus: props.autofocus ? 'end' : false,
     editorProps: {
