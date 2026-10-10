@@ -10,7 +10,7 @@
 
 import { Extension } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import { PAGE_GAP, overflowAt, pageOf, type Page } from '../pageFlow'
 
@@ -56,14 +56,25 @@ function build(doc: PMNode, breaks: Break[], tail: number, sheet: Page): Decorat
     return el
   }, { side: -1, ignoreSelection: true, key: `break-${b.pos}-${Math.round(b.height)}` }))
   if (tail > 0) {
-    decorations.push(Decoration.widget(doc.content.size, () => {
+    decorations.push(Decoration.widget(doc.content.size, view => {
       const el = document.createElement('div')
       el.className = 'page-tail'
       el.contentEditable = 'false'
       el.setAttribute('aria-hidden', 'true')
       el.style.height = `${tail}px`
+      // The empty rest of the last page: a click there writes at the end (on a new line after a picture).
+      el.addEventListener('mousedown', e => {
+        // The editor would otherwise pick the nearest thing (often the picture) on mouse-up.
+        e.preventDefault()
+        e.stopPropagation()
+        const { doc, schema } = view.state
+        let tr = view.state.tr
+        if (!doc.lastChild?.isTextblock) tr = tr.insert(doc.content.size, schema.nodes.paragraph.create())
+        view.dispatch(tr.setSelection(TextSelection.atEnd(tr.doc)).scrollIntoView())
+        view.focus()
+      })
       return el
-    }, { side: 1, ignoreSelection: true, key: `tail-${Math.round(tail)}` }))
+    }, { side: 1, ignoreSelection: true, stopEvent: () => true, key: `tail-${Math.round(tail)}` }))
   }
   return DecorationSet.create(doc, decorations)
 }

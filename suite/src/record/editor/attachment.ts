@@ -8,7 +8,8 @@
 // be small, half or full width, sit left, centre or right on its own
 // line, and carry a caption.
 
-import { Node, mergeAttributes } from '@tiptap/core'
+import { Extension, Node, mergeAttributes, type Editor } from '@tiptap/core'
+import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 import { ATTACHMENT_READY, attachmentURL } from '../attachments'
 
 export type AttachmentKind = 'photo' | 'scan' | 'drawing'
@@ -32,6 +33,38 @@ export interface MarkupDetail {
   pos: number
   attrs: AttachmentAttrs
 }
+
+/**
+ * Puts the cursor on the line after the picture at `pos`, making that line
+ * if the picture is last (or followed by another picture), so writing
+ * carries on below it.
+ */
+export function writeAfter(editor: Editor, pos: number) {
+  const { state } = editor
+  const node = state.doc.nodeAt(pos)
+  if (!node) return false
+  const after = pos + node.nodeSize
+  const next = state.doc.nodeAt(after)
+  return editor.chain().focus().command(({ tr }) => {
+    if (!next?.isTextblock) tr.insert(after, state.schema.nodes.paragraph.create())
+    tr.setSelection(TextSelection.create(tr.doc, after + 1)).scrollIntoView()
+    return true
+  }).run()
+}
+
+/** Enter on a selected picture: a new line below it, ready to write (ahead of the editor's own Enter). */
+export const PictureKeys = Extension.create({
+  name: 'pictureKeys',
+  priority: 1000,
+  addKeyboardShortcuts() {
+    return {
+      Enter: ({ editor }) => {
+        const sel = editor.state.selection
+        return sel instanceof NodeSelection && sel.node.type.name === 'attachment' ? writeAfter(editor, sel.from) : false
+      },
+    }
+  },
+})
 
 const LABELS: Record<AttachmentKind, string> = { photo: 'Photo', scan: 'Scanned page', drawing: 'Drawing' }
 
