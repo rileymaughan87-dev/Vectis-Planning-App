@@ -1,5 +1,6 @@
-// Finance's top level: the suite's shared shell with three tabs — Budget
-// (where it opens), Calendar and Goals — and Settings in the side menu.
+// Finance's top level: the suite's shared shell with its tabs — Now
+// (where it opens: safe to spend until payday), Accounts, Budget, Calendar
+// and Goals — and Settings in the side menu.
 // Opening the app with "?log" goes straight to logging spending (the
 // home-screen shortcut on Android, or a bookmark anywhere).
 
@@ -9,6 +10,7 @@ import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { AccountsScreen } from './screens/AccountsScreen'
+import { NowScreen } from './screens/NowScreen'
 import { BudgetScreen } from './screens/BudgetScreen'
 import { CalendarScreen } from './screens/CalendarScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
@@ -16,9 +18,10 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
 import { useSettings } from './store/settings'
 
-type Tab = 'accounts' | 'budget' | 'calendar' | 'goals'
+type Tab = 'now' | 'accounts' | 'budget' | 'calendar' | 'goals'
 
 const tabs: ShellTab<Tab>[] = [
+  { id: 'now', title: 'Now' },
   { id: 'accounts', title: 'Accounts' },
   { id: 'budget', title: 'Budget' },
   { id: 'calendar', title: 'Calendar' },
@@ -28,7 +31,7 @@ const tabs: ShellTab<Tab>[] = [
 export default function App() {
   const appearance = useSettings(s => s.appearance)
   useApplyTheme(appearance)
-  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab) || 'accounts')
+  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab) || 'now')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [quickLog, setQuickLog] = useState(() => new URLSearchParams(location.search).has('log'))
   const closeQuickLog = () => {
@@ -71,6 +74,7 @@ export default function App() {
         {quickLog && <LogSpendingSheet onClose={closeQuickLog} />}
       </>}
     >
+      {tab === 'now' && <NowScreen onGo={choose} />}
       {tab === 'accounts' && <AccountsScreen />}
       {tab === 'budget' && <BudgetScreen />}
       {tab === 'calendar' && <CalendarScreen />}
