@@ -112,6 +112,21 @@ Riley's follow-ups to Stage 3. Updated where Stage 3 below disagrees.
 - **Preview** (eye button in the bar): the finished paper page by page
   (`screens/PaperPreview.tsx`). Print shows this preview, each sheet on a
   new page.
+- **Page breaks** while writing and in the preview: where a letter-size
+  page (less its margins) fills, the sheet ends, a gap, the next sheet
+  starts, splitting a paragraph mid-way as Word does.
+  - The line measure is shared: `suite/src/record/pageFlow.ts`
+    (`overflowAt`, from character rects, so it works off-screen too).
+  - The editor's breaks are decorations (`editor/pageBreaks.ts`). Each run
+    clears them, measures, and redraws before the screen paints.
+  - The preview inserts spacers once after render (`paginate` in
+    `PaperPreview.tsx`), with a page number on each page; the references
+    number follows the last page.
+  - On screens narrower than the page, pages are drawn taller to hold
+    about the same words (an estimate). Printing hides the drawn breaks
+    and lets the printer paginate.
+- The title page is a full letter-shaped sheet, centred, with the title on
+  the fourth line (sizes use `cqw`, so long sheets still grow).
 - **Live word counts:** the total (and target) above the writing, plus each
   section's count beside its heading ("120 / 250", blue once met; the
   `SectionCounts` editor extension with `sectionTargets`). Format → "Show

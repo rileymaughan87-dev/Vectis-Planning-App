@@ -242,6 +242,11 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
         {/* Write stays mounted while Format is open, so the editor (and its undo history) carries on where it was.
             Its pages are the finished paper's: a title page (APA, Harvard), the writing, the references. */}
         <div className={`paper-pages${format.showWordCounts ? '' : ' no-counts'}`} style={pageStyle(format)} hidden={mode !== 'write'}>
+          {format.showWordCounts && (
+            <div className="paper-count mono">
+              {words.toLocaleString()} words{target ? ` of ${target.toLocaleString()}` : ''}
+            </div>
+          )}
           {hasTitlePage(style) && (
             <section className="paper-sheet paper-title-page" aria-label="Title page">
               {titleInput}
@@ -255,11 +260,6 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
             </section>
           )}
           <article className="paper-sheet">
-            {format.showWordCounts && (
-              <div className="paper-count mono">
-                {words.toLocaleString()} words{target ? ` of ${target.toLocaleString()}` : ''}
-              </div>
-            )}
             {style === 'mla' && (
               <div className="paper-header-lines">
                 {field('name', 'Your name')}
