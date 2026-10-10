@@ -123,7 +123,7 @@ except the two noted under part 2 and 3.
   lost `icon`); Segmented is an underline selector; the Vectis home page
   rebuilt to its mock (fixed paper and blue, no longer themed); new icons
   in every app's `public/` (`favicon.svg` replaced by `favicon-16/32.png`),
-  manifests and `theme-color` now paper `#F2EFE8`. Dark mode keeps the old
+  manifests and `theme-color` now paper `#F2EFE8`. (No dark pass planned — Riley prefers light.) Dark mode keeps the old
   dark colours (not designed yet). iOS asset catalogues untouched — the
   Swift apps are read-only.
 - **Part 2 (built, 10 Oct 2026):** screen by screen against the mocks.
@@ -668,7 +668,7 @@ Still to verify on device (carried over plus new):
 | Unused `tab*` image assets | Removed (Oct 2026) |
 | Rest days (2.2) | Built on the web (9 Oct 2026) |
 | Editor restyle for goals / settings / notes | Built (Oct 2026), awaiting device test |
-| Share my day | Not built |
+| Share my day | Dropped (10 Oct 2026) — Accountability partners cover it |
 | Estimate calibration (2.5) | Waiting — needs 5+ logged actuals |
 | Monthly review / recalibration (2.10, 2.11) | Waiting — needs a month of data |
 | Web app (`web/`): model, Home, Goals, Daily, event editor, Settings | Built (Oct 2026), browser-tested |
@@ -680,6 +680,12 @@ Still to verify on device (carried over plus new):
 | Web: People, Linked apps | Left out of the web app by Riley's decision (6 Oct 2026). Saved person/app links on goals and events are kept untouched, just not shown. |
 
 ## Decided against (don't reopen without a reason)
+
+- **Share my day** — dropped (10 Oct 2026). Accountability partners
+  (shared Drive file, partner view) already do this job.
+- **A dark Index style** — not planned (10 Oct 2026). Riley likes the app
+  in light mode; the old dark colours remain only for "Dark" / "System"
+  in Appearance.
 
 - **People and Linked apps on the web** — left out (6 Oct 2026). They rely
   on phone contacts and launching other apps. The Swift app keeps them.
@@ -721,7 +727,7 @@ also say "rest day overused".
 **Editor restyle.** Apply the event editor's pattern to `GoalSheets` (3 forms),
 `SettingsView`, `NoteSheets`. Settle editor titles on "New X / Edit X".
 
-**Share my day.** A `ShareLink` (Home and/or end of evening review) producing a
+**Share my day (dropped 10 Oct 2026).** A `ShareLink` (Home and/or end of evening review) producing a
 short summary — goals done / scheduled, optionally a rendered image card. Sent
 via Messages or any app. Accounts/CloudKit/partner-in-sidebar were costed and
 deferred: they need a paid Apple Developer account. If revisited, keep Journal,
