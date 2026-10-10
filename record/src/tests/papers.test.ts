@@ -1,6 +1,6 @@
 // Papers: format defaults and reading, new papers, word counts.
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_FORMAT, decodeFormat, decodePapers, newPaper, titleLines, wordCount } from '../model/papers'
+import { DEFAULT_FORMAT, bodyWords, decodeFormat, decodePapers, newPaper, wordCount } from '../model/papers'
 
 describe('papers', () => {
   it('starts like a school paper and reads saved formats safely', () => {
@@ -21,6 +21,8 @@ describe('papers', () => {
   it('counts words, keeping contractions and hyphens together', () => {
     expect(wordCount("It's a well-known fact — 42 times.")).toBe(6)
     expect(wordCount('   ')).toBe(0)
-    expect(titleLines({ ...DEFAULT_FORMAT, name: 'Riley', course: 'History 101', date: ' ' })).toEqual(['Riley', 'History 101'])
+    const doc = { type: 'doc', content: [{ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Two words' }] }, { type: 'paragraph', content: [{ type: 'text', text: 'Three more words' }] }] }
+    expect(bodyWords(doc)).toBe(3)
+    expect(bodyWords(doc, true)).toBe(5)
   })
 })

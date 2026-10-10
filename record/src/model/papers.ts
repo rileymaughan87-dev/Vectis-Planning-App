@@ -41,10 +41,16 @@ export interface PaperFormat {
   indent: boolean
   pageNumbers: boolean
   citationStyle: CitationStyle
+  /** Headings are guides while writing; the finished paper leaves them out unless this is on. */
+  includeHeadings: boolean
+  /** Live word counts beside each heading and above the paper. */
+  showWordCounts: boolean
   /** Title details, shown above the paper when any are filled in. */
   name: string
   course: string
   teacher: string
+  /** School or university, for a title page. */
+  institution: string
   /** As it should read, e.g. "10 October 2026". */
   date: string
 }
@@ -96,7 +102,8 @@ export interface Paper {
 /** A school paper's usual starting point: Times New Roman, 12 point, double spaced, one-inch margins. */
 export const DEFAULT_FORMAT: PaperFormat = {
   font: 'times', size: 12, lineSpacing: 2, margins: 'normal', indent: true, pageNumbers: true, citationStyle: 'apa',
-  name: '', course: '', teacher: '', date: '',
+  includeHeadings: false, showWordCounts: true,
+  name: '', course: '', teacher: '', institution: '', date: '',
 }
 
 export function decodeFormat(v: unknown): PaperFormat {
@@ -115,6 +122,9 @@ export function decodeFormat(v: unknown): PaperFormat {
     name: str(r.name, ''),
     course: str(r.course, ''),
     teacher: str(r.teacher, ''),
+    institution: str(r.institution, ''),
+    includeHeadings: bool(r.includeHeadings, d.includeHeadings),
+    showWordCounts: bool(r.showWordCounts, d.showWordCounts),
     date: str(r.date, ''),
   }
 }
@@ -184,7 +194,13 @@ export function wordCount(text: string): number {
   return words ? words.length : 0
 }
 
-export const paperWords = (p: Paper) => (p.body ? wordCount(docToPlainText(p.body.doc)) : 0)
+/**
+ * Words in the finished paper: the writing, without the headings (they're
+ * guides) unless the paper includes them.
+ */
+export function bodyWords(doc: NoteDoc['doc'], includeHeadings = false): number {
+  const blocks = (doc.content ?? []).filter(n => includeHeadings || n.type !== 'heading')
+  return wordCount(docToPlainText({ ...doc, content: blocks }))
+}
 
-/** Lines of the title block, in the usual order; empty ones left out. */
-export const titleLines = (f: PaperFormat) => [f.name, f.teacher, f.course, f.date].map(s => s.trim()).filter(Boolean)
+export const paperWords = (p: Paper) => (p.body ? bodyWords(p.body.doc, p.format.includeHeadings) : 0)
