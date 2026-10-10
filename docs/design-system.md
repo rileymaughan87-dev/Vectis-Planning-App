@@ -63,9 +63,13 @@ Rules:
   `#D2574A`, "still an estimate" amber `#D6862C`, destructive red and
   warning orange stay fixed.
 - Text on a coloured fill switches between white and ink for contrast.
-- **Light mode is the design** (Riley's call, Oct 2026). There's no dark
-  Index style planned; the earlier dark colours remain only for anyone
-  choosing Dark or System in Appearance. Don't invent one.
+- **Dark mode** (Oct 2026) follows the device on System, or is forced by
+  Light / Dark in Appearance — one setting shared by every app. Ink page
+  `#141619`, surfaces `#1C1F23` / `#262A2F`, paper-coloured text
+  `#ECE8DF` (secondary `#A4A29B`, tertiary `#74767B`), rules `#34373C` /
+  `#2A2D32`, and a lighter suite blue `#5AA2E6` for the frame so it still
+  reads. Scheme and semantic colours are unchanged. The status bar takes
+  the page colour (`useApplyTheme`).
 
 ### Typography
 

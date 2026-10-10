@@ -1,6 +1,9 @@
 // Appearance shared across the suite: the palettes, the saved settings,
 // and applying them to the page. Semantic colours (income, expense,
 // unconfirmed, warnings) are never themed — see docs/design-system.md.
+//
+// One setting for every app (Oct 2026): all of them read and write
+// "vectis:appearance.json", so changing the look in one changes it in all.
 
 import { useEffect } from 'react'
 import { bool, isObj, oneOf, str } from './decode'
@@ -63,6 +66,42 @@ export function themeColors(a: AppearanceSettings): ThemeColors {
   }
 }
 
+/** Where every app keeps the look (Planner's file name, from before the suite). */
+export const SHARED_APPEARANCE_KEY = 'vectis:appearance.json'
+
+/** The suite's appearance as saved. Finance kept its own copy before it was shared; that's used until one is saved here. */
+export function loadSharedAppearance(): AppearanceSettings {
+  const read = (key: string) => {
+    try {
+      const text = localStorage.getItem(key)
+      return text === null ? undefined : JSON.parse(text)
+    } catch {
+      return undefined
+    }
+  }
+  return decodeAppearance(read(SHARED_APPEARANCE_KEY) ?? read('finance:appearance.json'))
+}
+
+export function saveSharedAppearance(a: AppearanceSettings) {
+  try {
+    localStorage.setItem(SHARED_APPEARANCE_KEY, JSON.stringify(a))
+  } catch {
+    // It just won't be remembered.
+  }
+}
+
+/** Calls back when another open app (another tab) changes the look. */
+export function onSharedAppearanceChange(cb: (a: AppearanceSettings) => void): () => void {
+  const listener = (e: StorageEvent) => {
+    if (e.key === SHARED_APPEARANCE_KEY) cb(loadSharedAppearance())
+  }
+  window.addEventListener('storage', listener)
+  return () => window.removeEventListener('storage', listener)
+}
+
+/** The page colours the phone's status bar takes on (the top bar is the page colour). */
+const PAGE_COLOR = { light: '#F2EFE8', dark: '#141619' }
+
 /** Pushes the chosen palette and light/dark mode onto the page. */
 export function useApplyTheme(a: AppearanceSettings) {
   useEffect(() => {
@@ -74,6 +113,15 @@ export function useApplyTheme(a: AppearanceSettings) {
     root.style.setProperty('--on-primary', contrastingText(c.primary))
     if (a.mode === 'system') root.removeAttribute('data-theme')
     else root.setAttribute('data-theme', a.mode)
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', c.primary)
+
+    // The status bar matches the page, following the device when on System.
+    const media = window.matchMedia?.('(prefers-color-scheme: dark)')
+    const paint = () => {
+      const dark = a.mode === 'dark' || (a.mode === 'system' && Boolean(media?.matches))
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? PAGE_COLOR.dark : PAGE_COLOR.light)
+    }
+    paint()
+    media?.addEventListener?.('change', paint)
+    return () => media?.removeEventListener?.('change', paint)
   }, [a])
 }

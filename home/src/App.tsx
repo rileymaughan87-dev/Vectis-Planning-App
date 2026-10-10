@@ -6,10 +6,12 @@
 // Everything opened from here stays inside the same Home Screen app, so
 // on a phone they share storage and one sync sign-in. In the Index style:
 // each app is a numbered entry with a pivot rule running off the edge.
-// The page is always paper and suite blue — it doesn't follow an app's
-// colour scheme.
+// The page is paper and suite blue (ink in dark mode) — it follows the
+// shared light/dark choice but not the colour scheme.
 
+import { loadSharedAppearance, onSharedAppearanceChange, useApplyTheme } from '@suite/appearance'
 import { SUITE_APPS } from '@suite/ui/appIcons'
+import { useEffect, useState } from 'react'
 
 interface AppEntry {
   name: string
@@ -32,6 +34,9 @@ function greeting(now = new Date()) {
 }
 
 export default function App() {
+  const [appearance, setAppearance] = useState(loadSharedAppearance)
+  useEffect(() => onSharedAppearanceChange(setAppearance), [])
+  useApplyTheme(appearance)
   const today = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
