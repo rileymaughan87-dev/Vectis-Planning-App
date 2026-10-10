@@ -86,6 +86,29 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Record: Papers — Stage 2 of 3: Plan and Research (10 Oct 2026)
+
+- **Plan** (first mode; a new paper opens on it): `record/src/model/outline.ts`
+  (tested) reads and edits the paper's own headings — add (a section,
+  or a subheading at the end of its parent), rename, move with
+  subsections, remove only when empty. Each heading has a hidden `sid`
+  (schema attribute, `ensureSectionIds`; a split heading's copy gets a
+  new one). Per-section note and word target in `paper.plan[sid]`, a
+  paper target in `paper.target`; words per section and overall; a
+  starter outline. Plan edits the document outside the editor, so Write
+  remounts from it (`docVersion`) when you return.
+- **Section notes** show faintly under each heading while writing
+  (`SectionNotes` decorations, CSS `attr(data-note)` — never text).
+- **Research** (`PaperResearch.tsx`): a bar button with a count, open in
+  every mode — beside the page on wide screens, full screen below 1000px.
+  Quotes, links and ideas (`paper.research`), each with source details
+  (author, year, title, page, publisher, link) for citing in stage 3, a
+  section it's for (changeable), filters by kind and section, copy and
+  delete. Plan lists each section's research and what isn't placed yet.
+- Phone paper bar: back arrow, modes, Research (word count lives in Plan).
+- Next: Stage 3 — citations (APA/MLA/Harvard) from research sources, the
+  reference list, Word and PDF export, print.
+
 ## Record: Papers — Stage 1 of 3 (10 Oct 2026)
 
 Design: `docs/record-rework-brief.md` ("Decided: Papers").

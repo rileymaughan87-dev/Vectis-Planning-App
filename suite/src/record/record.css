@@ -352,7 +352,109 @@
 
 .attachment-actions button.is-on { background: var(--primary); color: var(--on-primary, #fff); }
 
+/* The page and, beside it on a wide screen, Research. */
+.paper-body { flex: 1; display: flex; min-height: 0; }
+
+.paper-body > .paper-scroll { flex: 1; }
+
+.paper-bar-end { justify-self: end; display: inline-flex; align-items: center; gap: 6px; }
+
+.research-toggle { position: relative; color: var(--text-2); }
+
+.research-toggle.is-on { color: var(--brand); }
+
+.research-count {
+  position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  background: var(--brand); color: #fff; font-family: var(--font-mono); font-size: 10px; line-height: 16px;
+}
+
+/* What a section should say, faintly under its heading while writing. */
+.paper-sheet .note-doc .has-section-note::after {
+  content: attr(data-note); display: block; margin-top: 0.15em; font-family: var(--font); font-size: 13px; font-weight: 400;
+  font-style: italic; line-height: 1.4; color: var(--text-3); white-space: pre-wrap;
+}
+
+/* ---------- Plan ---------- */
+.paper-plan { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+.plan-target { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--separator); }
+
+.plan-progress { display: flex; flex-direction: column; gap: 4px; }
+
+.plan-empty { display: flex; flex-direction: column; gap: 12px; }
+
+.plan-outline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+
+.plan-item { border-bottom: 1px solid var(--rule-soft); padding: 6px 0; }
+
+.plan-item.level-3 { margin-left: 28px; }
+
+.plan-head { display: flex; align-items: center; gap: 4px; }
+
+.plan-chevron { color: var(--text-2); flex: none; }
+
+.plan-title {
+  flex: 1; min-width: 0; background: transparent; border: 0; padding: 6px 4px;
+  font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 20px;
+}
+
+.level-3 .plan-title { font-size: 17px; }
+
+.plan-words { flex: none; }
+
+.plan-note-preview { margin: 0 0 4px 40px; font-size: 13px; color: var(--text-2); white-space: pre-wrap; }
+
+.plan-body { display: flex; flex-direction: column; gap: 10px; padding: 6px 0 8px 40px; }
+
+.plan-research { display: flex; flex-direction: column; gap: 4px; }
+
+.plan-research-item { font-size: 13px; }
+
+.plan-add { display: flex; align-items: center; gap: 8px; }
+
+.plan-add input { background: transparent; border: 0; border-bottom: 1px solid var(--rule-soft); padding: 8px 0; }
+
+.plan-add.sub input { font-size: 14px; }
+
+/* ---------- Research ---------- */
+.research-panel { width: 380px; flex: none; display: flex; flex-direction: column; border-left: 1px solid var(--separator); background: var(--bg); }
+
+.research-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--separator); }
+
+.research-title { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 20px; }
+
+.research-scroll { flex: 1; overflow-y: auto; padding: 14px 18px 40px; display: flex; flex-direction: column; gap: 16px; }
+
+.research-add { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--separator); }
+
+.research-source summary { font-size: 13px; color: var(--text-2); cursor: pointer; }
+
+.research-source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+
+.research-filters { display: flex; flex-direction: column; gap: 8px; }
+
+.research-list { display: flex; flex-direction: column; }
+
+.research-item { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); }
+
+.research-item select { flex: 1; min-width: 0; padding: 4px 6px; font-size: 13px; }
+
+.research-quote { margin: 0; font-family: var(--font-serif); font-style: italic; font-size: 16px; line-height: 1.4; }
+
+.research-text { margin: 0; font-size: 14px; }
+
+.research-link { color: var(--brand); font-size: 14px; overflow-wrap: anywhere; }
+
+/* On a phone (or a narrow window), Research covers the page. */
+@media (max-width: 999px) {
+  .research-panel { position: fixed; inset: 0; z-index: 45; width: auto; border-left: 0; padding-top: env(safe-area-inset-top); }
+}
+
 @media (max-width: 699px) {
+  /* A phone's bar: back, the modes, Research — the word count is in Plan. */
+  .paper-back-label, .paper-status { display: none; }
+  .paper-bar { padding-left: 8px; padding-right: 8px; gap: 4px; }
+  .paper-modes button { padding: 8px 10px; }
   .paper-scroll { padding: 0 0 140px; }
   .paper-sheet { border: 0; border-bottom: 1px solid var(--separator); padding: 20px 22px; }
   .paper-bar { grid-template-columns: auto 1fr auto; }

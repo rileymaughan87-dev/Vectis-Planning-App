@@ -122,6 +122,12 @@ const FoldableSections = Extension.create({
           parseHTML: el => el.getAttribute('data-collapsed') === 'true',
           renderHTML: attrs => (attrs.collapsed ? { 'data-collapsed': 'true' } : {}),
         },
+        // A paper's section id (its plan and research follow it); unused in notes.
+        sid: {
+          default: null,
+          parseHTML: el => el.getAttribute('data-sid'),
+          renderHTML: attrs => (attrs.sid ? { 'data-sid': attrs.sid } : {}),
+        },
       },
     }]
   },
@@ -133,6 +139,35 @@ const FoldableSections = Extension.create({
         apply: (tr, old) => (tr.docChanged ? buildDecorations(tr.doc) : old),
       },
       props: { decorations: state => foldKey.getState(state) },
+    })]
+  },
+})
+
+// MARK: - Section notes (papers)
+
+/**
+ * What each section is meant to say (from Plan), shown faintly under its
+ * heading while writing. Drawn by CSS from an attribute, so it's never
+ * part of the text.
+ */
+const SectionNotes = Extension.create<{ notes: Record<string, string> }>({
+  name: 'sectionNotes',
+  addOptions: () => ({ notes: {} }),
+  addProseMirrorPlugins() {
+    const notes = this.options.notes
+    const build = (doc: PMNode) => {
+      const decorations: Decoration[] = []
+      doc.forEach((node, offset) => {
+        const note = node.type.name === 'heading' ? notes[node.attrs.sid as string]?.trim() : undefined
+        if (note) decorations.push(Decoration.node(offset, offset + node.nodeSize, { 'data-note': note, class: 'has-section-note' }))
+      })
+      return DecorationSet.create(doc, decorations)
+    }
+    const key = new PluginKey<DecorationSet>('vectis-section-notes')
+    return [new Plugin({
+      key,
+      state: { init: (_, state) => build(state.doc), apply: (tr, old) => (tr.docChanged ? build(tr.doc) : old) },
+      props: { decorations: state => key.getState(state) },
     })]
   },
 })
@@ -241,7 +276,7 @@ const MathResults = Extension.create<{ enabled: boolean }>({
   },
 })
 
-export function editorExtensions(placeholder: string, math = true, variant: 'note' | 'paper' = 'note') {
+export function editorExtensions(placeholder: string, math = true, variant: 'note' | 'paper' = 'note', sectionNotes: Record<string, string> = {}) {
   const paper = variant === 'paper'
   return [
     StarterKit.configure({
@@ -260,7 +295,7 @@ export function editorExtensions(placeholder: string, math = true, variant: 'not
     MathResults.configure({ enabled: math && !paper }),
     Attachment.configure({ layout: paper }),
     // Papers: text alignment, and focusing on one section at a time.
-    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus] : []),
+    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus, SectionNotes.configure({ notes: sectionNotes })] : []),
   ]
 }
 
