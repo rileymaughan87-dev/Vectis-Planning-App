@@ -173,6 +173,53 @@ const SectionNotes = Extension.create<{ notes: Record<string, string> }>({
   },
 })
 
+// MARK: - Section word counts (papers)
+
+const countWords = (text: string) => text.trim().match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0
+
+/**
+ * A live word count at the end of each heading — the words under it
+ * (subsections included, headings not counted) and its target from Plan.
+ * Drawn beside the text, never part of it; hidden by CSS when the paper
+ * turns counts off.
+ */
+const SectionCounts = Extension.create<{ targets: Record<string, number> }>({
+  name: 'sectionCounts',
+  addOptions: () => ({ targets: {} }),
+  addProseMirrorPlugins() {
+    const targets = this.options.targets
+    const build = (doc: PMNode) => {
+      const decorations: Decoration[] = []
+      doc.forEach((node, offset, index) => {
+        if (node.type.name !== 'heading') return
+        const end = sectionEnd(doc, index, node.attrs.level as number)
+        let words = 0
+        for (let i = index + 1; i < end; i++) {
+          const child = doc.child(i)
+          if (child.type.name !== 'heading') words += countWords(child.textContent)
+        }
+        const target = targets[node.attrs.sid as string]
+        const label = target ? `${words} / ${target}` : `${words}`
+        decorations.push(Decoration.widget(offset + node.nodeSize - 1, () => {
+          const span = document.createElement('span')
+          span.className = `section-count${target && words >= target ? ' is-met' : ''}`
+          span.contentEditable = 'false'
+          span.textContent = label
+          span.setAttribute('aria-label', target ? `${words} of ${target} words` : `${words} words`)
+          return span
+        }, { side: 1, ignoreSelection: true, key: `count-${offset}-${label}` }))
+      })
+      return DecorationSet.create(doc, decorations)
+    }
+    const key = new PluginKey<DecorationSet>('vectis-section-counts')
+    return [new Plugin({
+      key,
+      state: { init: (_, state) => build(state.doc), apply: (tr, old) => (tr.docChanged ? build(tr.doc) : old) },
+      props: { decorations: state => key.getState(state) },
+    })]
+  },
+})
+
 // MARK: - Section focus (papers)
 
 export const focusKey = new PluginKey<number | null>('vectis-section-focus')
@@ -277,7 +324,9 @@ const MathResults = Extension.create<{ enabled: boolean }>({
   },
 })
 
-export function editorExtensions(placeholder: string, math = true, variant: 'note' | 'paper' = 'note', sectionNotes: Record<string, string> = {}) {
+export function editorExtensions(
+  placeholder: string, math = true, variant: 'note' | 'paper' = 'note', sectionNotes: Record<string, string> = {}, sectionTargets: Record<string, number> = {},
+) {
   const paper = variant === 'paper'
   return [
     StarterKit.configure({
@@ -296,7 +345,7 @@ export function editorExtensions(placeholder: string, math = true, variant: 'not
     MathResults.configure({ enabled: math && !paper }),
     Attachment.configure({ layout: paper }),
     // Papers: text alignment, and focusing on one section at a time.
-    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus, SectionNotes.configure({ notes: sectionNotes }), Citation] : []),
+    ...(paper ? [TextAlign.configure({ types: ['heading', 'paragraph'] }), SectionFocus, SectionNotes.configure({ notes: sectionNotes }), SectionCounts.configure({ targets: sectionTargets }), Citation] : []),
   ]
 }
 

@@ -9,20 +9,22 @@
 
 import { parseDate } from '@suite/dates'
 import { RichEditor } from '@suite/record/editor/LazyRichEditor'
-import { docToPlainText, isDocEmpty, textToDoc, wrapDoc, type DocNode } from '@suite/record/noteDoc'
+import { isDocEmpty, textToDoc, wrapDoc, type DocNode } from '@suite/record/noteDoc'
 import { EditorBox, Field, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { setCitationText, type CitationAttrs } from '@suite/record/editor/citationText'
-import { BookMarked, ChevronLeft, Download, FileText, Plus } from 'lucide-react'
+import { BookMarked, ChevronLeft, Download, Eye, FileText, Plus } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { Editor } from '@tiptap/react'
 import {
-  MARGINS, PAPER_FONTS, newPaper, paperWords, titleLines, wordCount, type CitationStyle, type LineSpacing, type Margins, type Paper, type PaperFont,
+  MARGINS, PAPER_FONTS, bodyWords, newPaper, paperWords, type CitationStyle, type LineSpacing, type Margins, type Paper, type PaperFont,
   type PaperFormat, type ResearchItem, type SectionPlan,
 } from '../model/papers'
 import { REFERENCES_HEADING, citedIDs, inText, referenceList } from '../model/citations'
+import { hasTitlePage } from '../model/layout'
 import { ensureSectionIds, outlineOf } from '../model/outline'
 import { useData } from '../store/data'
 import { PlanPanel } from './PaperPlan'
+import { PaperPreview } from './PaperPreview'
 import { ResearchPanel } from './PaperResearch'
 
 const editedText = (iso: string) => {
@@ -68,8 +70,8 @@ export function PapersSection() {
   )
 }
 
-type Mode = 'plan' | 'write' | 'format'
-const MODE_LABEL: Record<Mode, string> = { plan: 'Plan', write: 'Write', format: 'Format' }
+type Mode = 'plan' | 'write' | 'format' | 'preview'
+const MODE_LABEL: Record<Exclude<Mode, 'preview'>, string> = { plan: 'Plan', write: 'Write', format: 'Format' }
 
 /** CSS for the page: the chosen font, size and spacing, and the margins (narrower on a phone). */
 function pageStyle(f: PaperFormat): CSSProperties {
@@ -103,7 +105,7 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
   const [planDoc, setPlanDoc] = useState<DocNode>(docRef.current)
   const [docVersion, setDocVersion] = useState(0)
   const planChanged = useRef(false)
-  const [words, setWords] = useState(() => wordCount(docToPlainText(initial)))
+  const [words, setWords] = useState(() => bodyWords(initial, original.format.includeHeadings))
   const [status, setStatus] = useState<'saved' | 'saving'>('saved')
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const latest = useRef({ title, format, plan, target, research })
@@ -150,6 +152,7 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
 
   const patchFormat = (p: Partial<PaperFormat>) => {
     setFormat(f => ({ ...f, ...p }))
+    if (p.includeHeadings !== undefined) setWords(bodyWords(docRef.current, p.includeHeadings))
     soon()
   }
 
@@ -173,7 +176,7 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
     docRef.current = doc
     setPlanDoc(doc)
     planChanged.current = true
-    setWords(wordCount(docToPlainText(doc)))
+    setWords(bodyWords(doc, latest.current.format.includeHeadings))
     soon()
   }
   const patchPlan = (sid: string, p: Partial<SectionPlan>) => {
@@ -191,7 +194,16 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
     flush()
     onClose()
   }
-  const lines = titleLines(format)
+  const targets = Object.fromEntries(Object.entries(plan).flatMap(([sid, p]) => (p.target ? [[sid, p.target]] : [])))
+  const style = format.citationStyle
+  const today = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+  // The title-page details, filled in where they'll appear; new papers start with the same ones.
+  const field = (key: 'name' | 'institution' | 'course' | 'teacher' | 'date', placeholder: string) => (
+    <input className="paper-line" value={format[key]} onChange={e => patchFormat({ [key]: e.target.value })} placeholder={placeholder} aria-label={placeholder} />
+  )
+  const titleInput = (
+    <input className="paper-title" value={title} onChange={e => { setTitle(e.target.value); soon() }} placeholder="Title" aria-label="Title" />
+  )
 
   return (
     <div className="paper-page" role="dialog" aria-label={title || 'Untitled paper'}>
@@ -204,6 +216,7 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
         </div>
         <span className="paper-bar-end">
           <span className="mono muted paper-status">{status === 'saving' ? 'Saving…' : `${words.toLocaleString()} words`}</span>
+          <button className={`icon-button research-toggle ${mode === 'preview' ? 'is-on' : ''}`} onClick={() => go(mode === 'preview' ? 'write' : 'preview')} aria-pressed={mode === 'preview'} aria-label="Preview the finished paper" title="Preview the finished paper"><Eye size={18} /></button>
           <button className="icon-button research-toggle" onClick={() => setExporting(true)} aria-label="Export" title="Export"><Download size={18} /></button>
           <button className={`icon-button research-toggle ${researchOpen ? 'is-on' : ''}`} onClick={() => setResearchOpen(o => !o)} aria-pressed={researchOpen} aria-label="Research" title="Research">
             <BookMarked size={18} />{research.length > 0 && <span className="research-count">{research.length}</span>}
@@ -226,38 +239,59 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
             onOpenResearch={() => setResearchOpen(true)}
           />
         )}
-        {/* Write stays mounted while Format is open, so the editor (and its undo history) carries on where it was. */}
-        <article className="paper-sheet" style={pageStyle(format)} hidden={mode !== 'write'}>
-          {lines.length > 0 && (
-            <div className="paper-title-block">
-              {lines.map((l, i) => <div key={i}>{l}</div>)}
-            </div>
+        {/* Write stays mounted while Format is open, so the editor (and its undo history) carries on where it was.
+            Its pages are the finished paper's: a title page (APA, Harvard), the writing, the references. */}
+        <div className={`paper-pages${format.showWordCounts ? '' : ' no-counts'}`} style={pageStyle(format)} hidden={mode !== 'write'}>
+          {hasTitlePage(style) && (
+            <section className="paper-sheet paper-title-page" aria-label="Title page">
+              {titleInput}
+              <div className="paper-title-lines">
+                {field('name', 'Your name')}
+                {field('institution', 'School or university')}
+                {field('course', 'Course')}
+                {field('teacher', 'Instructor')}
+                {field('date', today)}
+              </div>
+            </section>
           )}
-          <input
-            className="paper-title"
-            value={title}
-            onChange={e => { setTitle(e.target.value); soon() }}
-            placeholder="Title"
-            aria-label="Title"
-          />
-          <RichEditor
-            key={docVersion}
-            initial={docRef.current}
-            sectionNotes={notes}
-            variant="paper"
-            label="Paper"
-            placeholder="Start writing…"
-            autofocus={docVersion === 0 && !original.title && isDocEmpty(initial)}
-            onEditor={onEditor}
-            onChange={doc => {
-              docRef.current = doc
-              setWords(wordCount(docToPlainText(doc)))
-              setCited(citedIDs(doc).join())
-              soon()
-            }}
-          />
+          <article className="paper-sheet">
+            {format.showWordCounts && (
+              <div className="paper-count mono">
+                {words.toLocaleString()} words{target ? ` of ${target.toLocaleString()}` : ''}
+              </div>
+            )}
+            {style === 'mla' && (
+              <div className="paper-header-lines">
+                {field('name', 'Your name')}
+                {field('teacher', 'Instructor')}
+                {field('course', 'Course')}
+                {field('date', today)}
+              </div>
+            )}
+            {style !== 'harvard' && titleInput}
+            <RichEditor
+              key={docVersion}
+              initial={docRef.current}
+              sectionNotes={notes}
+              sectionTargets={targets}
+              variant="paper"
+              label="Paper"
+              placeholder="Start writing…"
+              autofocus={docVersion === 0 && !original.title && isDocEmpty(initial)}
+              onEditor={onEditor}
+              onChange={doc => {
+                docRef.current = doc
+                setWords(bodyWords(doc, latest.current.format.includeHeadings))
+                setCited(citedIDs(doc).join())
+                soon()
+              }}
+            />
+          </article>
           <References paper={{ ...original, format, research }} doc={docRef.current} cited={cited} />
-        </article>
+        </div>
+        {mode === 'preview' && (
+          <PaperPreview paper={{ ...original, title, format, plan, target, research }} doc={docRef.current} style={pageStyle(format)} />
+        )}
         {mode === 'format' && (
           <FormatPanel
             format={format}
@@ -310,8 +344,8 @@ export function PaperPage({ paper: original, onClose }: { paper: Paper; onClose:
             flush()
             setExporting(false)
             setResearchOpen(false)
-            setMode('write')
-            // Once Write is showing: the page's own margins and numbering, then the browser's print (and Save as PDF).
+            setMode('preview')
+            // Once the preview is showing: the page's own margins and numbering, then the browser's print (and Save as PDF).
             setTimeout(() => printPaper(format), 50)
           }}
         />
@@ -327,7 +361,7 @@ function References({ paper, doc, cited }: { paper: Paper; doc: DocNode; cited: 
   if (!entries.length) return null
   const style = paper.format.citationStyle
   return (
-    <section className={`paper-references style-${style}`} aria-label={REFERENCES_HEADING[style]}>
+    <section className={`paper-sheet paper-references style-${style}`} aria-label={REFERENCES_HEADING[style]}>
       <h2>{REFERENCES_HEADING[style]}</h2>
       {entries.map((e, i) => (
         <p key={i}>{e.map((s, j) => (s.italic ? <i key={j}>{s.text}</i> : <span key={j}>{s.text}</span>))}</p>
@@ -394,7 +428,7 @@ function ExportSheet({ onClose, onWord, onPrint }: { onClose: () => void; onWord
   )
 }
 
-/** Everything set once: font, size, spacing, page, title details, citation style. */
+/** Everything set once: font, size, spacing, page, what the finished paper includes, citation style. */
 function FormatPanel({ format: f, onChange, onDelete, canDelete }: { format: PaperFormat; onChange: (p: Partial<PaperFormat>) => void; onDelete: () => void; canDelete: boolean }) {
   return (
     <div className="paper-format">
@@ -433,12 +467,12 @@ function FormatPanel({ format: f, onChange, onDelete, canDelete }: { format: Pap
         <Toggle label="Page numbers (when printed or exported)" checked={f.pageNumbers} onChange={pageNumbers => onChange({ pageNumbers })} />
       </EditorBox>
 
-      <EditorBox title="Title details">
-        <p className="help">Shown above the title when filled in, in this order. New papers start with the same details.</p>
-        <Field label="Your name"><input value={f.name} onChange={e => onChange({ name: e.target.value })} /></Field>
-        <Field label="Teacher"><input value={f.teacher} onChange={e => onChange({ teacher: e.target.value })} /></Field>
-        <Field label="Course"><input value={f.course} onChange={e => onChange({ course: e.target.value })} /></Field>
-        <Field label="Date"><input value={f.date} onChange={e => onChange({ date: e.target.value })} placeholder={new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })} /></Field>
+      <EditorBox title="The finished paper">
+        <Toggle label="Include headings" checked={f.includeHeadings} onChange={includeHeadings => onChange({ includeHeadings })} />
+        <p className="help">Headings guide you while writing. Most papers leave them out; turn this on if yours needs them.</p>
+        <Toggle label="Show word counts while writing" checked={f.showWordCounts} onChange={showWordCounts => onChange({ showWordCounts })} />
+        <p className="help">The total above the writing, and each section's count beside its heading.</p>
+        <p className="help">Your name, course and the rest are filled in on the title page (APA, Harvard) or at the top of the first page (MLA).</p>
       </EditorBox>
 
       <EditorBox title="Citations">
@@ -447,7 +481,7 @@ function FormatPanel({ format: f, onChange, onDelete, canDelete }: { format: Pap
           <option value="mla">MLA (9th edition)</option>
           <option value="harvard">Harvard</option>
         </select>
-        <p className="help">How citations from Research read in the text, and the reference list at the end.</p>
+        <p className="help">How citations read, the reference list, and the paper's layout: APA and Harvard start with a title page; MLA puts your details at the top of the first page. The references always start a page of their own.</p>
       </EditorBox>
 
       {canDelete && <VButton kind="destructive" onClick={onDelete}>Delete paper</VButton>}

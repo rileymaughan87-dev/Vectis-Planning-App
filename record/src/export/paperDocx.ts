@@ -1,19 +1,19 @@
 // A paper as a Word document (.docx), built in the browser. Loaded only
 // when exporting (with the docx library), so it never slows Record down.
 //
-// What carries over: the font, size, line spacing, first-line indent and
-// margins; headings (as Word's Heading 1–3, so Word's navigation pane
-// shows the outline); bold, italic, underline, strikethrough and
-// alignment; pictures — in line with text, so they stay where they are —
-// with their size, position and caption; citations as their text; the
-// title details and title; page numbers top right; and the reference
-// list on a page of its own.
+// The paper as finished (model/layout.ts): a title page (APA, Harvard)
+// or MLA's header block; the writing — headings left out unless the paper
+// includes them (then as Word's Heading 1–3); the font, size, spacing,
+// first-line indent and margins; bold, italic, underline, strikethrough
+// and alignment; pictures in line with text, so they stay where they are,
+// with size, position and caption; citations as their text; page numbers
+// top right (MLA: with the surname); the reference list on its own page.
 
 import type { DocNode } from '@suite/record/noteDoc'
 import { loadAttachment } from '@suite/record/attachments'
 import type { CitationAttrs } from '@suite/record/editor/citationText'
-import { REFERENCES_HEADING, referenceList } from '../model/citations'
-import { MARGINS, PAPER_FONTS, titleLines, type Paper } from '../model/papers'
+import { finished } from '../model/layout'
+import { MARGINS, PAPER_FONTS, type Paper } from '../model/papers'
 
 /** What Word should call each font (it substitutes one it hasn't got). */
 const WORD_FONT: Record<string, string> = {
@@ -59,19 +59,33 @@ export async function paperToDocx(paper: Paper, doc: DocNode, citation: (a: Cita
 
   const plain = (node: DocNode): string => (node.type === 'text' ? node.text ?? '' : (node.content ?? []).map(plain).join(''))
 
+  const out = finished(paper, doc)
+  type ParagraphOptions = ConstructorParameters<Docx['Paragraph']>[0] & object
   const blocks: InstanceType<Docx['Paragraph']>[] = []
-
-  // Title details, then the title.
-  for (const l of titleLines(f)) blocks.push(new d.Paragraph({ children: [new d.TextRun(l)] }))
-  if (paper.title.trim()) {
-    blocks.push(new d.Paragraph({ alignment: d.AlignmentType.CENTER, children: [new d.TextRun({ text: paper.title.trim(), bold: true })] }))
+  // The next paragraph starts a new page (after the title page; the references).
+  let breakNext = false
+  const push = (options: ParagraphOptions) => {
+    blocks.push(new d.Paragraph(breakNext ? { ...options, pageBreakBefore: true } : options))
+    breakNext = false
   }
+
+  // A title page: the title a little way down, bold and centred, the details beneath.
+  if (out.titlePage) {
+    for (let i = 0; i < 3; i++) push({ children: [] })
+    push({ alignment: d.AlignmentType.CENTER, children: [new d.TextRun({ text: out.titlePage.title || 'Untitled', bold: true })] })
+    push({ children: [] })
+    for (const l of out.titlePage.lines) push({ alignment: d.AlignmentType.CENTER, children: [new d.TextRun(l)] })
+    breakNext = true
+  }
+  // MLA's block, top left.
+  for (const l of out.header ?? []) push({ children: [new d.TextRun(l)] })
+  if (out.bodyTitle) push({ alignment: d.AlignmentType.CENTER, children: [new d.TextRun({ text: out.bodyTitle.text, bold: out.bodyTitle.bold || undefined })] })
 
   const picture = async (n: DocNode) => {
     const a = n.attrs ?? {}
     const stored = await loadAttachment(String(a.id ?? ''))
     if (!stored) {
-      blocks.push(new d.Paragraph({ children: [new d.TextRun({ text: '[Picture not on this device]', italics: true })] }))
+      push({ children: [new d.TextRun({ text: '[Picture not on this device]', italics: true })] })
       return
     }
     const fraction = a.size === 'small' ? 1 / 3 : a.size === 'half' ? 0.5 : 1
@@ -85,16 +99,16 @@ export async function paperToDocx(paper: Paper, doc: DocNode, citation: (a: Cita
       height = maxHeight
     }
     const alignment = a.align === 'left' ? d.AlignmentType.LEFT : a.align === 'right' ? d.AlignmentType.RIGHT : d.AlignmentType.CENTER
-    blocks.push(new d.Paragraph({
+    push({
       alignment,
       children: [new d.ImageRun({
         type: stored.blob.type === 'image/png' ? 'png' : 'jpg',
         data: await stored.blob.arrayBuffer(),
         transformation: { width: Math.round(width), height: Math.round(height) },
       })],
-    }))
+    })
     const caption = String(a.caption ?? '').trim()
-    if (caption) blocks.push(new d.Paragraph({ alignment, children: [new d.TextRun({ text: caption, italics: true })] }))
+    if (caption) push({ alignment, children: [new d.TextRun({ text: caption, italics: true })] })
   }
 
   const list = (n: DocNode, ordered: boolean, depth = 0) => {
@@ -102,7 +116,7 @@ export async function paperToDocx(paper: Paper, doc: DocNode, citation: (a: Cita
       const mark = n.type === 'taskList' ? (item.attrs?.checked ? '☑ ' : '☐ ') : ordered ? `${i + 1}. ` : '• '
       for (const child of item.content ?? []) {
         if (child.type === 'paragraph') {
-          blocks.push(new d.Paragraph({ indent: { left: 360 * (depth + 1), hanging: 360 }, children: [new d.TextRun(mark), ...runs(child)] }))
+          push({ indent: { left: 360 * (depth + 1), hanging: 360 }, children: [new d.TextRun(mark), ...runs(child)] })
         } else if (['bulletList', 'orderedList', 'taskList'].includes(child.type)) {
           list(child, child.type === 'orderedList', depth + 1)
         }
@@ -110,15 +124,15 @@ export async function paperToDocx(paper: Paper, doc: DocNode, citation: (a: Cita
     })
   }
 
-  for (const n of doc.content ?? []) {
+  for (const n of out.body) {
     switch (n.type) {
       case 'paragraph':
-        blocks.push(new d.Paragraph({ alignment: align(n.attrs?.textAlign), indent, children: runs(n) }))
+        push({ alignment: align(n.attrs?.textAlign), indent, children: runs(n) })
         break
       case 'heading': {
         const level = Number(n.attrs?.level ?? 2)
         const heading = level === 1 ? d.HeadingLevel.HEADING_1 : level === 2 ? d.HeadingLevel.HEADING_2 : d.HeadingLevel.HEADING_3
-        blocks.push(new d.Paragraph({ heading, alignment: align(n.attrs?.textAlign), children: runs(n) }))
+        push({ heading, alignment: align(n.attrs?.textAlign), children: runs(n) })
         break
       }
       case 'attachment':
@@ -130,36 +144,34 @@ export async function paperToDocx(paper: Paper, doc: DocNode, citation: (a: Cita
         list(n, n.type === 'orderedList')
         break
       case 'codeBlock':
-        blocks.push(new d.Paragraph({ children: [new d.TextRun({ text: plain(n), font: 'Courier New' })] }))
+        push({ children: [new d.TextRun({ text: plain(n), font: 'Courier New' })] })
         break
       case 'horizontalRule':
-        blocks.push(new d.Paragraph({ border: { bottom: { style: d.BorderStyle.SINGLE, size: 6, color: 'auto', space: 1 } } }))
+        push({ border: { bottom: { style: d.BorderStyle.SINGLE, size: 6, color: 'auto', space: 1 } } })
         break
       default:
-        if (plain(n)) blocks.push(new d.Paragraph({ children: [new d.TextRun(plain(n))] }))
+        if (plain(n)) push({ children: [new d.TextRun(plain(n))] })
     }
   }
 
   // The reference list, on a page of its own, each entry with a hanging indent.
-  const references = referenceList(f.citationStyle, doc, paper.research)
-  if (references.length) {
-    blocks.push(new d.Paragraph({
-      pageBreakBefore: true,
-      alignment: f.citationStyle === 'harvard' ? d.AlignmentType.LEFT : d.AlignmentType.CENTER,
-      children: [new d.TextRun({ text: REFERENCES_HEADING[f.citationStyle], bold: f.citationStyle !== 'mla' })],
-    }))
-    for (const entry of references) {
-      blocks.push(new d.Paragraph({ indent: { left: 720, hanging: 720 }, children: entry.map(s => new d.TextRun({ text: s.text, italics: s.italic || undefined })) }))
+  if (out.references) {
+    breakNext = true
+    push({
+      alignment: out.references.align === 'left' ? d.AlignmentType.LEFT : d.AlignmentType.CENTER,
+      children: [new d.TextRun({ text: out.references.heading, bold: out.references.bold || undefined })],
+    })
+    for (const entry of out.references.entries) {
+      push({ indent: { left: 720, hanging: 720 }, children: entry.map(s => new d.TextRun({ text: s.text, italics: s.italic || undefined })) })
     }
   }
 
   // Page numbers top right; MLA puts the surname before them.
-  const surname = f.name.trim().split(/\s+/).at(-1) ?? ''
   const headers = f.pageNumbers ? {
     default: new d.Header({
       children: [new d.Paragraph({
         alignment: d.AlignmentType.RIGHT,
-        children: [new d.TextRun({ children: [f.citationStyle === 'mla' && surname ? `${surname} ` : '', d.PageNumber.CURRENT] })],
+        children: [new d.TextRun({ children: [out.runningHead ? `${out.runningHead} ` : '', d.PageNumber.CURRENT] })],
       })],
     }),
   } : undefined

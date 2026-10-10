@@ -40,6 +40,8 @@ export function RichEditor(props: {
   variant?: 'note' | 'paper'
   /** A paper's notes per section (by heading id), shown faintly under each heading. */
   sectionNotes?: Record<string, string>
+  /** A paper's word targets per section (by heading id), beside each heading's live count. */
+  sectionTargets?: Record<string, number>
   /** The editor, once it's ready (a paper inserts citations from Research into it). */
   onEditor?: (editor: Editor | null) => void
 }) {
@@ -47,7 +49,7 @@ export function RichEditor(props: {
   const math = props.math ?? true
   const paper = props.variant === 'paper'
   const editor = useEditor({
-    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math, props.variant, props.sectionNotes),
+    extensions: editorExtensions(props.placeholder ?? 'Start writing…', math, props.variant, props.sectionNotes, props.sectionTargets),
     content: props.initial,
     autofocus: props.autofocus ? 'end' : false,
     editorProps: {

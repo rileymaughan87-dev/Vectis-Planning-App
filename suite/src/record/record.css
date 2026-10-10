@@ -295,7 +295,72 @@
   display: flex; flex-direction: column; gap: 0.5em;
 }
 
-.paper-sheet[hidden] { display: none; }
+.paper-pages[hidden] { display: none; }
+
+/* The finished paper's pages, one under another: title page, writing, references. */
+.paper-pages { display: flex; flex-direction: column; gap: 24px; }
+
+/* A title page: the title and details a third of the way down, centred, as on paper. */
+.paper-title-page { min-height: min(11in, 80vh); justify-content: flex-start; padding-top: max(var(--paper-margin), 22vh); text-align: center; }
+
+.paper-title-lines, .paper-header-lines { display: flex; flex-direction: column; line-height: var(--paper-spacing); }
+
+.paper-title-lines { margin-top: 1em; }
+
+.paper-line { font: inherit; color: inherit; background: transparent; border: 0; padding: 0; width: 100%; text-align: inherit; line-height: var(--paper-spacing); }
+
+.paper-line:hover, .paper-title:hover { background: color-mix(in srgb, var(--primary) 5%, transparent); }
+
+.paper-line:focus, .paper-title:focus { outline: none; background: color-mix(in srgb, var(--primary) 8%, transparent); }
+
+.paper-line::placeholder, .paper-title::placeholder { color: var(--text-3); }
+
+/* The live word count: the whole paper above the writing, each section beside its heading. */
+.paper-count { font-size: 12px; color: var(--text-3); text-align: right; }
+
+.section-count { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; font-weight: 400; font-style: normal; color: var(--text-3); margin-left: 0.75em; user-select: none; white-space: nowrap; }
+
+.section-count.is-met { color: var(--brand); }
+
+.paper-pages.no-counts .section-count { display: none; }
+
+/* The preview: the finished paper, page by page, in its own font and margins. */
+.paper-preview { display: flex; flex-direction: column; align-items: center; gap: 24px; font-family: var(--paper-font); font-size: var(--paper-size); }
+
+.preview-sheet {
+  position: relative; width: 100%; max-width: 8.5in; min-height: min(11in, 90vh); padding: var(--paper-margin); background: #fff; color: #1a1a1a;
+  border: 1px solid var(--separator); box-shadow: 0 2px 10px rgb(0 0 0 / 0.08); line-height: var(--paper-spacing);
+}
+
+.preview-sheet p { margin: 0; }
+
+.preview-body p { text-indent: var(--paper-indent); }
+
+.preview-body .preview-header-line, .preview-body .preview-title, .preview-body figcaption { text-indent: 0; }
+
+.preview-page-number { position: absolute; top: calc(var(--paper-margin) / 2); right: var(--paper-margin); font-size: 1em; line-height: 1; }
+
+.preview-title-page { display: flex; flex-direction: column; }
+
+.preview-title-block { margin-top: 25%; text-align: center; }
+
+.preview-title { text-align: center; }
+
+.preview-heading { font-weight: 700; }
+
+.preview-heading.level-1 { text-align: center; }
+
+.preview-heading.level-3 { font-style: italic; }
+
+.preview-figure { margin: 0.5em 0; }
+
+.preview-figure img { max-width: 100%; }
+
+.preview-figure figcaption { font-size: 0.9em; font-style: italic; }
+
+.preview-reference { padding-left: 0.5in; text-indent: -0.5in; overflow-wrap: anywhere; }
+
+.preview-note { max-width: 8.5in; text-align: center; }
 
 .paper-title-block { line-height: var(--paper-spacing); }
 
@@ -457,6 +522,10 @@
   .paper-modes button { padding: 8px 10px; }
   .paper-scroll { padding: 0 0 140px; }
   .paper-sheet { border: 0; border-bottom: 1px solid var(--separator); padding: 20px 22px; }
+  .paper-pages { gap: 0; }
+  .paper-title-page { min-height: 60vh; padding-top: 18vh; }
+  .paper-preview { gap: 12px; padding: 12px; }
+  .preview-sheet { --paper-margin: 22px; min-height: 0; }
   .paper-bar { grid-template-columns: auto 1fr auto; }
   .paper-modes { justify-self: center; }
 }
@@ -467,7 +536,7 @@
 .citation.is-selected { outline: 2px solid var(--primary); }
 
 /* The reference list under the paper, each entry with a hanging indent. */
-.paper-references { margin-top: 2em; line-height: var(--paper-spacing); }
+.paper-references { line-height: var(--paper-spacing); }
 
 .paper-references h2 { font: inherit; font-weight: 700; text-align: center; margin: 0 0 0.5em; }
 
@@ -477,23 +546,18 @@
 
 .paper-references p { margin: 0; padding-left: 0.5in; text-indent: -0.5in; overflow-wrap: anywhere; }
 
-/* Printing a paper (and so saving it as a PDF): only the page, as it should look on paper. */
+/* Printing a paper (and so saving it as a PDF): the preview's pages alone, each sheet a new page. */
 @media print {
   body.printing-paper .rail, body.printing-paper .topbar, body.printing-paper .tabbar,
   body.printing-paper .page.record > :not(.paper-page),
-  body.printing-paper .paper-bar, body.printing-paper .editor-toolbar, body.printing-paper .research-panel,
-  body.printing-paper .fold-toggle, body.printing-paper .attachment-actions { display: none !important; }
+  body.printing-paper .paper-bar, body.printing-paper .research-panel, body.printing-paper .paper-pages,
+  body.printing-paper .preview-page-number, body.printing-paper .preview-note { display: none !important; }
   body.printing-paper, body.printing-paper .app, body.printing-paper .main, body.printing-paper .content,
-  body.printing-paper .paper-page, body.printing-paper .paper-body, body.printing-paper .paper-scroll {
+  body.printing-paper .paper-page, body.printing-paper .paper-body, body.printing-paper .paper-scroll, body.printing-paper .paper-preview {
     position: static !important; display: block !important; height: auto !important; overflow: visible !important;
     background: #fff !important; padding: 0 !important; margin: 0 !important;
   }
-  body.printing-paper .paper-sheet { border: 0; padding: 0; max-width: none; background: #fff; color: #000; }
-  /* Folded or out-of-focus sections still print; notes from Plan don't. */
-  body.printing-paper .is-folded-away, body.printing-paper .is-out-of-focus { display: block !important; }
-  body.printing-paper .has-section-note::after, body.printing-paper .is-collapsed-heading::after { content: none !important; }
-  body.printing-paper .attachment-caption:placeholder-shown { display: none; }
-  body.printing-paper .citation { background: none; }
-  body.printing-paper .paper-references { break-before: page; }
-  body.printing-paper .paper-title::placeholder { color: transparent; }
+  body.printing-paper .preview-sheet { border: 0; box-shadow: none; padding: 0; max-width: none; min-height: 0; color: #000; }
+  body.printing-paper .preview-sheet + .preview-sheet { break-before: page; }
+  body.printing-paper .preview-title-block { margin-top: 3in; }
 }

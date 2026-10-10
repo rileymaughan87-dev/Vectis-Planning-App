@@ -86,6 +86,37 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Record: Papers — the finished paper (10 Oct 2026)
+
+Riley's follow-ups to Stage 3. Updated where Stage 3 below disagrees.
+
+- **Headings are guides.** They're left out of the finished paper (preview,
+  print, Word) unless Format → "Include headings" is on
+  (`PaperFormat.includeHeadings`, default off). Word counts leave them out
+  too (`bodyWords`).
+- **One layout for everything:** `record/src/model/layout.ts` `finished()`
+  (tested) decides each style's pages, and the preview, printing and the
+  Word export all use it.
+  - **APA:** a title page (title bold, then name, institution, course,
+    instructor, date), then the paper on a new page with its title bold
+    and centred.
+  - **MLA:** no title page. The header (name, instructor, course, date)
+    sits top left, then the title centred and not bold; "Surname 1" in the
+    page header.
+  - **Harvard:** a title page, then the paper with no repeated title.
+  - The reference list always starts its own page. A blank date means
+    today's.
+- **Write shows the pages separately:** the title page (APA/Harvard) or the
+  MLA header, filled in directly, then the writing, then the references.
+  Title details moved out of Format; Institution is new.
+- **Preview** (eye button in the bar): the finished paper page by page
+  (`screens/PaperPreview.tsx`). Print shows this preview, each sheet on a
+  new page.
+- **Live word counts:** the total (and target) above the writing, plus each
+  section's count beside its heading ("120 / 250", blue once met; the
+  `SectionCounts` editor extension with `sectionTargets`). Format → "Show
+  word counts while writing" (`showWordCounts`, default on).
+
 ## Record: Papers — Stage 3 of 3: citations and export (10 Oct 2026)
 
 Papers is complete: Plan · Write · Format, Research, citations, export.
