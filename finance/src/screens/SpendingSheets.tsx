@@ -8,6 +8,8 @@ import { useState } from 'react'
 import { runningRepeatingFlexible, weeklyFlexibleEstimate } from '../model/entries'
 import { amountText, formatMoney, formatMoneyWhole, parseAmount } from '../model/money'
 import { recentNotes, type SpendingEntry } from '../model/spending'
+import { spendableAccounts, spendingAccount } from '../model/accounts'
+import { useAccounts } from '../store/accounts'
 import { useEntries } from '../store/entries'
 import { useCurrency } from '../store/settings'
 import { useSpending } from '../store/spending'
@@ -18,6 +20,9 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
   const [text, setText] = useState(amountText(editing?.amount ?? 0))
   const [note, setNote] = useState(editing?.note ?? '')
   const [date, setDate] = useState(dayKey(editing ? parseDate(editing.date) : new Date()))
+  const accounts = useAccounts(s => s.accounts)
+  const spendable = spendableAccounts(accounts)
+  const [accountID, setAccountID] = useState(editing?.accountID ?? spendingAccount(accounts)?.id)
   const value = parseAmount(text)
   const ok = value !== null && value > 0 && Boolean(date)
   const notes = recentNotes(entries).filter(n => n !== note)
@@ -27,8 +32,10 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
     if (!ok) return
     // Today keeps the current time, so the week's list stays in the order things happened.
     const when = date === today ? new Date() : new Date(dayFromKey(date).getTime() + 12 * 3_600_000)
-    if (editing) update({ ...editing, amount: Math.abs(value!), note: note.trim(), date: date === dayKey(parseDate(editing.date)) ? editing.date : toISO(when) })
-    else log(Math.abs(value!), note, when)
+    // The main current account is the default, so it's left unset (spending logged before accounts existed reads the same way).
+    const account = accountID === spendingAccount(accounts)?.id ? undefined : accountID
+    if (editing) update({ ...editing, amount: Math.abs(value!), note: note.trim(), accountID: account, date: date === dayKey(parseDate(editing.date)) ? editing.date : toISO(when) })
+    else log(Math.abs(value!), note, when, account)
     onClose()
   }
 
@@ -45,6 +52,13 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
         </div>
       )}
       <Field label="Day"><input type="date" value={date} max={today} onChange={e => setDate(e.target.value)} /></Field>
+      {spendable.length > 1 && (
+        <Field label="Paid from">
+          <select value={accountID ?? ''} onChange={e => setAccountID(e.target.value || undefined)}>
+            {spendable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        </Field>
+      )}
       <VButton kind="primary" accent="var(--primary)" onClick={save} disabled={!ok}>{editing ? 'Save' : 'Log it'}</VButton>
       {editing && <VButton kind="destructive" onClick={() => { remove(editing.id); onClose() }}>Delete</VButton>}
     </Sheet>

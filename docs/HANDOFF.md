@@ -86,6 +86,32 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance rework — Stage 1 of 3: accounts and checks (10 Oct 2026)
+
+Direction and research: `docs/finance-rework-brief.md` ("Decided
+direction"). Balances are the truth; months become history.
+
+- `finance/src/model/accounts.ts` (tested): optional accounts — current,
+  savings, credit card, loan/other debt (`accounts.json`); each check of
+  a balance is an `Audit` snapshot (`account_audits.json`), both synced
+  (`addedLater`). Card/loan balances are what's owed.
+- Expected balance = last check + everything after that check's day:
+  for the main current account (`spendingAccount`: marked primary, else
+  the first), recurring pay/bills (estimates included) and goal
+  payments; for any account, spending logged against it (cards add to
+  owed). Spending entries gained `accountID` (unset = main current).
+- A check shows "since you last checked" (the movements), expected now,
+  and — for the main current account and cards — any gap as "more went
+  out / came in than expected", noted in one tap as everyday spending or
+  extra in (or left unexplained). Savings and loans just show the change.
+- New **Accounts** tab (first, opens by default): where you stand (have,
+  owe, altogether), account cards (balance, checked N days ago, expected
+  now), Check balance, History (each check with its change; latest can
+  be undone). Log spending has "Paid from" when there's more than one
+  account to spend from. Wording says "check", not "audit".
+- Next: Stage 2 — the forward view: coming up until the next payday and
+  safe to spend (with a cushion) as the main screen.
+
 ## Dark mode and one look for every app (10 Oct 2026)
 
 - Index dark palette in `suite/src/styles.css` (tokens in

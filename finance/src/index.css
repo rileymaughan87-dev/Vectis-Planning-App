@@ -38,6 +38,18 @@
 
 .money-legend .swatch { width: 7px; height: 7px; }
 
+/* ---------- Accounts ---------- */
+/* Where you stand: three serif figures side by side. */
+.standing { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 12px; }
+
+.standing > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.standing-figure { font-family: var(--font-serif); font-size: 26px; line-height: 1.1; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.account-card { gap: 6px; }
+
+.account-balance { font-family: var(--font-serif); font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+
 /* ---------- Budget ---------- */
 .num { font-variant-numeric: tabular-nums; }
 

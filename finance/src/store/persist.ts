@@ -9,6 +9,9 @@ export const Filename = {
   financeGoals: 'finance_goals.json',
   spendingEntries: 'spending_entries.json',
   spendingPot: 'spending_pot.json',
+  /** Web-only: accounts and their audits (model/accounts.ts). */
+  accounts: 'accounts.json',
+  accountAudits: 'account_audits.json',
   /** Web-only: currency choice. */
   preferences: 'preferences.json',
 } as const

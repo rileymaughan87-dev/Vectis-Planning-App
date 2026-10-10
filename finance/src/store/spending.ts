@@ -10,7 +10,8 @@ import { Filename, storage } from './persist'
 interface SpendingState {
   entries: SpendingEntry[]
   pot: SpendingPot
-  log(amount: number, note: string, date: Date): void
+  /** `accountID` unset means the main current account. */
+  log(amount: number, note: string, date: Date, accountID?: string): void
   update(entry: SpendingEntry): void
   remove(id: string): void
   /** Turns the pot on from today. The caller ends repeating flexible entries at the same moment, so nothing counts twice. */
@@ -22,9 +23,9 @@ interface SpendingState {
 export const useSpending = create<SpendingState>()(set => ({
   entries: decodeSpendingEntries(storage.loadRaw(Filename.spendingEntries)),
   pot: decodePot(storage.loadRaw(Filename.spendingPot)),
-  log: (amount, note, date) => {
+  log: (amount, note, date, accountID) => {
     if (amount <= 0) return
-    set(s => ({ entries: [...s.entries, { id: newID(), date: toISO(date), amount, note: note.trim(), source: 'manual' }] }))
+    set(s => ({ entries: [...s.entries, { id: newID(), date: toISO(date), amount, note: note.trim(), source: 'manual', accountID }] }))
   },
   update: entry => set(s => ({ entries: s.entries.map(e => (e.id === entry.id ? entry : e)) })),
   remove: id => set(s => ({ entries: s.entries.filter(e => e.id !== id) })),

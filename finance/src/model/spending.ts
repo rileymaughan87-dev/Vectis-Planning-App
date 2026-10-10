@@ -11,7 +11,7 @@
 // Saved as spending_entries.json and spending_pot.json, the iPhone shapes.
 
 import { addDays, daysBetween, parseDate, startOfDay, startOfWeek, toISO, type ISODate } from '@suite/dates'
-import { bool, isObj, list, num, oneOf, str, type Raw } from '@suite/decode'
+import { bool, isObj, list, num, oneOf, optStr, str, type Raw } from '@suite/decode'
 import { newID } from '@suite/ids'
 
 export interface SpendingEntry {
@@ -21,6 +21,8 @@ export interface SpendingEntry {
   note: string
   /** "shortcut" came from the iPhone's Shortcuts action; the web only logs by hand. */
   source: 'manual' | 'shortcut'
+  /** Which account it came out of (model/accounts.ts); unset means the main current account. */
+  accountID?: string
 }
 
 export interface SpendingPot {
@@ -36,6 +38,7 @@ export const decodeSpendingEntry = (r: Raw): SpendingEntry => ({
   amount: num(r.amount, 0),
   note: str(r.note, ''),
   source: oneOf(r.source, ['manual', 'shortcut'] as const, 'manual'),
+  accountID: optStr(r.accountID),
 })
 
 export const decodeSpendingEntries = (v: unknown) => list(v, decodeSpendingEntry)
