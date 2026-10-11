@@ -46,9 +46,9 @@ export interface SyncApp {
    */
   onLive?: () => Promise<(ctx: LiveContext) => () => void>
   /**
-   * Slices added after devices were already syncing. On a device that
-   * synced before, these merge in the first time (keeping its own items)
-   * rather than being replaced by the cloud's.
+   * Slices added after devices were already syncing. (Kept as a record:
+   * since Oct 2026 every list slice merges in this device's new items on
+   * connecting, not only these.)
    */
   addedLater?: string[]
 }

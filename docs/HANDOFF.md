@@ -104,6 +104,26 @@ them back.
   - `setAside`, `bringBack` and `dismissSetAside` live in
     `suite/src/sync/store.ts`; `sync:set-aside-done` is device-only.
   - Tested in `record/src/tests/setAside.test.ts`.
+- **But the notebook wasn't in the set-aside copy.** Riley's backup from
+  11 Oct showed that device's set-aside copy was from 8 Oct, and it held
+  nothing missing. So the notebook was dropped another way, with no copy
+  kept. There were two ways a device could drop its own unsent items:
+  1. **On connecting:** a device that already syncs takes the cloud's copy
+     of each slice it hasn't marked as edited. That replaced the whole list,
+     so an item made there but never marked or sent was lost. (The shared
+     `vectis:` sync notes make this easy, e.g. signing in through one app
+     while the other app's edits weren't marked.)
+  2. **While live:** another device's change arriving within the 600 ms
+     before this device sent its own new item replaced the list.
+- **Fixes in `engine.ts`:**
+  - On connecting, every list slice now first sends items the cloud has
+    never seen (`mergeIn` → `newToCloud`; items deleted elsewhere have a
+    deleted record, so they stay deleted). This replaces the "merge only
+    unseen slices" rule; `addedLater` is no longer needed but kept.
+  - While live, waiting changes are sent before another device's are taken
+    in.
+- The lost notebook was never sent, so neither the cloud nor either device
+  has it. It can't be recovered.
 
 ## Record: Papers — the finished paper (10 Oct 2026)
 
