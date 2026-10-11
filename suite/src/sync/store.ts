@@ -5,7 +5,7 @@
 
 import type { Firestore } from 'firebase/firestore'
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import type { SliceKind, SyncRecord } from './records'
+import { recordsFor, type SliceKind, type SyncRecord } from './records'
 
 /** What extra syncing (an app's `onLive`) gets while a device is live. */
 export interface LiveContext {
@@ -75,6 +75,15 @@ export interface SyncState {
   signOut(): Promise<void>
   /** A joining device with data of its own: take the synced data, or combine the two (nothing is deleted either way). */
   choose(side: 'combine' | 'cloud'): Promise<void>
+  /**
+   * Items this device had when it first took the synced data that aren't
+   * here now ("1 notebook, 2 notes"), or null. They were set aside, not lost.
+   */
+  setAside(): { savedAt: string; summary: string } | null
+  /** Adds those items back (nothing is removed); sync then sends them to your other devices. */
+  bringBack(): void
+  /** Stops offering them (the set-aside copy itself stays). */
+  dismissSetAside(): void
 }
 
 export type SyncStore = UseBoundStore<StoreApi<SyncState>>
@@ -99,6 +108,8 @@ export const keys = (app: SyncApp) => ({
   /** Slices this device has synced at least once (newer slices merge in on first sight). */
   files: `${app.prefix}sync:files`,
   beforeSync: `${app.prefix}before-sync`,
+  /** The set-aside copy (by its date) you've brought back or said you don't need. */
+  setAsideDone: `${app.prefix}sync:set-aside-done`,
   cloudBeforeSync: `${app.prefix}cloud-before-sync`,
 })
 
@@ -126,15 +137,71 @@ export function createSyncStore(app: SyncApp): SyncStore {
     return engine
   }
 
+  const k = keys(app)
+
+  /** This app's list items in the set-aside copy that aren't here now, by slice. */
+  const missingFromSetAside = (): { savedAt: string; items: Map<SyncSlice, { id: string }[]> } | null => {
+    let saved: { savedAt?: unknown; entries?: Record<string, string> }
+    try {
+      saved = JSON.parse(read(k.beforeSync) ?? 'null') ?? {}
+    } catch {
+      return null
+    }
+    const savedAt = typeof saved.savedAt === 'string' ? saved.savedAt : ''
+    if (!saved.entries || read(k.setAsideDone) === savedAt) return null
+    const items = new Map<SyncSlice, { id: string }[]>()
+    for (const s of app.slices) {
+      const text = saved.entries[s.file]
+      if (s.kind !== 'list' || typeof text !== 'string') continue
+      let before: unknown
+      try {
+        before = s.decode(JSON.parse(text))
+      } catch {
+        continue
+      }
+      const now = s.get()
+      const have = new Set(Array.isArray(now) ? now.map(i => (i as { id?: unknown })?.id) : [])
+      const missing = (Array.isArray(before) ? before : []).filter(i => typeof i?.id === 'string' && !have.has(i.id))
+      if (missing.length) items.set(s, missing)
+    }
+    return items.size ? { savedAt, items } : null
+  }
+  const done = (savedAt: string) => {
+    try {
+      localStorage.setItem(k.setAsideDone, savedAt)
+    } catch {
+      // Storage unavailable: it will be offered again.
+    }
+  }
+
   const useSync: SyncStore = create<SyncState>()(() => ({
     phase: firebaseConfig() ? 'signedOut' : 'unavailable',
     status: 'upToDate',
     signIn: async () => (await loadEngine()).signIn(),
     signOut: async () => (await loadEngine()).signOut(),
     choose: async side => (await loadEngine()).choose(side),
+    setAside: () => {
+      const found = missingFromSetAside()
+      if (!found) return null
+      const records = new Map<string, SyncRecord>()
+      for (const [s, list] of found.items) for (const [id, r] of recordsFor(s.file, s.kind, list)) records.set(id, r)
+      return { savedAt: found.savedAt, summary: app.describe(records) }
+    },
+    bringBack: () => {
+      const found = missingFromSetAside()
+      if (!found) return
+      for (const [s, list] of found.items) {
+        const now = s.get()
+        s.set([...(Array.isArray(now) ? now : []), ...list])
+      }
+      done(found.savedAt)
+    },
+    dismissSetAside: () => {
+      const found = missingFromSetAside()
+      if (found) done(found.savedAt)
+    },
   }))
 
-  const k = keys(app)
   for (const slice of app.slices) {
     slice.subscribe(() => {
       if (attachment.attached || !read(k.user)) return
