@@ -53,8 +53,6 @@ function friendly(error: unknown): string {
 }
 
 export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attachment): Engine {
-  /** Slices a device synced before it kept a list of them: all but those the app added later. */
-  const FIRST_TRACKED = app.slices.map(s => s.file).filter(f => !(app.addedLater ?? []).includes(f))
   const k = keys(app)
   const config = firebaseConfig()
   if (!config) {
@@ -138,7 +136,12 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
     send(writes)
   }
 
-  /** Merges list slices this device has never synced: only items the cloud has never seen go up. */
+  /**
+   * Before taking the cloud's copy of list slices: this device's items the
+   * cloud has never seen (no record, not even a deleted one) go up first,
+   * so they're kept rather than replaced. Items deleted on another device
+   * have a deleted record, so they don't come back.
+   */
   const mergeIn = (slices: SyncSlice[]) => {
     const writes = new Map<string, SyncRecord>()
     for (const s of slices) {
@@ -217,6 +220,9 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
 
     // Changes from other devices come down as they happen.
     stopListening = onSnapshot(col, { includeMetadataChanges: true }, snap => {
+      // Send this device's waiting changes first, so taking the other device's
+      // can't replace something made here a moment ago that hadn't gone up yet.
+      if (snap.docChanges().some(c => !c.doc.metadata.hasPendingWrites)) flush()
       const files = new Set<string>()
       for (const change of snap.docChanges()) {
         if (change.doc.metadata.hasPendingWrites) continue // our own, already applied
@@ -298,13 +304,12 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
         // (and anything the cloud has never had, such as a slice added in a later version).
         const pending = new Set<string>(JSON.parse(localStorage.getItem(k.pending) ?? '[]'))
         const inCloud = (s: SyncSlice) => [...known.values()].some(r => r.file === s.file)
-        // Before this was tracked, every slice the app then had was synced: assume those.
-        const seen = new Set<string>(JSON.parse(localStorage.getItem(k.files) ?? 'null') ?? FIRST_TRACKED)
         const fromHere = (s: SyncSlice) => pending.has(s.file) || !inCloud(s)
         clearPending()
-        // A slice new to this device that another device already sent: merge rather than replace.
         push(allSlices.filter(fromHere))
-        mergeIn(allSlices.filter(s => !fromHere(s) && !seen.has(s.file)))
+        // Anything made here the cloud has never seen is kept, not replaced (Oct 2026: a notebook made
+        // on a device whose edits weren't marked as waiting was replaced by the cloud's list).
+        mergeIn(allSlices.filter(s => !fromHere(s)))
         pull(allSlices.filter(s => !fromHere(s)))
         markSynced()
         goLive()
