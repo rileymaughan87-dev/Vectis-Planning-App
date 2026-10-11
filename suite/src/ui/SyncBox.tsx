@@ -5,6 +5,7 @@
 // Shared by Planner and Finance; each passes its own sync store.
 
 import { Cloud, CloudOff, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
 import type { SyncStore } from '../sync/store'
 import { EditorBox, VButton } from './components'
 
@@ -21,7 +22,9 @@ export function SyncBox({ useSync, what, notYet }: {
   /** Anything that doesn't sync yet, said plainly. */
   notYet?: string
 }) {
-  const { phase, email, status, lastSyncedAt, error, choice, signIn, signOut, choose } = useSync()
+  const { phase, email, status, lastSyncedAt, error, choice, signIn, signOut, choose, setAside, bringBack, dismissSetAside } = useSync()
+  const [, redraw] = useState(0)
+  const aside = phase === 'connecting' || phase === 'choose' ? null : setAside()
 
   if (phase === 'unavailable') return null
 
@@ -48,15 +51,15 @@ export function SyncBox({ useSync, what, notYet }: {
             A one-time choice for this device. Neither option deletes anything from your synced data, and this device's copy is set aside in case you need it.
           </p>
           <div className="sync-choice">
-            <button type="button" onClick={() => void choose('cloud')}>
-              <strong>Use the synced data</strong>
-              <span className="caption">{choice.cloud}</span>
-              <span className="caption2">Replaces what's on this device. The usual choice.</span>
-            </button>
             <button type="button" onClick={() => void choose('combine')}>
               <strong>Combine both</strong>
               <span className="caption">Adds this device's {choice.device}</span>
-              <span className="caption2">Keeps everything synced and adds this device's items. Where both have the same item, this device's version is kept.</span>
+              <span className="caption2">Keeps everything synced and adds this device's items. Where both have the same item, this device's version is kept. The usual choice.</span>
+            </button>
+            <button type="button" onClick={() => void choose('cloud')}>
+              <strong>Use only the synced data</strong>
+              <span className="caption">{choice.cloud}</span>
+              <span className="caption2">Leaves out this device's items. They're set aside, and can be added back from here later.</span>
             </button>
           </div>
         </>
@@ -80,6 +83,20 @@ export function SyncBox({ useSync, what, notYet }: {
         <>
           <VButton onClick={() => void signOut()}>Sign out and try again</VButton>
         </>
+      )}
+
+      {aside && (
+        <div className="notice">
+          <strong>Set aside when this device first synced</strong>
+          <p className="help" style={{ margin: '4px 0 8px' }}>
+            From this device{aside.savedAt ? ` on ${new Date(aside.savedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}` : ''}, not
+            here now: {aside.summary}. Adding back keeps everything you have and sends them to your other devices.
+          </p>
+          <div className="button-row">
+            <VButton small kind="primary" accent="var(--primary)" onClick={() => { bringBack(); redraw(n => n + 1) }}>Add them back</VButton>
+            <VButton small onClick={() => { dismissSetAside(); redraw(n => n + 1) }}>Not needed</VButton>
+          </div>
+        </div>
       )}
 
       {error && <div className="notice error">{error}</div>}

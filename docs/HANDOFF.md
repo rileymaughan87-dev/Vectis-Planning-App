@@ -86,6 +86,25 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Sync: bringing back what a first sync set aside (11 Oct 2026)
+
+Riley made a different notebook on each device and then turned sync on.
+One notebook disappeared. The joining device's choice had "Use the synced
+data" marked as the usual one, and that replaces the device's items. They
+weren't lost: they're kept in `vectis:before-sync`, but nothing offered
+them back.
+
+- **The choice:** "Combine both" is now first and marked as the usual
+  choice. The other option is now "Use only the synced data" and says the
+  device's items are set aside.
+- **Bringing them back:** the sync box in every app's Settings shows
+  anything in the set-aside copy that isn't there now ("1 notebook"),
+  with **Add them back**, which only adds and never removes (sync then
+  sends the items on), and **Not needed**.
+  - `setAside`, `bringBack` and `dismissSetAside` live in
+    `suite/src/sync/store.ts`; `sync:set-aside-done` is device-only.
+  - Tested in `record/src/tests/setAside.test.ts`.
+
 ## Record: Papers — the finished paper (10 Oct 2026)
 
 Riley's follow-ups to Stage 3. Updated where Stage 3 below disagrees.

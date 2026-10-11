@@ -11,7 +11,9 @@
 // shows), when you choose: take the synced data, or combine the two. No
 // choice ever deletes anything from the cloud (Oct 2026: replacing the
 // cloud with a re-added Home Screen app's empty copy wiped Riley's data).
-// The side that's replaced is also set aside in localStorage.
+// The side that's replaced is also set aside in localStorage, and the
+// sync box offers to add back anything set aside that isn't there now
+// (Oct 2026: "Use the synced data" left a notebook out).
 
 import { getApps, initializeApp } from 'firebase/app'
 import {

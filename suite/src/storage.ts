@@ -21,7 +21,7 @@ export interface AppStorage {
  * they are here. (Each device keeps its own id; sync's own notes are
  * rewritten below; the copies set aside before a first sync are old.)
  */
-const DEVICE_ONLY = ['device-id', 'sync:pending', 'sync:files', 'before-sync', 'cloud-before-sync']
+const DEVICE_ONLY = ['device-id', 'sync:pending', 'sync:files', 'sync:set-aside-done', 'before-sync', 'cloud-before-sync']
 
 /**
  * Writes a backup's entries back as saved text, then marks every data file
