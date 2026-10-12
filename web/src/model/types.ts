@@ -66,6 +66,12 @@ export interface CalendarEvent {
   /** The plan's duration, frozen the first time an actual is logged. */
   estimatedMinutes?: number
   actualMinutes?: number
+  /**
+   * Web only, never saved in your own events: set on an event from a
+   * shared calendar (store/shared.ts), with who added it.
+   */
+  sharedCalendarID?: ID
+  addedByName?: string
 }
 
 export interface Milestone {

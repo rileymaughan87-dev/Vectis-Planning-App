@@ -21,6 +21,7 @@ import { decodePalette } from '../model/palette'
 import { useData, type DataState } from './data'
 import { Filename, allEntries } from './persist'
 import { decodePartners, decodeShareSettings, useShare, type Partner } from './share'
+import { decodeMyShared, useShared } from './shared'
 
 function slice<K extends keyof DataState>(key: K, file: string, kind: SyncSlice['kind'], decode: (raw: unknown) => DataState[K]): SyncSlice {
   return {
@@ -96,14 +97,27 @@ const partners: SyncSlice = {
   }),
 }
 
+/** Which shared calendars you're in and which show for you (the calendars themselves are shared separately). */
+const sharedCalendars: SyncSlice = {
+  file: Filename.sharedCalendars,
+  kind: 'list',
+  get: () => useShared.getState().mine,
+  set: value => useShared.setState({ mine: value as ReturnType<typeof decodeMyShared> }),
+  decode: decodeMyShared,
+  subscribe: onChange => useShared.subscribe((s, p) => {
+    if (s.mine !== p.mine) onChange()
+  }),
+}
+
 export const useSync = createSyncStore({
   name: 'Planner',
   collection: 'planner',
   prefix: 'vectis:',
-  slices: [...PLANNER_SLICES, shareSettings, partners],
+  slices: [...PLANNER_SLICES, shareSettings, partners, sharedCalendars],
   // Accountability joined sync on 9 Oct 2026, after phone and laptop were already syncing.
   // Category colours joined on 10 Oct 2026.
-  addedLater: [Filename.share, Filename.partners, Filename.categoryPalette],
+  // Shared calendars on 12 Oct 2026.
+  addedLater: [Filename.share, Filename.partners, Filename.categoryPalette, Filename.sharedCalendars],
   contentFiles: [Filename.goals, Filename.calendarEvents, Filename.tasks, Filename.journalEntries],
   describe: records => describeCounts([
     ['goal', 'goals', countIn(records, Filename.goals)],

@@ -11,6 +11,7 @@ import { commitmentFraction } from '../model/dayBlocks'
 import { formatDuration, formatTime } from '../model/format'
 import { BIG_ITEM_MINUTES, fixedEvents, planningItems, type PlanningItem } from '../model/planning'
 import { useData } from '../store/data'
+import { useCalendarData } from '../store/calendarView'
 import { CommitmentBar, Sheet, Stepper, VButton } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 
@@ -23,7 +24,8 @@ export function PlanningCapture({ date, colors, onClose, onStartPlacing }: {
   /** Called on finish if anything is still unplaced — opens the tray. */
   onStartPlacing: () => void
 }) {
-  const { goals, events, tasks, categories, hours } = useData()
+  const { goals, tasks, hours } = useData()
+  const { events, categories } = useCalendarData()
   const fixed = fixedEvents(events, date)
   const items = planningItems(goals, tasks, date)
   const big = items.filter(i => i.durationMinutes >= BIG_ITEM_MINUTES)

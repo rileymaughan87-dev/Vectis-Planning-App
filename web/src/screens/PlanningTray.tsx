@@ -13,6 +13,7 @@ import { commitmentFraction } from '../model/dayBlocks'
 import { formatDuration } from '../model/format'
 import { planningItems, type PlanningItem } from '../model/planning'
 import { useData } from '../store/data'
+import { useCalendarData } from '../store/calendarView'
 import { CommitmentBar, Field, Sheet, VButton } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 
@@ -41,7 +42,8 @@ export function PlanningTray(props: {
   onPreview: (preview: DropPreview | null) => void
   onDone: () => void
 }) {
-  const { goals, events, tasks, categories, hours, scheduleGoalOnCalendar, placeTask } = useData()
+  const { goals, tasks, hours, scheduleGoalOnCalendar, placeTask } = useData()
+  const { events, categories } = useCalendarData()
   const items = planningItems(goals, tasks, props.date)
   const fraction = commitmentFraction({ goals, events, tasks, categories }, hours, props.date)
   const dragRef = useRef<Drag | null>(null)

@@ -25,6 +25,7 @@ import type {
   AppearanceSettings, CalendarCategory, CalendarEvent, CalendarHours, Goal, JournalEntry, PlanReviewSettings, VectisTask,
 } from '../model/types'
 import { Filename, loadRaw, saveRaw } from './persist'
+import { useShared } from './shared'
 
 export interface DataState {
   goals: Goal[]
@@ -136,6 +137,17 @@ function repairOrphanedEvents(events: CalendarEvent[], categories: CalendarCateg
 const mapGoal = (goals: Goal[], id: string, f: (g: Goal) => Goal) => goals.map(g => (g.id === id ? f(g) : g))
 const mapEvent = (events: CalendarEvent[], id: string, f: (e: CalendarEvent) => CalendarEvent) =>
   events.map(e => (e.id === id ? f(e) : e))
+
+/**
+ * The same edit for your own events or a shared calendar's: a shared
+ * event's change goes to its calendar (store/shared.ts), everyone in it
+ * sees it; your own events change here.
+ */
+function editEvents(s: DataState, id: string, f: (events: CalendarEvent[]) => CalendarEvent[]): Partial<DataState> {
+  if (s.events.some(e => e.id === id)) return { events: f(s.events) }
+  useShared.getState().apply(f)
+  return {}
+}
 const mapTask = (tasks: VectisTask[], id: string, f: (t: VectisTask) => VectisTask) => tasks.map(t => (t.id === id ? f(t) : t))
 const clampStart = (minutes: number, max: number) => Math.min(Math.max(minutes, 0), max)
 
@@ -194,31 +206,30 @@ export const useData = create<DataState & Actions>()(set => ({
   restartChallenge: goalID => set(s => ({ goals: challenges.restartChallenge(s.goals, goalID) })),
   resolveChallengeDay: (goalID, date, completed) => set(s => ({ goals: challenges.resolveDay(s.goals, goalID, date, completed) })),
 
-  addEvent: event => set(s => ({ events: [...s.events, event] })),
-  updateEvent: event => set(s => ({ events: mapEvent(s.events, event.id, () => event) })),
-  moveEvent: (id, newStart) => set(s => ({ events: mapEvent(s.events, id, e => moved(e, newStart)) })),
-  resizeEvent: (id, newEnd) => set(s => ({ events: mapEvent(s.events, id, e => resized(e, newEnd)) })),
+  addEvent: event => {
+    if (event.sharedCalendarID) useShared.getState().apply(list => [...list, event])
+    else set(s => ({ events: [...s.events, event] }))
+  },
+  updateEvent: event => set(s => editEvents(s, event.id, l => mapEvent(l, event.id, () => event))),
+  moveEvent: (id, newStart) => set(s => editEvents(s, id, l => mapEvent(l, id, e => moved(e, newStart)))),
+  resizeEvent: (id, newEnd) => set(s => editEvents(s, id, l => mapEvent(l, id, e => resized(e, newEnd)))),
 
   setOccurrenceTime: (eventID, date, startMinutes) =>
-    set(s => ({
-      events: mapEvent(s.events, eventID, e => ({
-        ...e,
-        timeOverrides: { ...e.timeOverrides, [dayKey(date)]: clampStart(startMinutes, 23 * 60 + 55) },
-      })),
-    })),
+    set(s => editEvents(s, eventID, l => mapEvent(l, eventID, e => ({
+      ...e,
+      timeOverrides: { ...e.timeOverrides, [dayKey(date)]: clampStart(startMinutes, 23 * 60 + 55) },
+    })))),
 
   setOccurrenceDuration: (eventID, date, minutes) =>
-    set(s => ({ events: mapEvent(s.events, eventID, e => withOccurrenceDuration(e, date, minutes)) })),
+    set(s => editEvents(s, eventID, l => mapEvent(l, eventID, e => withOccurrenceDuration(e, date, minutes)))),
   logOccurrenceActual: (eventID, date, minutes) =>
-    set(s => ({ events: mapEvent(s.events, eventID, e => withOccurrenceActual(e, date, minutes)) })),
+    set(s => editEvents(s, eventID, l => mapEvent(l, eventID, e => withOccurrenceActual(e, date, minutes)))),
   changeTimesFromOccurrence: (eventID, date, startMinutes, durationMinutes) =>
-    set(s => ({ events: splitSeriesFrom(s.events, eventID, date, startMinutes, durationMinutes, newID) })),
+    set(s => editEvents(s, eventID, l => splitSeriesFrom(l, eventID, date, startMinutes, durationMinutes, newID))),
 
-  deleteEvent: id => set(s => ({ events: s.events.filter(e => e.id !== id) })),
+  deleteEvent: id => set(s => editEvents(s, id, l => l.filter(e => e.id !== id))),
   deleteOccurrence: (eventID, date) =>
-    set(s => ({
-      events: mapEvent(s.events, eventID, e => ({ ...e, excludedOccurrences: [...new Set([...e.excludedOccurrences, dayKey(date)])] })),
-    })),
+    set(s => editEvents(s, eventID, l => mapEvent(l, eventID, e => ({ ...e, excludedOccurrences: [...new Set([...e.excludedOccurrences, dayKey(date)])] })))),
 
   setCategories: categories => set({ categories }),
   addCategory: name => set(s => ({ categories: [...s.categories, { id: newID(), name, colorHex: colorForNew(s.palette, s.categories.length) }] })),

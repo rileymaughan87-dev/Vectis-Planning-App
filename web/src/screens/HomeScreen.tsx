@@ -12,6 +12,7 @@ import { formatDuration, formatTime } from '../model/format'
 import { isScheduled } from '../model/goals'
 import { hasReviewed } from '../model/planning'
 import { sortedTasks, useData } from '../store/data'
+import { useCalendarData } from '../store/calendarView'
 import { CompletionMark, SectionBox, Sheet } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 import { EveningReview } from './EveningReview'
@@ -38,7 +39,8 @@ export function useNow(intervalMs = 30_000) {
 
 export function HomeScreen({ colors }: { colors: ThemeColors }) {
   const now = useNow()
-  const { goals, events, tasks, categories, journal, planReview, setCompletion } = useData()
+  const { goals, tasks, journal, planReview, setCompletion } = useData()
+  const { events, categories } = useCalendarData()
   const [reviewing, setReviewing] = useState(false)
   const [tasksOpen, setTasksOpen] = useState(false)
 

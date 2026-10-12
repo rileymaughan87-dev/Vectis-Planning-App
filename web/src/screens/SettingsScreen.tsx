@@ -12,6 +12,7 @@ import { EditorBox, Field, Sheet, SummaryRow, Toggle, VButton } from '../ui/comp
 import { CategoryColoursSheet, ColourPicker } from './CategoryColours'
 import { SyncBox } from '@suite/ui/SyncBox'
 import { useSync } from '../store/sync'
+import { SharedCalendarsBox } from './SharedCalendars'
 
 const toTime = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
@@ -29,6 +30,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
       <SyncBox useSync={useSync} what="your goals, calendar, tasks, settings and journal" />
+      <SharedCalendarsBox />
 
       <EditorBox title="Plan and review">
         <Toggle label="Plan and review" checked={planReview.isEnabled} onChange={isEnabled => setPlanReview({ isEnabled })} />
