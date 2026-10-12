@@ -23,6 +23,8 @@ export const Filename = {
   partners: 'partners.json',
   /** Which category colours are in use: a preset or your own (model/palette.ts). */
   categoryPalette: 'category_palette.json',
+  /** Shared calendars you're in, and whether each shows on your calendar (store/shared.ts). */
+  sharedCalendars: 'shared_calendars.json',
 } as const
 
 export type FilenameValue = (typeof Filename)[keyof typeof Filename]

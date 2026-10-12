@@ -11,6 +11,7 @@ import { formatTime } from '../model/format'
 import { isTargetOverdue, milestonePercent } from '../model/goals'
 import { longTermItems, startOfMonth, type LongTermItem } from '../model/longTerm'
 import { useData } from '../store/data'
+import { useCalendarData } from '../store/calendarView'
 import { SectionBox, Sheet, VButton, accentStyle } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 import { EventEditor, type EventEditorTarget } from './EventEditor'
@@ -18,7 +19,8 @@ import { EventEditor, type EventEditorTarget } from './EventEditor'
 const MAX_VISIBLE = 3
 
 export function LongTermScreen({ colors }: { colors: ThemeColors }) {
-  const { goals, events, categories } = useData()
+  const goals = useData(s => s.goals)
+  const { events, categories } = useCalendarData()
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
   const [selected, setSelected] = useState<Date | null>(null)
   const [editor, setEditor] = useState<EventEditorTarget | null>(null)

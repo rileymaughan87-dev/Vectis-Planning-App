@@ -86,6 +86,27 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Planner: shared calendars (12 Oct 2026) — built, awaiting the Firebase rules
+
+Riley's choices:
+- Shared Planner calendars, like Apple's Family calendar.
+- Everyone in a calendar can add and change its events.
+- Each event shows who added it.
+- Each person ticks whether a calendar shows for them.
+
+Details, and the Firestore rules Riley pastes in once, are in
+`docs/shared-calendars.md`. In short:
+- Calendars live at `calendars/{id}` in Firebase, with `events` and
+  `invites` beneath. Only members can read or change one; an invitation's
+  code lets a signed-in person add only themselves.
+- Shared calendars need sync to be on (the same Google sign-in).
+- A shared calendar is a category `shared:{id}` in the event editor.
+- Planner's Settings has a Shared calendars box: tick a calendar to show
+  it, invite someone (link `#join=…~…`), leave, or make a new one.
+- Shared edits go through `editEvents` in `store/data.ts`.
+- Not tested against Firebase by Claude (it can't sign in). The first real
+  check is Riley publishing the rules and making a calendar.
+
 ## Planner: repeat rules — every 2 weeks and custom (12 Oct 2026)
 
 Riley asked for custom frequencies and an every-2-weeks preset, for goals

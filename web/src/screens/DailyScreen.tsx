@@ -13,6 +13,7 @@ import { contrastingText, darkened, formatDayHeading, formatMinutes, formatTime,
 import { isScheduled } from '../model/goals'
 import type { Goal } from '../model/types'
 import { useData } from '../store/data'
+import { useCalendarData } from '../store/calendarView'
 import { CompletionMark, Sheet, VButton } from '../ui/components'
 import type { ThemeColors } from '../ui/theme'
 import { EveningReview } from './EveningReview'
@@ -43,7 +44,9 @@ interface DragState {
 
 export function DailyScreen({ colors }: { colors: ThemeColors }) {
   const data = useData()
-  const { goals, events, tasks, categories, hours } = data
+  const { goals, tasks, hours } = data
+  // Your events plus the shared calendars you've ticked.
+  const { events, categories } = useCalendarData()
   const now = useNow(60_000)
   const [dayOffset, setDayOffset] = useState(0)
   const [slot, setSlot] = useState(() => Number(localStorage.getItem('vectis:ui:slot')) || 24)
@@ -374,7 +377,11 @@ export function DailyScreen({ colors }: { colors: ThemeColors }) {
                       <span className="ellipsis">{block.title}</span>
                     </div>
                     {height > 34 && (
-                      <div className="time">{formatTime(addMinutes(block.start, delta))} – {formatTime(addMinutes(block.end, delta))}</div>
+                      <div className="time">
+                        {formatTime(addMinutes(block.start, delta))} – {formatTime(addMinutes(block.end, delta))}
+                        {/* A shared calendar's event says who added it. */}
+                        {block.event?.addedByName ? ` · ${block.event.addedByName}` : ''}
+                      </div>
                     )}
                   </>
                 )}

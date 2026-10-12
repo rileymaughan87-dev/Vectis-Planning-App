@@ -212,3 +212,6 @@
 .repeat-sentence select, .repeat-sentence input { width: auto; flex: 0 1 auto; }
 
 .repeat-interval { width: 64px !important; text-align: center; }
+
+/* A shared calendar in Settings: its tick, who's in it, invite and leave. */
+.shared-calendar { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--separator); }

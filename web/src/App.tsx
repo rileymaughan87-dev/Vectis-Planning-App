@@ -12,6 +12,7 @@ import { HomeScreen } from './screens/HomeScreen'
 import { LongTermScreen } from './screens/LongTermScreen'
 import { PartnerView } from './screens/PartnerView'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { JoinSharedSheet } from './screens/SharedCalendars'
 import { useData } from './store/data'
 import { useShare } from './store/share'
 import { fileIDFromLink } from './sync/google'
@@ -75,6 +76,7 @@ export default function App() {
   const [invite, setInvite] = useState<string | null>(null)
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviteBusy, setInviteBusy] = useState(false)
+  const [joining, setJoining] = useState<{ id: string; code: string } | null>(null)
 
   useEffect(() => {
     try {
@@ -84,9 +86,16 @@ export default function App() {
     }
   }, [tab])
 
-  // Opening a partner's link (…#partner=<file id>) offers to follow them.
+  // Opening a partner's link (…#partner=<file id>) offers to follow them;
+  // a shared calendar's invitation (…#join=<calendar>~<code>) offers to join it.
   useEffect(() => {
     const check = () => {
+      const join = /join=([A-Za-z0-9]+)~([A-Za-z0-9]+)/.exec(location.hash)
+      if (join) {
+        history.replaceState(null, '', location.pathname + location.search)
+        setJoining({ id: join[1], code: join[2] })
+        return
+      }
       if (!location.hash.includes('partner=')) return
       const id = fileIDFromLink(location.hash)
       history.replaceState(null, '', location.pathname + location.search)
@@ -140,6 +149,8 @@ export default function App() {
               <VButton onClick={() => setInvite(null)}>Not now</VButton>
             </Sheet>
           )}
+
+          {joining && <JoinSharedSheet invite={joining} onClose={() => setJoining(null)} />}
 
           {partnerID && <PartnerView partnerID={partnerID} colors={colors} onBack={() => setPartnerID(null)} />}
         </>

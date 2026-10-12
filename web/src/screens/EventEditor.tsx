@@ -11,6 +11,8 @@ import { newID } from '../model/ids'
 import { describeRule, ruleFor, type RepeatRule } from '../model/repeat'
 import type { CalendarEvent, EventOrigin, EventPart, EventRecurrence } from '../model/types'
 import { useData } from '../store/data'
+import { useCalendarData } from '../store/calendarView'
+import { calendarOfCategory, isSharedCategory } from '../store/shared'
 import { RepeatRuleEditor } from './RepeatRuleEditor'
 import {
   EditorBox, Field, RepeatDaysPicker, Sheet, Stepper, SummaryRow, Toggle, VButton, accentStyle, repeatSummary,
@@ -43,9 +45,11 @@ const minutesBetween = (a: Date, b: Date) => Math.round((b.getTime() - a.getTime
 
 export function EventEditor({ target, onClose }: { target: EventEditorTarget; onClose: () => void }) {
   const {
-    categories, goals, events, addEvent, updateEvent, deleteEvent, deleteOccurrence, setOccurrenceTime, resizeEvent,
+    goals, addEvent, updateEvent, deleteEvent, deleteOccurrence, setOccurrenceTime, resizeEvent,
     setOccurrenceDuration, logOccurrenceActual, changeTimesFromOccurrence,
   } = useData()
+  // Shared calendars you've ticked are offered as categories: choosing one puts the event in it.
+  const { events, categories } = useCalendarData()
   const original = target.mode === 'edit' ? target.event : null
 
   const [page, setPage] = useState<Page>('main')
@@ -131,6 +135,22 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
     const fields = {
       title: resolvedTitle, categoryID, isAllDay, flowsToDaily: isAllDay ? false : flowsToDaily,
       recurrence, repeatRule, recurrenceEndDate, repeatDays: savedRepeatDays, parts, linkedGoalID, origin, isFlexible,
+      sharedCalendarID: calendarOfCategory(categoryID),
+    }
+
+    // Into or out of a shared calendar (or between two): it moves there whole.
+    if (original && original.sharedCalendarID !== fields.sharedCalendarID) {
+      const series = events.find(e => e.id === original.id) ?? original
+      const repeating = original.recurrence !== 'none'
+      const moved = {
+        ...series, ...fields, addedByName: undefined,
+        // A repeating event keeps its series' own first day; a one-off takes the times shown here.
+        ...(repeating ? {} : { startDate: toISO(resolvedStart), endDate: toISO(resolvedEnd) }),
+      }
+      deleteEvent(original.id)
+      addEvent(moved)
+      onClose()
+      return
     }
 
     if (original && original.recurrence !== 'none') {
@@ -301,12 +321,29 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
 
       <EditorBox title="Category" accent={accent}>
         <div className="chips">
-          {categories.map(c => (
+          {categories.filter(c => !isSharedCategory(c.id)).map(c => (
             <button key={c.id} className="chip" aria-pressed={categoryID === c.id} style={{ '--chip-color': c.colorHex } as CSSProperties} onClick={() => setCategoryID(c.id)}>
               <span className="swatch" style={{ background: c.colorHex }} />{c.name}
             </button>
           ))}
         </div>
+        {categories.some(c => isSharedCategory(c.id)) && (
+          <>
+            <span className="field-label">Shared calendars</span>
+            <div className="chips">
+              {categories.filter(c => isSharedCategory(c.id)).map(c => (
+                <button key={c.id} className="chip" aria-pressed={categoryID === c.id} style={{ '--chip-color': c.colorHex } as CSSProperties} onClick={() => setCategoryID(c.id)}>
+                  <span className="swatch" style={{ background: c.colorHex }} />{c.name}
+                </button>
+              ))}
+            </div>
+            <p className="help">
+              {isSharedCategory(categoryID)
+                ? `Everyone in ${categories.find(c => c.id === categoryID)?.name ?? 'this calendar'} sees this event and can change it.${original?.addedByName ? ` Added by ${original.addedByName}.` : ''}`
+                : 'Choose a shared calendar to put this event in it for everyone in it.'}
+            </p>
+          </>
+        )}
       </EditorBox>
 
       <SummaryRow title="Repeats" summary={repeatsText} onClick={() => setPage('repeats')} />
