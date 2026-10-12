@@ -8,13 +8,26 @@ import { addMonths, atMinutes, dayFromKey, dayKey, daysBetween, minutesFromMidni
 import { makeEvent } from '../model/events'
 import { formatDuration } from '../model/format'
 import { newID } from '../model/ids'
+import { describeRule, ruleFor, type RepeatRule } from '../model/repeat'
 import type { CalendarEvent, EventOrigin, EventPart, EventRecurrence } from '../model/types'
 import { useData } from '../store/data'
+import { RepeatRuleEditor } from './RepeatRuleEditor'
 import {
   EditorBox, Field, RepeatDaysPicker, Sheet, Stepper, SummaryRow, Toggle, VButton, accentStyle, repeatSummary,
 } from '../ui/components'
 
 type Page = 'main' | 'repeats' | 'parts' | 'links'
+
+/** What the Repeats menu offers: the plain repeats, every 2 weeks, or a custom rule. */
+type RepeatChoice = EventRecurrence | 'biweekly' | 'custom'
+const isBiweekly = (r: RepeatRule) => r.unit === 'week' && r.interval === 2 && r.weekdays.length === 1
+
+/** The plain repeat nearest a rule, kept for the iPhone app (which doesn't know rules). */
+function nearestRecurrence(r: RepeatRule): EventRecurrence {
+  if (r.unit === 'day') return 'daily'
+  if (r.unit === 'week') return r.weekdays.length === 1 ? 'weekly' : 'daily'
+  return 'monthly'
+}
 
 export type EventEditorTarget =
   | { mode: 'new'; date: Date; startMinutes: number; endMinutes: number; allDay?: boolean; origin?: EventOrigin }
@@ -44,7 +57,9 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
   const [flowsToDaily, setFlowsToDaily] = useState(original?.flowsToDaily ?? !(target.mode === 'new' && target.allDay))
   const [userSetDaily, setUserSetDaily] = useState(Boolean(original))
   const [isFlexible, setIsFlexible] = useState(original?.isFlexible ?? false)
-  const [recurrence, setRecurrence] = useState<EventRecurrence>(original?.recurrence ?? 'none')
+  const [choice, setChoice] = useState<RepeatChoice>(() =>
+    original?.repeatRule ? (isBiweekly(original.repeatRule) ? 'biweekly' : 'custom') : original?.recurrence ?? 'none')
+  const [customRule, setCustomRule] = useState<RepeatRule | undefined>(original?.repeatRule)
   const [recurrenceEndDate, setRecurrenceEndDate] = useState(original?.recurrenceEndDate)
   const [repeatDays, setRepeatDays] = useState(original?.repeatDays ?? [1, 2, 3, 4, 5, 6, 7])
   const [parts, setParts] = useState<EventPart[]>(original?.parts ?? [])
@@ -83,7 +98,13 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
   const partsTotal = parts.reduce((a, p) => a + p.estimatedMinutes, 0)
   const blockMinutes = Math.max(minutesBetween(start, end), 0)
 
-  const repeatsText = recurrence === 'none' ? 'Never' : recurrence === 'weekly' ? 'Every week' : recurrence === 'monthly' ? 'Every month' : repeatSummary(repeatDays)
+  // The rule (if any) and the plain repeat saved with it.
+  const repeatRule: RepeatRule | undefined =
+    choice === 'biweekly' ? ruleFor(start, 'week', 2) : choice === 'custom' ? customRule ?? ruleFor(start) : undefined
+  const recurrence: EventRecurrence = repeatRule ? nearestRecurrence(repeatRule) : (choice as EventRecurrence)
+  const savedRepeatDays = repeatRule?.unit === 'week' && repeatRule.weekdays.length > 1 ? repeatRule.weekdays : repeatDays
+  const repeatsText = repeatRule ? describeRule(repeatRule)
+    : recurrence === 'none' ? 'Never' : recurrence === 'weekly' ? 'Every week' : recurrence === 'monthly' ? 'Every month' : repeatSummary(repeatDays)
   const partsText = parts.length === 0 ? 'None' : `${parts.length} part${parts.length === 1 ? '' : 's'} · ${formatDuration(partsTotal)}`
   const linksText = goals.find(g => g.id === linkedGoalID)?.title ?? 'None'
 
@@ -109,7 +130,7 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
 
     const fields = {
       title: resolvedTitle, categoryID, isAllDay, flowsToDaily: isAllDay ? false : flowsToDaily,
-      recurrence, recurrenceEndDate, repeatDays, parts, linkedGoalID, origin, isFlexible,
+      recurrence, repeatRule, recurrenceEndDate, repeatDays: savedRepeatDays, parts, linkedGoalID, origin, isFlexible,
     }
 
     if (original && original.recurrence !== 'none') {
@@ -153,14 +174,30 @@ export function EventEditor({ target, onClose }: { target: EventEditorTarget; on
         {page === 'repeats' && (
           <>
             <EditorBox title="Repeats" accent={accent}>
-              <select value={recurrence} onChange={e => setRecurrence(e.target.value as EventRecurrence)} aria-label="Repeats">
+              <select
+                value={choice}
+                onChange={e => {
+                  const next = e.target.value as RepeatChoice
+                  if (next === 'custom' && !customRule) setCustomRule(repeatRule ?? ruleFor(start))
+                  setChoice(next)
+                }}
+                aria-label="Repeats"
+              >
                 <option value="none">Never</option>
                 <option value="daily">Every day</option>
                 <option value="weekly">Every week</option>
+                <option value="biweekly">Every 2 weeks</option>
                 <option value="monthly">Every month</option>
+                <option value="custom">Custom…</option>
               </select>
+              {choice === 'biweekly' && <p className="help">{describeRule(ruleFor(start, 'week', 2))}, counting from this event's first day.</p>}
             </EditorBox>
-            {recurrence === 'daily' && (
+            {choice === 'custom' && customRule && (
+              <EditorBox title="Custom" accent={accent}>
+                <RepeatRuleEditor rule={customRule} anchor={start} onChange={setCustomRule} />
+              </EditorBox>
+            )}
+            {choice === 'daily' && (
               <EditorBox title="On these days" accent={accent}>
                 <RepeatDaysPicker days={repeatDays} onChange={setRepeatDays} />
               </EditorBox>

@@ -3,6 +3,8 @@
 // `.iso8601` strategy), weekday sets are arrays of 1 = Sunday … 7 =
 // Saturday, and day keys are "yyyy-MM-dd" in local time.
 
+import type { RepeatRule } from './repeat'
+
 export type ID = string
 export type ISODate = string
 
@@ -46,6 +48,12 @@ export interface CalendarEvent {
   isFlexible: boolean
   /** Weekdays a `daily` repeat lands on. */
   repeatDays: number[]
+  /**
+   * Web only: a custom repeat (every 2 weeks, the 1st Thursday…). When set
+   * it decides the days; `recurrence` stays the nearest plain repeat for
+   * the iPhone app.
+   */
+  repeatRule?: RepeatRule
   /** Per-day start time (minutes from midnight) for one moved occurrence. */
   timeOverrides: Record<string, number>
   /** Per-day length in minutes: one occurrence made longer or shorter. */
@@ -79,6 +87,8 @@ export interface ScheduleVersion {
   id: ID
   effectiveFrom: ISODate
   repeatDays: number[]
+  /** Web only: the custom repeat then in force, if any. */
+  repeatRule?: RepeatRule
   startMinutes: number
   durationMinutes: number
 }
@@ -102,6 +112,12 @@ export interface Goal {
   /** Set on a short-term habit that belongs to a long-term goal. */
   linkedToGoalID?: ID
   repeatDays: number[]
+  /**
+   * Web only: for goals on chosen days, a custom repeat (every 2 weeks,
+   * monthly, yearly…). When set it decides the days; for weekly rules
+   * `repeatDays` keeps its weekdays for the iPhone app.
+   */
+  repeatRule?: RepeatRule
   scheduledOnCalendar: boolean
   scheduledStartMinutes: number
   scheduledDurationMinutes: number

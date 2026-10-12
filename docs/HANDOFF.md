@@ -86,6 +86,40 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Planner: repeat rules — every 2 weeks and custom (12 Oct 2026)
+
+Riley asked for custom frequencies and an every-2-weeks preset, for goals
+and events, including "the 1st Thursday of the month". (Shared calendars
+are next: see below.)
+
+- **The rule:** `web/src/model/repeat.ts` (tested in `repeat.test.ts`)
+  defines `RepeatRule`:
+  - `unit` day/week/month/year and `interval` (every N);
+  - `weekdays` for weeks;
+  - for months and years, `monthMode` is a date (`monthDay`, the 31st
+    falls on a short month's last day) or a weekday (`ordinal` 1–4 or −1
+    for last, plus `weekday`);
+  - `month` for years;
+  - `anchor`, the day a goal counts its every-N from.
+  - Helpers: `landsOn`, `nextDays` (the "Next: …" preview),
+    `describeRule`, `decodeRepeatRule`.
+- **Events:** `CalendarEvent.repeatRule?`, counted from the event's own
+  start. When set, it decides the days in `occupies`. `recurrence` stays
+  the nearest plain repeat for the iPhone app: day → daily; week → weekly
+  (one day) or daily with those weekdays; month or year → monthly, which
+  over-shows on the iPhone. Repeats offers Never, Every day, Every week,
+  **Every 2 weeks**, Every month and **Custom…**
+  (`screens/RepeatRuleEditor.tsx`).
+- **Goals (chosen days):** `Goal.repeatRule?`, versioned like the rest of
+  the schedule (`ScheduleVersion.repeatRule`, `ResolvedSchedule`,
+  `applyScheduleChange` compares it), so changing a pattern only affects
+  days from the change. Patterns are Every week, **Every 2 weeks** (with
+  "Starting the week of") and **Custom**.
+  - Weekly rules keep `repeatDays` in step.
+  - Rest days apply only to weekly patterns (`restAllowance` is 0
+    otherwise).
+- Weeks for every-N-weeks follow the device's first weekday.
+
 ## Sync: bringing back what a first sync set aside (11 Oct 2026)
 
 Riley made a different notebook on each device and then turned sync on.
