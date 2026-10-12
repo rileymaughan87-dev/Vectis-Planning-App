@@ -2,6 +2,7 @@
 
 import { addDays, addMinutes, atMinutes, dayKey, daysBetween, minutesFromMidnight, parseDate, startOfDay, toISO, weekday } from './dates'
 import { newID } from './ids'
+import { landsOn } from './repeat'
 import type { CalendarEvent } from './types'
 
 export function makeEvent(fields: Pick<CalendarEvent, 'title' | 'startDate' | 'endDate' | 'categoryID'> & Partial<CalendarEvent>): CalendarEvent {
@@ -36,6 +37,8 @@ export function occupies(event: CalendarEvent, date: Date): boolean {
   if (day >= start && day <= end) return true
   if (event.recurrence === 'none' || day <= end) return false
   if (event.recurrenceEndDate && day > startOfDay(parseDate(event.recurrenceEndDate))) return false
+  // A custom repeat (every 2 weeks, the 1st Thursday…) counts from the event's first day.
+  if (event.repeatRule) return landsOn(event.repeatRule, start, day)
 
   switch (event.recurrence) {
     case 'daily':

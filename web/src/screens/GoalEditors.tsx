@@ -7,8 +7,10 @@ import { ALL_DAYS, addDays, addMonths, dayFromKey, dayKey, parseDate, toISO } fr
 import { formatTimeRange } from '../model/format'
 import { liveSchedule, makeGoal } from '../model/goals'
 import { newID } from '../model/ids'
+import { goalAnchor, ruleFor, type RepeatRule } from '../model/repeat'
 import type { Goal, GoalFrequencyType } from '../model/types'
 import { useData } from '../store/data'
+import { RepeatRuleEditor } from './RepeatRuleEditor'
 import { CompletionMark, EditorBox, Field, RepeatDaysPicker, Segmented, Sheet, Stepper, Toggle, VButton } from '../ui/components'
 
 /** An optional date, off by default, with quick presets. */
@@ -66,30 +68,90 @@ function RestDaysField({ value, repeatDays, onChange }: { value: number; repeatD
   )
 }
 
+type GoalPattern = 'weekly' | 'biweekly' | 'custom'
+
+/** Rest days only make sense for a weekly pattern (every week or every few weeks on chosen days). */
+const weeklyPattern = (rule?: RepeatRule) => !rule || rule.unit === 'week'
+
+/**
+ * Which days a goal on chosen days is due: every week on chosen weekdays,
+ * every 2 weeks on chosen weekdays, or a custom rule (every N days, the
+ * 1st Thursday of the month, once a year…). Weekday rules keep
+ * `repeatDays` in step, for the iPhone app and the rest-day count.
+ */
+function GoalRepeatField({ repeatDays, rule, createdDate, onChange }: {
+  repeatDays: number[]
+  rule?: RepeatRule
+  createdDate: Date
+  onChange: (p: { repeatDays: number[]; repeatRule?: RepeatRule }) => void
+}) {
+  const [pattern, setPattern] = useState<GoalPattern>(!rule ? 'weekly' : rule.unit === 'week' && rule.interval === 2 ? 'biweekly' : 'custom')
+  const today = new Date()
+  const fresh = (unit: RepeatRule['unit'], interval: number): RepeatRule => ({ ...ruleFor(today, unit, interval), weekdays: repeatDays, anchor: dayKey(today) })
+  const withRule = (r: RepeatRule) => onChange({ repeatDays: r.unit === 'week' ? r.weekdays : repeatDays, repeatRule: r })
+  const anchor = rule ? goalAnchor(rule, createdDate) : today
+
+  return (
+    <>
+      <Segmented<GoalPattern>
+        label="Pattern"
+        value={pattern}
+        onChange={p => {
+          setPattern(p)
+          if (p === 'weekly') onChange({ repeatDays: rule?.unit === 'week' ? rule.weekdays : repeatDays, repeatRule: undefined })
+          else if (p === 'biweekly') withRule(rule?.unit === 'week' ? { ...rule, interval: 2 } : fresh('week', 2))
+          else withRule(rule ?? fresh('week', 1))
+        }}
+        options={[{ value: 'weekly', label: 'Every week' }, { value: 'biweekly', label: 'Every 2 weeks' }, { value: 'custom', label: 'Custom' }]}
+      />
+      {pattern === 'weekly' && <RepeatDaysPicker days={repeatDays} onChange={days => onChange({ repeatDays: days })} />}
+      {pattern === 'biweekly' && rule && (
+        <>
+          <RepeatDaysPicker days={rule.weekdays} onChange={weekdays => weekdays.length && withRule({ ...rule, weekdays })} />
+          <label className="repeat-sentence">
+            <span>Starting the week of</span>
+            <input type="date" value={dayKey(anchor)} onChange={e => e.target.value && withRule({ ...rule, anchor: dayKey(dayFromKey(e.target.value)) })} />
+          </label>
+        </>
+      )}
+      {pattern === 'custom' && rule && <RepeatRuleEditor rule={rule} anchor={anchor} onChange={withRule} showAnchor />}
+    </>
+  )
+}
+
 export function AddShortTermGoalSheet({ onClose }: { onClose: () => void }) {
   const add = useData(s => s.addShortTermGoal)
   const [title, setTitle] = useState('')
   const [repeatDays, setRepeatDays] = useState([...ALL_DAYS])
+  const [repeatRule, setRepeatRule] = useState<RepeatRule | undefined>()
   const [restDaysPerWeek, setRestDays] = useState(0)
   const [endDate, setEndDate] = useState<string | undefined>()
   const valid = title.trim() !== '' && repeatDays.length > 0
+  const rest = weeklyPattern(repeatRule) ? Math.min(restDaysPerWeek, Math.max(0, repeatDays.length - 1)) : 0
 
   return (
     <Sheet
       title="New short-term goal"
       onClose={onClose}
-      right={{ label: 'Add', disabled: !valid, onClick: () => { add({ title: title.trim(), repeatDays, endDate, restDaysPerWeek: Math.min(restDaysPerWeek, Math.max(0, repeatDays.length - 1)) }); onClose() } }}
+      right={{ label: 'Add', disabled: !valid, onClick: () => { add({ title: title.trim(), repeatDays, repeatRule, endDate, restDaysPerWeek: rest }); onClose() } }}
     >
       <EditorBox title="Name">
         <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Read for 30 min" aria-label="Name" />
         <p className="help">To tie a habit to a long-term goal, add it from within that goal instead.</p>
       </EditorBox>
-      <EditorBox title="Repeats on">
-        <RepeatDaysPicker days={repeatDays} onChange={setRepeatDays} />
+      <EditorBox title="Repeats">
+        <GoalRepeatField
+          repeatDays={repeatDays}
+          rule={repeatRule}
+          createdDate={new Date()}
+          onChange={p => { setRepeatDays(p.repeatDays); setRepeatRule(p.repeatRule) }}
+        />
       </EditorBox>
-      <EditorBox title="Rest days">
-        <RestDaysField value={restDaysPerWeek} repeatDays={repeatDays.length} onChange={setRestDays} />
-      </EditorBox>
+      {weeklyPattern(repeatRule) && (
+        <EditorBox title="Rest days">
+          <RestDaysField value={restDaysPerWeek} repeatDays={repeatDays.length} onChange={setRestDays} />
+        </EditorBox>
+      )}
       <EditorBox title="Duration">
         <OptionalDate value={endDate} onChange={setEndDate} toggleLabel="Set a duration" dateLabel="Ends on" />
       </EditorBox>
@@ -120,12 +182,13 @@ export function ShortTermGoalEditor({ goal: original, openedFromDay, onClose }: 
   const save = () => {
     // Versioned against the schedule as it was when the editor opened,
     // so the change only affects today onward.
-    update({ ...goal, restDaysPerWeek: Math.min(goal.restDaysPerWeek, Math.max(0, goal.repeatDays.length - 1)) }, liveSchedule(original))
+    const rest = weeklyPattern(goal.repeatRule) ? Math.min(goal.restDaysPerWeek, Math.max(0, goal.repeatDays.length - 1)) : 0
+    update({ ...goal, restDaysPerWeek: rest }, liveSchedule(original))
     onClose()
   }
 
   const help: Record<GoalFrequencyType, string> = {
-    specificDays: 'Tracks specific weekdays, like Monday/Wednesday/Friday.',
+    specificDays: 'Tracks chosen days: weekdays like Monday/Wednesday/Friday, every 2 weeks, or a custom pattern like the 1st Thursday of the month.',
     timesPerWeek: 'Any days count, up to the weekly target — good for "workout 3 times a week".',
     timesPerDay: 'Tracks several completions in one day, like drinking water 4 times.',
   }
@@ -147,7 +210,9 @@ export function ShortTermGoalEditor({ goal: original, openedFromDay, onClose }: 
             { value: 'timesPerDay', label: 'Per day' },
           ]}
         />
-        {goal.frequencyType === 'specificDays' && <RepeatDaysPicker days={goal.repeatDays} onChange={repeatDays => patch({ repeatDays })} />}
+        {goal.frequencyType === 'specificDays' && (
+          <GoalRepeatField repeatDays={goal.repeatDays} rule={goal.repeatRule} createdDate={parseDate(goal.createdDate)} onChange={patch} />
+        )}
         {goal.frequencyType === 'timesPerWeek' && (
           <Stepper label={`${goal.timesPerWeekTarget} times a week`} value={goal.timesPerWeekTarget} min={1} max={14} onChange={timesPerWeekTarget => patch({ timesPerWeekTarget })} />
         )}
@@ -157,7 +222,7 @@ export function ShortTermGoalEditor({ goal: original, openedFromDay, onClose }: 
         <p className="help">{help[goal.frequencyType]}</p>
       </EditorBox>
 
-      {goal.frequencyType === 'specificDays' && (
+      {goal.frequencyType === 'specificDays' && weeklyPattern(goal.repeatRule) && (
         <EditorBox title="Rest days">
           <RestDaysField value={goal.restDaysPerWeek} repeatDays={goal.repeatDays.length} onChange={restDaysPerWeek => patch({ restDaysPerWeek })} />
         </EditorBox>

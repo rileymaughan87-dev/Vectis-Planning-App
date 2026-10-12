@@ -203,3 +203,12 @@
   .partner-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
   .partner-page > .notice, .partner-page > .empty { grid-column: 1 / -1; }
 }
+
+/* A custom repeat, set out as a sentence: "Every [2] [weeks] on…". */
+.repeat-rule { display: flex; flex-direction: column; gap: 12px; }
+
+.repeat-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.repeat-sentence select, .repeat-sentence input { width: auto; flex: 0 1 auto; }
+
+.repeat-interval { width: 64px !important; text-align: center; }

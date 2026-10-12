@@ -6,6 +6,7 @@ import {
   ALL_DAYS, DISTANT_PAST, addDays, atMinutes, dayKey, parseDate, startOfDay, startOfWeek, toISO, weekday,
 } from './dates'
 import { newID } from './ids'
+import { goalAnchor, landsOn, sameRule, type RepeatRule } from './repeat'
 import type { Goal, Milestone } from './types'
 
 /** `rest`: a planned rest day — a scheduled day not done, within the week's rest days. */
@@ -13,6 +14,8 @@ export type GoalDayState = 'done' | 'rest' | 'missed' | 'notScheduled' | 'pendin
 
 export interface ResolvedSchedule {
   repeatDays: number[]
+  /** A custom repeat in force then, if any (it decides the days). */
+  repeatRule?: RepeatRule
   startMinutes: number
   durationMinutes: number
 }
@@ -56,6 +59,7 @@ export function scheduleOn(goal: Goal, date: Date): ResolvedSchedule {
   const day = startOfDay(date)
   const live: ResolvedSchedule = {
     repeatDays: goal.repeatDays,
+    repeatRule: goal.repeatRule,
     startMinutes: goal.scheduledStartMinutes,
     durationMinutes: goal.scheduledDurationMinutes,
   }
@@ -67,7 +71,7 @@ export function scheduleOn(goal: Goal, date: Date): ResolvedSchedule {
     if (!match || parseDate(v.effectiveFrom) > parseDate(match.effectiveFrom)) match = v
   }
   if (!match) return live
-  return { repeatDays: match.repeatDays, startMinutes: match.startMinutes, durationMinutes: match.durationMinutes }
+  return { repeatDays: match.repeatDays, repeatRule: match.repeatRule, startMinutes: match.startMinutes, durationMinutes: match.durationMinutes }
 }
 
 /**
@@ -82,6 +86,7 @@ export function applyScheduleChange(
 ): Goal {
   const changed =
     !sameDays(previous.repeatDays, goal.repeatDays) ||
+    !sameRule(previous.repeatRule, goal.repeatRule) ||
     previous.startMinutes !== goal.scheduledStartMinutes ||
     previous.durationMinutes !== goal.scheduledDurationMinutes
   if (!changed) return goal
@@ -93,6 +98,7 @@ export function applyScheduleChange(
         id: newID(),
         effectiveFrom: goal.currentScheduleEffectiveFrom,
         repeatDays: previous.repeatDays,
+        ...(previous.repeatRule ? { repeatRule: previous.repeatRule } : {}),
         startMinutes: previous.startMinutes,
         durationMinutes: previous.durationMinutes,
       },
@@ -108,6 +114,7 @@ function sameDays(a: number[], b: number[]) {
 export function liveSchedule(goal: Goal): ResolvedSchedule {
   return {
     repeatDays: goal.repeatDays,
+    repeatRule: goal.repeatRule,
     startMinutes: goal.scheduledStartMinutes,
     durationMinutes: goal.scheduledDurationMinutes,
   }
@@ -142,8 +149,12 @@ export function isScheduled(goal: Goal, date: Date): boolean {
   if (dayKey(date) < firstDayKey(goal)) return false
   if (goal.endDate && startOfDay(date) > startOfDay(parseDate(goal.endDate))) return false
   switch (goal.frequencyType) {
-    case 'specificDays':
-      return scheduleOn(goal, date).repeatDays.includes(weekday(date))
+    case 'specificDays': {
+      const s = scheduleOn(goal, date)
+      // A custom repeat counts its every-N from the day it was set (or the goal's first day).
+      if (s.repeatRule) return landsOn(s.repeatRule, goalAnchor(s.repeatRule, parseDate(goal.createdDate)), date)
+      return s.repeatDays.includes(weekday(date))
+    }
     case 'timesPerWeek':
     case 'timesPerDay':
       return true
@@ -185,7 +196,8 @@ export function weeklyCompletionCount(goal: Goal, asOf: Date = new Date()): numb
  */
 export function restAllowance(goal: Goal): number {
   if (goal.frequencyType === 'timesPerWeek') return Math.max(0, 7 - goal.timesPerWeekTarget)
-  if (goal.frequencyType === 'specificDays') return goal.restDaysPerWeek
+  // Rest days are per week: a monthly or yearly pattern has none.
+  if (goal.frequencyType === 'specificDays') return goal.repeatRule && goal.repeatRule.unit !== 'week' ? 0 : goal.restDaysPerWeek
   return 0
 }
 

@@ -7,6 +7,7 @@
 
 import { bool, isObj, list, num, nums, oneOf, optNum, optStr, record, str, strs, type Raw } from '@suite/decode'
 import { ALL_DAYS, DISTANT_PAST, toISO } from './dates'
+import { decodeRepeatRule } from './repeat'
 import { newID } from './ids'
 import type {
   CalendarCategory, CalendarEvent, CalendarHours, EventPart, Goal, GoalNote, Milestone, PlanReviewSettings, ScheduleVersion, VectisTask,
@@ -53,6 +54,7 @@ export function decodeEvent(r: Raw): CalendarEvent | null {
     origin: oneOf(r.origin, ['daily', 'longTerm'] as const, 'daily'),
     isFlexible: bool(r.isFlexible, false),
     repeatDays: nums(r.repeatDays, ALL_DAYS),
+    repeatRule: decodeRepeatRule(r.repeatRule),
     timeOverrides: record(r.timeOverrides, x => optNum(x)),
     durationOverrides: record(r.durationOverrides, x => optNum(x)),
     occurrenceActuals: record(r.occurrenceActuals, x => optNum(x)),
@@ -82,6 +84,7 @@ export function decodeScheduleVersion(r: Raw): ScheduleVersion {
     id: str(r.id, newID()),
     effectiveFrom: str(r.effectiveFrom, DISTANT_PAST),
     repeatDays: nums(r.repeatDays, ALL_DAYS),
+    repeatRule: decodeRepeatRule(r.repeatRule),
     startMinutes: num(r.startMinutes, 21 * 60),
     durationMinutes: num(r.durationMinutes, 30),
   }
@@ -101,6 +104,7 @@ export function decodeGoal(r: Raw): Goal {
     notes: list(r.notes, decodeGoalNote),
     linkedToGoalID: optStr(r.linkedToGoalID),
     repeatDays: nums(r.repeatDays, ALL_DAYS),
+    repeatRule: decodeRepeatRule(r.repeatRule),
     scheduledOnCalendar: bool(r.scheduledOnCalendar, false),
     scheduledStartMinutes: num(r.scheduledStartMinutes, 21 * 60),
     scheduledDurationMinutes: num(r.scheduledDurationMinutes, 30),
