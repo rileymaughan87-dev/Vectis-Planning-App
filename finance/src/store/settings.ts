@@ -17,6 +17,12 @@ interface SettingsState {
   cushion: number
   /** The pay that marks payday; unset means the biggest repeating pay. */
   paydayEntryID?: string
+  /** International mode: accounts in more than one currency (model/currency.ts). */
+  international: boolean
+  /** Your own rates: what 1 of each currency is worth in your home currency. They win over the daily rate. */
+  rateOverrides: Record<string, number>
+  setInternational(on: boolean): void
+  setRateOverride(code: string, rate: number | undefined): void
   setAppearance(patch: Partial<AppearanceSettings>): void
   setCurrency(code: string | undefined): void
   setCushion(amount: number): void
@@ -27,11 +33,22 @@ export interface Preferences {
   currency?: string
   cushion: number
   paydayEntryID?: string
+  international: boolean
+  rateOverrides: Record<string, number>
 }
 
 export function decodePreferences(v: unknown): Preferences {
   const r = isObj(v) ? v : {}
-  return { currency: optStr(r.currency), cushion: Math.max(0, num(r.cushion, 0)), paydayEntryID: optStr(r.paydayEntryID) }
+  const overrides = isObj(r.rateOverrides)
+    ? Object.fromEntries(Object.entries(r.rateOverrides).filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] > 0))
+    : {}
+  return {
+    currency: optStr(r.currency),
+    cushion: Math.max(0, num(r.cushion, 0)),
+    paydayEntryID: optStr(r.paydayEntryID),
+    international: r.international === true,
+    rateOverrides: overrides,
+  }
 }
 
 const savedPrefs = decodePreferences(storage.loadRaw(Filename.preferences))
@@ -41,6 +58,14 @@ export const useSettings = create<SettingsState>()(set => ({
   currencyOverride: savedPrefs.currency,
   cushion: savedPrefs.cushion,
   paydayEntryID: savedPrefs.paydayEntryID,
+  international: savedPrefs.international,
+  rateOverrides: savedPrefs.rateOverrides,
+  setInternational: on => set({ international: on }),
+  setRateOverride: (code, rate) => set(s => {
+    const { [code]: _old, ...rest } = s.rateOverrides
+    void _old
+    return { rateOverrides: rate && rate > 0 ? { ...rest, [code]: rate } : rest }
+  }),
   setAppearance: patch => set(s => ({ appearance: { ...s.appearance, ...patch } })),
   setCurrency: code => set({ currencyOverride: code }),
   setCushion: amount => set({ cushion: Math.max(0, amount) }),
@@ -48,8 +73,11 @@ export const useSettings = create<SettingsState>()(set => ({
 }))
 
 /** The saved preferences as one value (and how sync sends them). */
-export const preferencesOf = (s: Pick<SettingsState, 'currencyOverride' | 'cushion' | 'paydayEntryID'>): Preferences =>
-  ({ currency: s.currencyOverride, cushion: s.cushion, paydayEntryID: s.paydayEntryID })
+export const preferencesOf = (s: Pick<SettingsState, 'currencyOverride' | 'cushion' | 'paydayEntryID' | 'international' | 'rateOverrides'>): Preferences =>
+  ({ currency: s.currencyOverride, cushion: s.cushion, paydayEntryID: s.paydayEntryID, international: s.international, rateOverrides: s.rateOverrides })
+
+/** Whether two saved preferences differ (what sync and saving watch). */
+export const prefsChanged = (a: Preferences, b: Preferences) => JSON.stringify(a) !== JSON.stringify(b)
 
 /** The currency to show amounts in. */
 export const useCurrency = () => useSettings(s => s.currencyOverride ?? regionCurrency())
@@ -68,7 +96,5 @@ onSharedAppearanceChange(appearance => {
 
 useSettings.subscribe((state, prev) => {
   if (state.appearance !== prev.appearance && !fromElsewhere) saveSharedAppearance(state.appearance)
-  if (state.currencyOverride !== prev.currencyOverride || state.cushion !== prev.cushion || state.paydayEntryID !== prev.paydayEntryID) {
-    storage.saveRaw(Filename.preferences, preferencesOf(state))
-  }
+  if (prefsChanged(preferencesOf(state), preferencesOf(prev))) storage.saveRaw(Filename.preferences, preferencesOf(state))
 })

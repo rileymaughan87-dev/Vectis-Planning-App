@@ -12,8 +12,12 @@ export const Filename = {
   /** Web-only: accounts and their audits (model/accounts.ts). */
   accounts: 'accounts.json',
   accountAudits: 'account_audits.json',
+  /** Web-only: money moved between your accounts (international mode). */
+  transfers: 'transfers.json',
   /** Web-only: currency choice. */
   preferences: 'preferences.json',
+  /** Web-only, this device only: the last daily exchange rates fetched (store/rates.ts). */
+  rates: 'rates.json',
 } as const
 
 export const storage = createStorage('finance:', 'Finance')

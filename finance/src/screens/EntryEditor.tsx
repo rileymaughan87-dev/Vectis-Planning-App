@@ -8,8 +8,10 @@ import { dayFromKey, dayKey, parseDate, startOfDay, toISO, weekday } from '@suit
 import { EditorBox, Field, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { useState } from 'react'
 import { isLaterOccurrence, makeFinanceEvent, repeatText, type EntryType, type ExpenseCategory, type FinanceEvent, type Frequency } from '../model/entries'
+import { entryAccount, spendableAccounts } from '../model/accounts'
 import { amountText, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
+import { useMoneyTools } from '../store/money'
 
 export type EntryEditorTarget =
   | { mode: 'new'; date: Date; entryType?: EntryType; category?: ExpenseCategory }
@@ -35,6 +37,11 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
   const [amountVaries, setAmountVaries] = useState(original?.amountVaries ?? false)
   const [endDate, setEndDate] = useState(original?.endDate)
   const [askScope, setAskScope] = useState(false)
+  // International mode: which account it's paid from or into (and so its currency).
+  const tools = useMoneyTools()
+  const accountChoices = tools.international ? spendableAccounts(tools.accounts) : []
+  const [accountID, setAccountID] = useState(() => (original ? entryAccount(original, tools.accounts)?.id : undefined))
+  const account = tools.accounts.find(a => a.id === accountID) ?? entryAccount({ accountID } as FinanceEvent, tools.accounts)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const parsed = parseAmount(amount)
@@ -54,6 +61,8 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
       weekday: frequency === 'weekly' ? weekday(anchor) : undefined,
       amountVaries: repeats && amountVaries,
       endDate: repeats ? endDate : undefined,
+      // The main current account is the default, so it's saved as none.
+      ...(tools.international ? { accountID: accountID && accountID !== entryAccount({} as FinanceEvent, tools.accounts)?.id ? accountID : undefined } : {}),
     }
   }
 
@@ -101,7 +110,14 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
         )}
       </EditorBox>
 
-      <EditorBox title="Amount">
+      <EditorBox title={tools.international ? `Amount (${tools.currencyOf(account)})` : 'Amount'}>
+        {accountChoices.length > 1 && (
+          <Field label={entryType === 'income' ? 'Paid into' : 'Paid from'}>
+            <select value={account?.id ?? ''} onChange={e => setAccountID(e.target.value)}>
+              {accountChoices.map(a => <option key={a.id} value={a.id}>{a.name || 'Account'} · {tools.currencyOf(a)}</option>)}
+            </select>
+          </Field>
+        )}
         <input
           inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Amount"
           placeholder={amountVaries && repeats ? 'Usual amount' : '0.00'} style={{ fontSize: 19 }}

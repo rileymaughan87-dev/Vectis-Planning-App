@@ -5,6 +5,7 @@
 // home-screen shortcut on Android, or a bookmark anywhere).
 
 import { useApplyTheme } from '@suite/appearance'
+import { useFreshRates } from './store/money'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
 import { Settings } from 'lucide-react'
 import { useState } from 'react'
@@ -31,6 +32,8 @@ const tabs: ShellTab<Tab>[] = [
 export default function App() {
   const appearance = useSettings(s => s.appearance)
   useApplyTheme(appearance)
+  // International mode: today's exchange rate.
+  useFreshRates()
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab | 'budget' | null)?.replace('budget', 'plan') as Tab || 'now')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [quickLog, setQuickLog] = useState(() => new URLSearchParams(location.search).has('log'))

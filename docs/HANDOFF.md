@@ -86,6 +86,52 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance: international mode (13 Oct 2026)
+
+Riley is American, lives in the UK, is paid in pounds and moves money to
+a US account for US bills. Their choices:
+- Totals convert into one home currency.
+- The rate is the automatic daily one, with your own override.
+- Safe to spend covers the main account only.
+- Instead of foreign charges, show "how much to transfer to the US
+  account".
+
+How it works:
+- **Settings → Currency → International.** The home currency is the
+  existing Currency choice. Note that "follow my region" gives USD on a US
+  locale, so Riley may need to pick GBP.
+- **One plan, no double budgeting.** `Account.currency` is set for
+  non-home accounts. `FinanceEvent.accountID` is where an entry is paid
+  from or into; unset means the main current account (`entryAccount`). An
+  entry's amount is in its account's currency.
+  - Goal payments come from the current account in the goal's account's
+    currency, if there is one (`goalSource`).
+  - On a card, a bill adds to what's owed.
+- **Transfers** (`transfers.json`, synced) record what left one account
+  and what arrived in the other, each in its own currency. They're
+  time-stamped, so one made after a same-day balance check still counts.
+- **Now screen:**
+  - `transferNeeds` (in `forward.ts`): for each current account in
+    another currency, the lowest it gets before payday from its balance
+    and its own bills gives "transfer $X (≈ £Y)".
+  - That amount comes off safe to spend.
+  - "Log a transfer" pre-fills the pounds from the rate (editable to what
+    the bank took). After logging, nothing more is asked.
+- **Rates:**
+  - `store/rates.ts` fetches the ECB reference rates via Frankfurter
+    (`api.frankfurter.dev`, falling back to `.app`; no key) at most every
+    12 hours while international mode is on. They're kept per device in
+    `rates.json`.
+  - `rateOverrides` in preferences (synced) win over the fetched rate.
+  - `model/currency.ts` has `converter` and `rateToHome`.
+- **Display:** `store/money.ts` `useMoneyTools()` gives each account,
+  entry and goal its own currency.
+  - Totals (Where you stand, Over time, Plan's ≈ a month) convert to home
+    at today's rate.
+  - Off, everything is home currency again; accounts keep their saved
+    currency for when it's turned back on.
+- Tests: `model/international.test.ts`.
+
 ## Planner: shared calendars (12 Oct 2026) — built, awaiting the Firebase rules
 
 Riley's choices:

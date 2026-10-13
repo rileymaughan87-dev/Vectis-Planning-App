@@ -13,6 +13,7 @@ import { useAccounts } from '../store/accounts'
 import { useEntries } from '../store/entries'
 import { useCurrency } from '../store/settings'
 import { useSpending } from '../store/spending'
+import { useMoneyTools } from '../store/money'
 
 /** The quick log: amount first (the keyboard opens on it), an optional note, the day. Also edits one. */
 export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry; onClose: () => void }) {
@@ -23,6 +24,7 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
   const accounts = useAccounts(s => s.accounts)
   const spendable = spendableAccounts(accounts)
   const [accountID, setAccountID] = useState(editing?.accountID ?? spendingAccount(accounts)?.id)
+  const tools = useMoneyTools()
   const value = parseAmount(text)
   const ok = value !== null && value > 0 && Boolean(date)
   const notes = recentNotes(entries).filter(n => n !== note)
@@ -42,7 +44,8 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
   return (
     <Sheet title={editing ? 'Edit spending' : 'Log spending'} compact onClose={onClose} right={{ label: editing ? 'Save' : 'Log', onClick: save, disabled: !ok }}>
       <input
-        autoFocus={!editing} inputMode="decimal" value={text} onChange={e => setText(e.target.value)} aria-label="Amount" placeholder="0.00"
+        autoFocus={!editing} inputMode="decimal" value={text} onChange={e => setText(e.target.value)} aria-label="Amount"
+        placeholder={tools.international ? `0.00 ${tools.currencyOf(tools.accounts.find(a => a.id === accountID))}` : '0.00'}
         onKeyDown={e => e.key === 'Enter' && save()} style={{ fontSize: 26, textAlign: 'center' }}
       />
       <input value={note} onChange={e => setNote(e.target.value)} placeholder="What for? (optional)" aria-label="What for" onKeyDown={e => e.key === 'Enter' && save()} />
@@ -55,7 +58,7 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
       {spendable.length > 1 && (
         <Field label="Paid from">
           <select value={accountID ?? ''} onChange={e => setAccountID(e.target.value || undefined)}>
-            {spendable.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            {spendable.map(a => <option key={a.id} value={a.id}>{a.name}{tools.international ? ` · ${tools.currencyOf(a)}` : ''}</option>)}
           </select>
         </Field>
       )}

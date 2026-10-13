@@ -11,6 +11,10 @@
 // by default the biggest repeating pay. Money that lands on payday starts
 // the next stretch; it never props up this one (pay on the 30th funds the
 // month after). Smaller pay before then does count.
+//
+// International mode: a current account in another currency (your US
+// account, say) gets what it needs to cover its own bills before payday —
+// "transfer this much" — and that comes out of safe to spend, converted.
 
 import { addDays, addMonths, daysBetween, dayKey, startOfDay } from '@suite/dates'
 import { expectedBalance, movementsBetween, spendingAccount, type Account, type Audit, type MoneyData, type Movement } from './accounts'
@@ -87,9 +91,53 @@ export type Forward =
       perDay: number
       /** The lowest the account gets before payday, if it dips below the cushion. */
       dip?: { balance: number; date: Date }
+      /** Other-currency current accounts and what to send each before payday. */
+      transfers: TransferNeed[]
     }
 
-export function forward(data: MoneyData & { audits: Audit[] }, options: { cushion: number; paydayEntryID?: string }, today: Date = new Date()): Forward {
+/** What a current account in another currency needs sent to it, to cover its bills until payday. */
+export interface TransferNeed {
+  account: Account
+  /** In the account's own currency; 0 if it's covered. */
+  need: number
+  /** The same in the main account's currency, if there's a rate. */
+  inMain: number | null
+  /** False until its balance has been checked once (then it's counted from nothing). */
+  checked: boolean
+  /** Its own bills before payday, in its currency. */
+  bills: Movement[]
+}
+
+/**
+ * For each current account in another currency than the main one: the
+ * least it gets down to before `end` (from its balance now, through its
+ * bills and pay), and so what to send so it never goes below zero.
+ */
+export function transferNeeds(
+  data: MoneyData & { audits: Audit[] }, main: Account, today: Date, end: Date,
+  convert?: (amount: number, from: Account, to: Account) => number | null,
+): TransferNeed[] {
+  return data.accounts
+    .filter(a => a.kind === 'current' && a.id !== main.id && (a.currency ?? '') !== (main.currency ?? ''))
+    .map(account => {
+      const exp = expectedBalance(account, data.audits, data, today)
+      const bills = movementsBetween(account, data, today, end)
+      let running = exp?.expected ?? 0
+      let low = running
+      for (const m of bills) {
+        running += m.amount
+        low = Math.min(low, running)
+      }
+      const need = low < 0 ? Math.ceil(-low) : 0
+      return { account, need, inMain: need ? convert?.(need, account, main) ?? null : 0, checked: Boolean(exp), bills }
+    })
+}
+
+export function forward(
+  data: MoneyData & { audits: Audit[] },
+  options: { cushion: number; paydayEntryID?: string; convert?: (amount: number, from: Account, to: Account) => number | null },
+  today: Date = new Date(),
+): Forward {
   const account = spendingAccount(data.accounts)
   if (!account) return { kind: 'noAccount' }
   const exp = expectedBalance(account, data.audits, data, today)
@@ -103,7 +151,10 @@ export function forward(data: MoneyData & { audits: Audit[] }, options: { cushio
 
   const cushion = Math.max(0, options.cushion)
   const net = comingUp.reduce((a, m) => a + m.amount, 0)
-  const safe = round2(exp.expected + net - cushion)
+  // Money to send to other-currency accounts before payday leaves this one.
+  const transfers = transferNeeds(data, account, today, addDays(end, -1), options.convert)
+  const sending = transfers.reduce((a, t) => a + (t.inMain ?? 0), 0)
+  const safe = round2(exp.expected + net - sending - cushion)
   const days = Math.max(1, daysBetween(startOfDay(today), startOfDay(end)))
 
   let running = exp.expected
@@ -127,6 +178,7 @@ export function forward(data: MoneyData & { audits: Audit[] }, options: { cushio
     safe,
     perDay: round2(safe / days),
     dip: low.balance < cushion && low.date > startOfDay(today) ? low : undefined,
+    transfers,
   }
 }
 

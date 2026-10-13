@@ -38,6 +38,22 @@ export interface Account {
   createdDate: ISODate
   /** The current account pay and bills go through (the first current account if none is marked). */
   primary: boolean
+  /** International mode: the account's own currency (e.g. "USD"). Unset means your home currency. */
+  currency?: string
+}
+
+/**
+ * Money moved between two of your accounts — say pounds into a US account.
+ * Each side is in its own account's currency: what left one, what arrived
+ * in the other.
+ */
+export interface Transfer {
+  id: string
+  date: ISODate
+  fromAccountID: string
+  toAccountID: string
+  amountOut: number
+  amountIn: number
 }
 
 /** What a gap at an audit was put down to. */
@@ -64,8 +80,16 @@ function decodeAccount(r: Raw): Account {
     kind: oneOf(r.kind, ACCOUNT_KINDS, 'current'),
     createdDate: str(r.createdDate, toISO(new Date())),
     primary: bool(r.primary, false),
+    currency: typeof r.currency === 'string' && /^[A-Z]{3}$/.test(r.currency) ? r.currency : undefined,
   }
 }
+
+function decodeTransfer(r: Raw): Transfer | null {
+  if (typeof r.fromAccountID !== 'string' || typeof r.toAccountID !== 'string' || typeof r.date !== 'string') return null
+  return { id: str(r.id, newID()), date: r.date, fromAccountID: r.fromAccountID, toAccountID: r.toAccountID, amountOut: num(r.amountOut, 0), amountIn: num(r.amountIn, 0) }
+}
+
+export const decodeTransfers = (v: unknown) => list(v, decodeTransfer)
 
 function decodeAudit(r: Raw): Audit | null {
   if (typeof r.accountID !== 'string' || typeof r.date !== 'string') return null
@@ -88,6 +112,23 @@ export const decodeAudits = (v: unknown) => list(v, decodeAudit)
 export function spendingAccount(accounts: Account[]): Account | undefined {
   const current = accounts.filter(a => a.kind === 'current')
   return current.find(a => a.primary) ?? current[0]
+}
+
+/** The account an entry is paid from or into: its own (if it still exists), else the main current account. */
+export function entryAccount(event: FinanceEvent, accounts: Account[]): Account | undefined {
+  return accounts.find(a => a.id === event.accountID) ?? spendingAccount(accounts)
+}
+
+/**
+ * Where a goal's payments come from: the main current account, unless the
+ * goal sits on an account in another currency (a US loan, say) and you
+ * have a current account in that currency — then that one.
+ */
+export function goalSource(goal: FinanceGoal, accounts: Account[]): Account | undefined {
+  const main = spendingAccount(accounts)
+  const linked = accounts.find(a => a.id === goal.accountID)
+  if (!linked || (linked.currency ?? '') === (main?.currency ?? '')) return main
+  return accounts.find(a => a.kind === 'current' && (a.currency ?? '') === (linked.currency ?? '')) ?? main
 }
 
 /** Accounts spending can be logged against: current accounts and cards. */
@@ -116,6 +157,8 @@ export interface MoneyData {
   events: FinanceEvent[]
   goals: FinanceGoal[]
   spending: SpendingEntry[]
+  /** Money moved between your accounts (international mode). */
+  transfers?: Transfer[]
 }
 
 /**
@@ -142,17 +185,36 @@ export function movementsBetween(account: Account, data: MoneyData, after: Date,
     }
   }
 
-  if (isSpending) {
+  // Pay and bills on this account (the main current account, unless an entry names another).
+  const mine = data.events.filter(e => entryAccount(e, data.accounts)?.id === account.id)
+  if (mine.length) {
     for (let m = new Date(after.getFullYear(), after.getMonth(), 1); m <= upTo; m = addMonths(m, 1)) {
-      for (const item of lineItemsInMonth(data.events, m)) {
+      for (const item of lineItemsInMonth(mine, m)) {
         if (!inRange(item.date)) continue
-        const sign = item.event.entryType === 'income' ? 1 : -1
+        // On a card, a bill adds to what's owed; money in pays it down.
+        const sign = (item.event.entryType === 'income' ? 1 : -1) * (accountKindInfo[account.kind].owed ? -1 : 1)
         out.push({ date: item.date, title: item.event.title || 'Untitled', amount: sign * item.amount, estimate: !item.confirmed })
       }
     }
-    for (const p of data.goals.flatMap(schedule)) {
+  }
+  // Goal payments paid from this account.
+  for (const g of data.goals) {
+    if (goalSource(g, data.accounts)?.id !== account.id) continue
+    for (const p of schedule(g)) {
       if (inRange(p.date) && p.amount > 0) out.push({ date: p.date, title: p.title || 'Goal payment', amount: -p.amount, estimate: !p.confirmed })
     }
+  }
+
+  // Transfers between your accounts, each side in its own currency. These
+  // carry the time they were made, so one made after a check on the same
+  // day still counts (unlike a bill, which is taken as already in it).
+  const owed = accountKindInfo[account.kind].owed
+  const nameOf = (id: string) => data.accounts.find(a => a.id === id)?.name || 'another account'
+  for (const t of data.transfers ?? []) {
+    const d = parseDate(t.date)
+    if (!(d > after && dayKey(d) <= toKey)) continue
+    if (t.fromAccountID === account.id) out.push({ date: startOfDay(d), title: `Transfer to ${nameOf(t.toAccountID)}`, amount: owed ? t.amountOut : -t.amountOut, estimate: false })
+    if (t.toAccountID === account.id) out.push({ date: startOfDay(d), title: `Transfer from ${nameOf(t.fromAccountID)}`, amount: owed ? -t.amountIn : t.amountIn, estimate: false })
   }
 
   for (const e of data.spending) {
@@ -215,6 +277,12 @@ export const goalAccounts = (accounts: Account[], kind: FinanceGoal['kind']) =>
 
 // MARK: - Over time
 
+/**
+ * An account's amount in your home currency, for totals (international
+ * mode). Without one, amounts add up as they are.
+ */
+export type InHome = (amount: number, account: Account) => number
+
 export interface MonthStanding {
   /** The first of the month. */
   month: Date
@@ -231,7 +299,7 @@ export interface MonthStanding {
  * latest check by the end of that month. Built only from checks, so it's
  * what really happened, not the plan.
  */
-export function monthlyStanding(accounts: Account[], audits: Audit[], today: Date = new Date()): MonthStanding[] {
+export function monthlyStanding(accounts: Account[], audits: Audit[], today: Date = new Date(), inHome: InHome = (n) => n): MonthStanding[] {
   const mine = audits.filter(a => accounts.some(acc => acc.id === a.accountID))
   if (!mine.length) return []
   const first = mine.map(a => parseDate(a.date)).reduce((a, b) => (a < b ? a : b))
@@ -244,10 +312,11 @@ export function monthlyStanding(accounts: Account[], audits: Audit[], today: Dat
     for (const acc of accounts) {
       const last = auditsFor(mine, acc.id).find(a => parseDate(a.date) < end)
       if (!last) continue
-      if (accountKindInfo[acc.kind].owed) owed += last.balance
+      const balance = inHome(last.balance, acc)
+      if (accountKindInfo[acc.kind].owed) owed += balance
       else {
-        have += last.balance
-        if (acc.kind === 'savings') saved += last.balance
+        have += balance
+        if (acc.kind === 'savings') saved += balance
       }
     }
     out.push({ month: m, saved: round2(saved), owed: round2(owed), have: round2(have) })
@@ -258,14 +327,14 @@ export function monthlyStanding(accounts: Account[], audits: Audit[], today: Dat
 // MARK: - Where things stand
 
 /** Money you have (current and savings) and what you owe (cards and loans), from each account's latest audit. */
-export function standing(accounts: Account[], audits: Audit[]): { have: number; owe: number } {
+export function standing(accounts: Account[], audits: Audit[], inHome: InHome = (n) => n): { have: number; owe: number } {
   let have = 0
   let owe = 0
   for (const a of accounts) {
     const last = latestAudit(audits, a.id)
     if (!last) continue
-    if (accountKindInfo[a.kind].owed) owe += last.balance
-    else have += last.balance
+    if (accountKindInfo[a.kind].owed) owe += inHome(last.balance, a)
+    else have += inHome(last.balance, a)
   }
   return { have: round2(have), owe: round2(owe) }
 }

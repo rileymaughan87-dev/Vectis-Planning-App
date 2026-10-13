@@ -13,6 +13,7 @@ import { monthly, running, type Running } from '../model/forward'
 import { formatMoney, parseAmount } from '../model/money'
 import type { SpendingEntry } from '../model/spending'
 import { useEntries } from '../store/entries'
+import { useMoneyTools } from '../store/money'
 import { useCurrency } from '../store/settings'
 import { EXPENSE, INCOME, UNCONFIRMED } from '../ui/semantic'
 import { EntryEditor, type EntryEditorTarget } from './EntryEditor'
@@ -29,6 +30,7 @@ export function PlanScreen() {
   const events = useEntries(s => s.events)
   const currency = useCurrency()
   const money = (n: number) => formatMoney(n, currency)
+  const tools = useMoneyTools()
   const [editor, setEditor] = useState<EntryEditorTarget | null>(null)
   const [logging, setLogging] = useState<{ editing?: SpendingEntry } | null>(null)
   const [potSetup, setPotSetup] = useState(false)
@@ -39,7 +41,8 @@ export function PlanScreen() {
   const pay = all.filter(r => r.event.entryType === 'income')
   const bills = all.filter(r => r.event.entryType === 'expense' && r.event.expenseCategory !== 'flexible')
   const flexible = all.filter(r => r.event.entryType === 'expense' && r.event.expenseCategory === 'flexible')
-  const perMonth = (rows: Running[]) => rows.filter(r => r.event.repeats).reduce((a, r) => a + monthly(r.event), 0)
+  // A month's worth, in your home currency (entries on an account in another currency are converted).
+  const perMonth = (rows: Running[]) => rows.filter(r => r.event.repeats).reduce((a, r) => a + tools.entryInHome(monthly(r.event), r.event), 0)
 
   const section = (title: string, rows: Running[], color: string, empty: string, add: string, entryType: 'income' | 'expense', category?: 'fixed' | 'flexible') => (
     <SectionBox title={title} accent={color} subtitle={rows.some(r => r.event.repeats) ? `≈ ${money(perMonth(rows))} a month` : undefined}>
@@ -51,7 +54,7 @@ export function PlanScreen() {
               <div className="ellipsis">{r.event.title || 'Untitled'}</div>
               <div className="mono muted">{repeatText(r.event)} · next {nextText(r.next)}</div>
             </span>
-            <span className="amount" style={{ color: r.event.amountVaries ? UNCONFIRMED : undefined }}>{money(r.event.amount)}</span>
+            <span className="amount" style={{ color: r.event.amountVaries ? UNCONFIRMED : undefined }}>{formatMoney(r.event.amount, tools.entryCurrency(r.event))}</span>
             <ChevronRight size={14} className="muted" />
           </button>
         ))}

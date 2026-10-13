@@ -14,6 +14,7 @@ import { lineItemsInMonth, repeatText, type LineItem } from '../model/entries'
 import { goalPaymentsInMonth, isDue, kindInfo, type GoalPayment } from '../model/goals'
 import { amountText, formatMoney, formatSigned, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
+import { useMoneyTools } from '../store/money'
 import { useGoals } from '../store/goals'
 import { useCurrency } from '../store/settings'
 import { EXPENSE, INCOME, UNCONFIRMED } from '../ui/semantic'
@@ -170,7 +171,13 @@ export function CalendarScreen() {
 
 function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency: string; showDate?: boolean; onClick: () => void }) {
   if (row.kind === 'entry') return <EntryRow item={row.item} currency={currency} showDate={showDate} onClick={onClick} />
-  const p = row.payment
+  return <PaymentRow payment={row.payment} currency={currency} showDate={showDate} onClick={onClick} />
+}
+
+function PaymentRow({ payment: p, currency: home, showDate, onClick }: { payment: GoalPayment; currency: string; showDate?: boolean; onClick: () => void }) {
+  const tools = useMoneyTools()
+  const goal = useGoals(s => s.goals.find(g => g.id === p.goalID))
+  const currency = goal ? tools.goalCurrency(goal) : home
   const info = kindInfo[p.kind]
   const due = isDue(p)
   return (
@@ -197,8 +204,9 @@ function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency:
 }
 
 
-function EntryRow({ item, currency, showDate, onClick }: { item: LineItem; currency: string; showDate?: boolean; onClick: () => void }) {
+function EntryRow({ item, showDate, onClick }: { item: LineItem; currency: string; showDate?: boolean; onClick: () => void }) {
   const { event, date, amount, confirmed } = item
+  const currency = useMoneyTools().entryCurrency(event)
   const income = event.entryType === 'income'
   const kind = income ? 'Money in' : event.expenseCategory === 'flexible' ? 'Flexible' : 'Fixed bill'
   return (
@@ -223,8 +231,9 @@ function EntryRow({ item, currency, showDate, onClick }: { item: LineItem; curre
 }
 
 /** The real amount for one occurrence of a varying entry. */
-function ConfirmAmount({ item, currency, onClose, onEdit }: { item: LineItem; currency: string; onClose: () => void; onEdit: () => void }) {
+function ConfirmAmount({ item, onClose, onEdit }: { item: LineItem; currency: string; onClose: () => void; onEdit: () => void }) {
   const { confirmAmount, clearConfirmation } = useEntries()
+  const currency = useMoneyTools().entryCurrency(item.event)
   const [text, setText] = useState(amountText(item.amount))
   const value = parseAmount(text)
   const save = () => {
