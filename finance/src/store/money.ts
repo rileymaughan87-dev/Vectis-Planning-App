@@ -3,7 +3,7 @@
 // is in the one currency, as before.
 
 import { useEffect, useMemo } from 'react'
-import { entryAccount, goalSource, type Account } from '../model/accounts'
+import { entryAccount, type Account } from '../model/accounts'
 import { converter, currencyOf } from '../model/currency'
 import type { FinanceEvent } from '../model/entries'
 import type { FinanceGoal } from '../model/goals'
@@ -41,7 +41,11 @@ export function useMoneyTools() {
       /** The currency an entry is in: its account's. */
       entryCurrency: (e: FinanceEvent) => cur(entryAccount(e, accounts)),
       /** A goal's currency: its account's (a US loan is in dollars), else where it's paid from. */
-      goalCurrency: (g: FinanceGoal) => cur(accounts.find(a => a.id === g.accountID) ?? goalSource(g, accounts)),
+      goalCurrency: (g: FinanceGoal) => {
+        const linked = accounts.find(a => a.id === g.accountID)
+        if (linked) return cur(linked)
+        return international && g.currency ? g.currency : home
+      },
       /** For sums across entries: an entry's amount in the home currency. */
       entryInHome: (amount: number, e: FinanceEvent) => convert(amount, cur(entryAccount(e, accounts)), home) ?? amount,
     }

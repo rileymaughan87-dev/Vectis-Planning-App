@@ -131,6 +131,12 @@ How it works:
   - Off, everything is home currency again; accounts keep their saved
     currency for when it's turned back on.
 - Tests: `model/international.test.ts`.
+- **Goals (follow-up, 13 Oct):** an unlinked goal has its own
+  `FinanceGoal.currency` (shown in the goal editor when international is
+  on); a linked goal follows its account. `goalSource` pays it from the
+  current account in that currency. "Measured on" always shows. Saving
+  goals and set-asides can also link to a current account (everything in
+  it counts); debts link to cards and loans.
 
 ## Planner: shared calendars (12 Oct 2026) — built, awaiting the Firebase rules
 

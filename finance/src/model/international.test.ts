@@ -61,6 +61,8 @@ describe('international mode', () => {
     const goal = { id: 'g', title: 'Loan', kind: 'debt', accountID: 'loan' } as FinanceGoal
     expect(goalSource(goal, data.accounts)?.id).toBe('us')
     expect(goalSource({ ...goal, accountID: undefined }, data.accounts)?.id).toBe('uk')
+    // Not linked, but in dollars: paid from the US account too.
+    expect(goalSource({ ...goal, accountID: undefined, currency: 'USD' }, data.accounts)?.id).toBe('us')
   })
 
   it('adds up totals in pounds', () => {

@@ -127,8 +127,10 @@ export function entryAccount(event: FinanceEvent, accounts: Account[]): Account 
 export function goalSource(goal: FinanceGoal, accounts: Account[]): Account | undefined {
   const main = spendingAccount(accounts)
   const linked = accounts.find(a => a.id === goal.accountID)
-  if (!linked || (linked.currency ?? '') === (main?.currency ?? '')) return main
-  return accounts.find(a => a.kind === 'current' && (a.currency ?? '') === (linked.currency ?? '')) ?? main
+  // The goal's currency: its account's if linked, else its own (unset is home).
+  const currency = linked ? linked.currency ?? '' : goal.currency ?? ''
+  if (currency === (main?.currency ?? '')) return main
+  return accounts.find(a => a.kind === 'current' && (a.currency ?? '') === currency) ?? main
 }
 
 /** Accounts spending can be logged against: current accounts and cards. */
@@ -272,8 +274,11 @@ export function onBalance(goal: FinanceGoal, accounts: Account[], audits: Audit[
 }
 
 /** Accounts a goal of this kind can sit on. */
+/** Accounts a goal of this kind can sit on: cards and loans for a debt; savings (then current) accounts for saving or a set-aside. */
 export const goalAccounts = (accounts: Account[], kind: FinanceGoal['kind']) =>
-  accounts.filter(a => (kind === 'debt' ? accountKindInfo[a.kind].owed : a.kind === 'savings'))
+  kind === 'debt'
+    ? accounts.filter(a => accountKindInfo[a.kind].owed)
+    : [...accounts.filter(a => a.kind === 'savings'), ...accounts.filter(a => a.kind === 'current')]
 
 // MARK: - Over time
 

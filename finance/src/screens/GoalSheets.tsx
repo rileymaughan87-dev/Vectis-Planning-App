@@ -11,7 +11,7 @@ import {
   GOAL_KINDS, isComplete, kindInfo, makeGoal, planText, schedule, suggestedPayment, type FinanceGoal, type GoalFrequency, type GoalKind,
   type GoalPayment,
 } from '../model/goals'
-import { amountText, formatMoney, parseAmount } from '../model/money'
+import { amountText, formatMoney, parseAmount, CURRENCIES } from '../model/money'
 import { accountKindInfo, goalAccounts } from '../model/accounts'
 import { useAccounts } from '../store/accounts'
 import { useGoals } from '../store/goals'
@@ -39,8 +39,9 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
   const [targetDate, setTargetDate] = useState(original?.targetDate)
   const accounts = useAccounts(s => s.accounts)
   const [accountID, setAccountID] = useState(original?.accountID)
-  // Amounts are in the chosen account's currency.
-  const currency = tools.goalCurrency({ ...(original ?? ({} as FinanceGoal)), accountID })
+  const [ownCurrency, setOwnCurrency] = useState(original?.currency ?? tools.home)
+  // Amounts are in the linked account's currency, or the goal's own.
+  const currency = tools.goalCurrency({ ...(original ?? ({} as FinanceGoal)), accountID, currency: ownCurrency })
   const money = (n: number) => formatMoney(n, currency)
   const [paymentSheet, setPaymentSheet] = useState<PaymentTarget | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -60,6 +61,8 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
     targetDate,
     // Only an account that suits the kind (a debt can't sit on a savings account).
     accountID: goalAccounts(accounts, kind).some(a => a.id === accountID) ? accountID : undefined,
+    // Home is saved as none; a linked goal follows its account instead.
+    currency: tools.international && ownCurrency !== tools.home ? ownCurrency : undefined,
   }
   const linkable = goalAccounts(accounts, kind)
   const plan = schedule(draft)
@@ -89,7 +92,19 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
         <p className="help">{info.empty}</p>
       </EditorBox>
 
-      <EditorBox title="Amount" accent={info.accent}>
+      <EditorBox title={tools.international ? `Amount (${currency})` : 'Amount'} accent={info.accent}>
+        {tools.international && (
+          <Field label="Currency">
+            <select
+              value={currency}
+              disabled={Boolean(draft.accountID)}
+              onChange={e => setOwnCurrency(e.target.value)}
+            >
+              {[...new Set([tools.home, currency, ...CURRENCIES])].map(c => <option key={c} value={c}>{c}{c === tools.home ? ' (home)' : ''}</option>)}
+            </select>
+          </Field>
+        )}
+        {tools.international && draft.accountID && <p className="help">Follows the account it's measured on (below).</p>}
         <div className="inline-fields">
           <Field label={info.target}>
             <input inputMode="decimal" value={targetText} onChange={e => setTargetText(e.target.value)} placeholder="0" />
@@ -102,19 +117,33 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
         </div>
       </EditorBox>
 
-      {linkable.length > 0 && (
-        <EditorBox title="Measured on" accent={info.accent}>
-          <select value={draft.accountID ?? ''} onChange={e => setAccountID(e.target.value || undefined)} aria-label="Account">
-            <option value="">Not linked — count payments made</option>
-            {linkable.map(a => <option key={a.id} value={a.id}>{a.name || accountKindInfo[a.kind].label}</option>)}
-          </select>
-          <p className="help">
+      <EditorBox title="Measured on" accent={info.accent}>
+        {linkable.length > 0 ? (
+          <>
+            <select value={draft.accountID ?? ''} onChange={e => setAccountID(e.target.value || undefined)} aria-label="Account">
+              <option value="">Not linked — count payments made</option>
+              {linkable.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.name || accountKindInfo[a.kind].label} ({accountKindInfo[a.kind].label.toLowerCase()}){tools.international ? ` · ${tools.currencyOf(a)}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="help">
+              {kind === 'debt'
+                ? "Linked, what's left comes from the account's checked balance — interest and extra payments included."
+                : accounts.find(a => a.id === draft.accountID)?.kind === 'current'
+                  ? 'Linked to a current account, everything in it counts towards the goal — best for an account you keep just for this.'
+                  : 'Linked, progress comes from what’s really in the account when you check it. Payments go into it.'}
+            </p>
+          </>
+        ) : (
+          <p className="help" style={{ margin: 0 }}>
             {kind === 'debt'
-              ? "Linked, what's left comes from the account's checked balance — interest and extra payments included."
-              : 'Linked, progress comes from what’s really in the account when you check it. Payments go into it.'}
+              ? 'To measure this on a real balance, add the card or loan in Accounts, then link it here.'
+              : 'To measure this on a real balance, add the account in Accounts, then link it here.'}
           </p>
-        </EditorBox>
-      )}
+        )}
+      </EditorBox>
 
       <EditorBox title="Payments" accent={info.accent}>
         <Segmented<GoalFrequency>
