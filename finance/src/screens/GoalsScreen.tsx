@@ -13,8 +13,8 @@ import { onBalance, type MoneyData } from '../model/accounts'
 import { useAccounts } from '../store/accounts'
 import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
+import { useMoneyTools } from '../store/money'
 import { useSpending } from '../store/spending'
-import { useCurrency } from '../store/settings'
 import { GoalEditor, GoalPaymentSheet, type GoalEditorTarget, type PaymentTarget } from './GoalSheets'
 
 const monthYear = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -51,7 +51,8 @@ export function GoalsScreen() {
 }
 
 function GoalCard({ goal, account, onEdit, onConfirm }: { goal: FinanceGoal; account?: string; onEdit: () => void; onConfirm: (p: NonNullable<ReturnType<typeof nextPayment>>) => void }) {
-  const currency = useCurrency()
+  // In its account's currency (a US loan is in dollars).
+  const currency = useMoneyTools().goalCurrency(goal)
   const money = (n: number) => formatMoney(n, currency)
   const accent = kindInfo[goal.kind].accent
   const plan = schedule(goal)

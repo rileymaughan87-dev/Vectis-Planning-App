@@ -5,7 +5,7 @@
 
 import { countIn, describeCounts } from '@suite/sync/records'
 import { createSyncStore, type SyncSlice } from '@suite/sync/store'
-import { decodeAccounts, decodeAudits } from '../model/accounts'
+import { decodeAccounts, decodeAudits, decodeTransfers } from '../model/accounts'
 import { decodeFinanceEvents } from '../model/entries'
 import { decodeGoals } from '../model/goals'
 import { decodePot, decodeSpendingEntries } from '../model/spending'
@@ -13,7 +13,7 @@ import { useAccounts } from './accounts'
 import { useEntries } from './entries'
 import { useGoals } from './goals'
 import { Filename, storage } from './persist'
-import { decodePreferences, preferencesOf, useSettings } from './settings'
+import { decodePreferences, preferencesOf, prefsChanged, useSettings } from './settings'
 import { useSpending } from './spending'
 
 /** A slice backed by one field of a zustand store. */
@@ -40,18 +40,19 @@ const FINANCE_SLICES: SyncSlice[] = [
   slice(useSpending, 'pot', Filename.spendingPot, 'single', decodePot),
   slice(useAccounts, 'accounts', Filename.accounts, 'list', decodeAccounts),
   slice(useAccounts, 'audits', Filename.accountAudits, 'list', decodeAudits),
-  // Currency, cushion and payday, saved together as preferences.json.
+  slice(useAccounts, 'transfers', Filename.transfers, 'list', decodeTransfers),
+  // Currency, cushion, payday and international mode, saved together as preferences.json.
   {
     file: Filename.preferences,
     kind: 'single',
     get: () => preferencesOf(useSettings.getState()),
     set: value => {
       const p = value as ReturnType<typeof decodePreferences>
-      useSettings.setState({ currencyOverride: p.currency, cushion: p.cushion, paydayEntryID: p.paydayEntryID })
+      useSettings.setState({ currencyOverride: p.currency, cushion: p.cushion, paydayEntryID: p.paydayEntryID, international: p.international, rateOverrides: p.rateOverrides })
     },
     decode: decodePreferences,
     subscribe: onChange => useSettings.subscribe((s, p) => {
-      if (s.currencyOverride !== p.currencyOverride || s.cushion !== p.cushion || s.paydayEntryID !== p.paydayEntryID) onChange()
+      if (prefsChanged(preferencesOf(s), preferencesOf(p))) onChange()
     }),
   },
 ]
@@ -63,7 +64,8 @@ export const useSync = createSyncStore({
   slices: FINANCE_SLICES,
   contentFiles: [Filename.financeEvents, Filename.financeGoals, Filename.spendingEntries, Filename.accounts],
   // Accounts joined on 10 Oct 2026, after devices were already syncing.
-  addedLater: [Filename.accounts, Filename.accountAudits],
+  // Transfers (international mode) on 13 Oct 2026.
+  addedLater: [Filename.accounts, Filename.accountAudits, Filename.transfers],
   describe: records => describeCounts([
     ['entry', 'entries', countIn(records, Filename.financeEvents)],
     ['goal', 'goals', countIn(records, Filename.financeGoals)],

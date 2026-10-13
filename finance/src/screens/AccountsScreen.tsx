@@ -11,13 +11,13 @@ import {
   ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, monthlyStanding, sinceText, spendingAccount, standing,
   type Account, type AccountKind, type GapNote, type MoneyData,
 } from '../model/accounts'
-import { amountText, formatMoney, parseAmount } from '../model/money'
+import { CURRENCIES, amountText, parseAmount } from '../model/money'
 import { useAccounts } from '../store/accounts'
 import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
-import { useCurrency } from '../store/settings'
 import { useSpending } from '../store/spending'
 import { UNCONFIRMED } from '../ui/semantic'
+import { useMoneyTools } from '../store/money'
 
 const SHORT_KIND: Record<AccountKind, string> = { current: 'Current', savings: 'Savings', credit: 'Card', loan: 'Loan' }
 const dateText = (iso: string) => parseDate(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
@@ -25,7 +25,8 @@ const dateText = (iso: string) => parseDate(iso).toLocaleDateString(undefined, {
 /** Everything the expected balance is worked out from. */
 function useMoneyData(): MoneyData {
   return {
-    accounts: useAccounts(s => s.accounts),
+    accounts: useMoneyTools().accounts,
+    transfers: useAccounts(s => s.transfers),
     events: useEntries(s => s.events),
     goals: useGoals(s => s.goals),
     spending: useSpending(s => s.entries),
@@ -36,14 +37,17 @@ function useMoneyData(): MoneyData {
 const tracksSpending = (account: Account, accounts: Account[]) => account.kind === 'credit' || spendingAccount(accounts)?.id === account.id
 
 export function AccountsScreen() {
-  const { accounts, audits } = useAccounts()
-  const currency = useCurrency()
-  const money = (n: number) => formatMoney(n, currency)
+  const audits = useAccounts(s => s.audits)
+  const tools = useMoneyTools()
+  const { accounts } = tools
+  // Totals are in your home currency; each account in its own.
+  const money = (n: number) => tools.money(n)
+  const mixed = new Set(accounts.map(a => tools.currencyOf(a))).size > 1
   const data = useMoneyData()
   const [editing, setEditing] = useState<{ account?: Account } | null>(null)
   const [auditing, setAuditing] = useState<Account | null>(null)
   const [viewing, setViewing] = useState<Account | null>(null)
-  const { have, owe } = standing(accounts, audits)
+  const { have, owe } = standing(accounts, audits, tools.inHome)
   const ordered = ACCOUNT_KINDS.flatMap(k => accounts.filter(a => a.kind === k))
   // Gone once deleted from its own editor.
   const viewed = viewing ? accounts.find(a => a.id === viewing.id) : undefined
@@ -67,7 +71,7 @@ export function AccountsScreen() {
               {owe > 0 && <div><span className="mono muted">You owe</span><span className="standing-figure">{money(owe)}</span></div>}
               {owe > 0 && <div><span className="mono muted">Altogether</span><span className="standing-figure">{have - owe < 0 ? '−' : ''}{money(Math.abs(have - owe))}</span></div>}
             </div>
-            <p className="help" style={{ margin: 0 }}>From each account's last check.</p>
+            <p className="help" style={{ margin: 0 }}>From each account's last check{mixed ? `, in ${tools.home} at today's rate` : ''}.</p>
           </SectionBox>
 
           <SectionBox title="Accounts" accent="var(--brand)">
@@ -75,7 +79,7 @@ export function AccountsScreen() {
               <AccountCard
                 key={a.id}
                 account={a}
-                money={money}
+                money={n => tools.forAccount(n, a)}
                 data={data}
                 onAudit={() => setAuditing(a)}
                 onOpen={() => setViewing(a)}
@@ -92,13 +96,13 @@ export function AccountsScreen() {
       {viewed && !editing && !auditing && (
         <AccountDetail
           account={viewed}
-          money={money}
+          money={n => tools.forAccount(n, viewed)}
           onClose={() => setViewing(null)}
           onAudit={() => setAuditing(viewing)}
           onEdit={() => setEditing({ account: viewed })}
         />
       )}
-      {auditing && <AuditSheet account={auditing} money={money} data={data} onClose={() => setAuditing(null)} />}
+      {auditing && <AuditSheet account={auditing} money={n => tools.forAccount(n, auditing)} data={data} onClose={() => setAuditing(null)} />}
     </div>
   )
 }
@@ -109,8 +113,9 @@ export function AccountsScreen() {
  * it fills in as you check your balances.
  */
 function OverTime({ money }: { money: (n: number) => string }) {
-  const { accounts, audits } = useAccounts()
-  const months = monthlyStanding(accounts, audits)
+  const audits = useAccounts(s => s.audits)
+  const { accounts, inHome } = useMoneyTools()
+  const months = monthlyStanding(accounts, audits, new Date(), inHome)
   const hasSavings = accounts.some(a => a.kind === 'savings')
   const hasDebt = accounts.some(a => accountKindInfo[a.kind].owed)
   if (!months.length || (!hasSavings && !hasDebt)) return null
@@ -319,6 +324,8 @@ function AccountDetail({ account, money, onClose, onAudit, onEdit }: { account: 
 
 function AccountEditor({ account, onClose }: { account?: Account; onClose: () => void }) {
   const { accounts, addAccount, updateAccount, makePrimary, deleteAccount } = useAccounts()
+  const { home, international } = useMoneyTools()
+  const [currency, setCurrency] = useState(account?.currency ?? home)
   const [name, setName] = useState(account?.name ?? '')
   const [kind, setKind] = useState<AccountKind>(account?.kind ?? 'current')
   const [text, setText] = useState(amountText(0))
@@ -330,8 +337,10 @@ function AccountEditor({ account, onClose }: { account?: Account; onClose: () =>
 
   const save = () => {
     if (!ok) return
-    if (account) updateAccount({ ...account, name: name.trim(), kind })
-    else addAccount(name, kind, Math.abs(value!))
+    // Your home currency is stored as none, so changing home later carries those accounts with it.
+    const own = international && currency !== home ? currency : undefined
+    if (account) updateAccount({ ...account, name: name.trim(), kind, currency: international ? own : account.currency })
+    else addAccount(name, kind, Math.abs(value!), own)
     onClose()
   }
 
@@ -341,6 +350,16 @@ function AccountEditor({ account, onClose }: { account?: Account; onClose: () =>
         <Segmented<AccountKind> label="Kind" value={kind} onChange={setKind} options={ACCOUNT_KINDS.map(k => ({ value: k, label: SHORT_KIND[k] }))} />
         <p className="help">{info.help}</p>
         <Field label="Name"><input autoFocus={!account} value={name} onChange={e => setName(e.target.value)} placeholder={info.placeholder} /></Field>
+        {international && (
+          <Field label="Currency">
+            <select value={currency} onChange={e => setCurrency(e.target.value)}>
+              {[home, ...CURRENCIES.filter(c => c !== home)].map(c => <option key={c} value={c}>{c}{c === home ? ' (home)' : ''}</option>)}
+            </select>
+          </Field>
+        )}
+        {international && account && currency !== (account.currency ?? home) && (
+          <p className="help">Its balances, and the bills and spending on it, are read as {currency} from now on — the numbers aren't converted.</p>
+        )}
       </EditorBox>
       {!account && (
         <EditorBox title={info.owed ? 'Owed now' : 'In it now'}>

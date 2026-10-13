@@ -34,6 +34,11 @@ export interface FinanceEvent {
   confirmedAmounts: Record<string, number>
   /** A repeating entry stops here: no occurrences on or after this day. */
   endDate?: ISODate
+  /**
+   * Web only (international mode): the account it's paid from or into, and
+   * so its currency. Unset means the main current account.
+   */
+  accountID?: string
 }
 
 export interface LineItem {
@@ -64,6 +69,7 @@ export function decodeFinanceEvent(r: Raw): FinanceEvent {
     amountVaries: bool(r.amountVaries, false),
     confirmedAmounts: record(r.confirmedAmounts, x => optNum(x)),
     endDate: optStr(r.endDate),
+    accountID: optStr(r.accountID),
   }
 }
 

@@ -95,3 +95,6 @@
   .money-grid .day-amount { margin-top: 2px; }
   .finance-goals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 }
+
+/* International mode: a currency's rate and your own override, in Settings. */
+.rate-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px solid var(--separator); }

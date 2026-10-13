@@ -15,7 +15,7 @@ import { amountText, formatMoney, parseAmount } from '../model/money'
 import { accountKindInfo, goalAccounts } from '../model/accounts'
 import { useAccounts } from '../store/accounts'
 import { useGoals } from '../store/goals'
-import { useCurrency } from '../store/settings'
+import { useMoneyTools } from '../store/money'
 
 const longDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
 const shortDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -24,8 +24,7 @@ export type GoalEditorTarget = { mode: 'new'; kind: GoalKind } | { mode: 'edit';
 
 export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onClose: () => void }) {
   const { goals, addGoal, updateGoal, deleteGoal } = useGoals()
-  const currency = useCurrency()
-  const money = (n: number) => formatMoney(n, currency)
+  const tools = useMoneyTools()
   const original = target.mode === 'edit' ? target.goal : null
   // The live copy, so payments recorded while the editor is open show and aren't lost on save.
   const live = original ? goals.find(g => g.id === original.id) ?? original : null
@@ -40,6 +39,9 @@ export function GoalEditor({ target, onClose }: { target: GoalEditorTarget; onCl
   const [targetDate, setTargetDate] = useState(original?.targetDate)
   const accounts = useAccounts(s => s.accounts)
   const [accountID, setAccountID] = useState(original?.accountID)
+  // Amounts are in the chosen account's currency.
+  const currency = tools.goalCurrency({ ...(original ?? ({} as FinanceGoal)), accountID })
+  const money = (n: number) => formatMoney(n, currency)
   const [paymentSheet, setPaymentSheet] = useState<PaymentTarget | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -195,8 +197,11 @@ export type PaymentTarget =
 
 /** Skipping is a plain, equal choice rather than a failure — the plan just adds a payment at the end. */
 export function GoalPaymentSheet({ target, onClose }: { target: PaymentTarget; onClose: () => void }) {
-  const { recordPayment, addExtraPayment, removePayment } = useGoals()
-  const currency = useCurrency()
+  const { recordPayment, addExtraPayment, removePayment, goals } = useGoals()
+  const tools = useMoneyTools()
+  const goalID = target.mode === 'extra' ? target.goal.id : target.payment.goalID
+  const goal = goals.find(g => g.id === goalID)
+  const currency = goal ? tools.goalCurrency(goal) : tools.home
   const title = target.mode === 'extra' ? target.goal.title : target.payment.title
   const kind = target.mode === 'extra' ? target.goal.kind : target.payment.kind
   const accent = kindInfo[kind].accent
