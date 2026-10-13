@@ -52,6 +52,11 @@ export interface FinanceGoal {
    * Then progress comes from the account's checked balance.
    */
   accountID?: string
+  /**
+   * International mode, for a goal not linked to an account: its currency
+   * (e.g. "USD"). Linked, it's the account's. Unset means your home currency.
+   */
+  currency?: string
 }
 
 export interface GoalPayment {
@@ -80,6 +85,7 @@ export function decodeGoal(r: Raw): FinanceGoal {
     firstPaymentDate: str(r.firstPaymentDate, toISO(startOfDay(new Date()))),
     payments: record(r.payments, x => optNum(x)),
     accountID: optStr(r.accountID),
+    currency: typeof r.currency === 'string' && /^[A-Z]{3}$/.test(r.currency) ? r.currency : undefined,
   }
 }
 
