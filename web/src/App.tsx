@@ -3,6 +3,8 @@
 // partner's view is laid over the top when one is open.
 
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
+import { SyncChoiceSheet } from '@suite/ui/SyncBox'
+import { useSync } from './store/sync'
 import { Settings, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AccountabilityScreen } from './screens/AccountabilityScreen'
@@ -150,6 +152,7 @@ export default function App() {
             </Sheet>
           )}
 
+          {destination !== 'settings' && <SyncChoiceSheet useSync={useSync} appName="Planner" />}
           {joining && <JoinSharedSheet invite={joining} onClose={() => setJoining(null)} />}
 
           {partnerID && <PartnerView partnerID={partnerID} colors={colors} onBack={() => setPartnerID(null)} />}

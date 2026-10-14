@@ -86,6 +86,28 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Sync: one sign-in for every app (14 Oct 2026)
+
+Riley's Finance wasn't syncing: they had never signed in to it on the
+laptop, because each app turned sync on separately (though Firebase's
+sign-in was already shared on the site). Now:
+
+- **Signing in.** Whichever app signs in sets `vectis-suite:signed-in`
+  (`SIGNED_IN_KEY` in `suite/src/sync/store.ts`). Every app that sees it
+  on opening connects too, and an app open in another tab joins on the
+  `storage` event.
+- **Stopping.** "Stop syncing on this device" clears it, which signs out
+  every app.
+- **Joining safely.** An app joining this way goes through the usual
+  first-sync rules:
+  - nothing in the cloud: it sends its data;
+  - nothing saved locally: it takes the cloud's;
+  - both have data: you choose, with "Combine both" as the usual choice.
+  Neither choice deletes anything from the cloud.
+- **The choice can't be missed.** It now also shows over the app
+  (`SyncChoiceSheet`, in each App's overlays), not only in Settings.
+  "Later" hides it until the app is next opened.
+
 ## Finance: international mode (13 Oct 2026)
 
 Riley is American, lives in the UK, is paid in pounds and moves money to

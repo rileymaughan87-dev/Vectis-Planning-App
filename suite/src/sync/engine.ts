@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore'
 import { newID } from '../ids'
 import { combineWrites, diff, newToCloud, readRecord, rebuild, recordsFor, type SyncRecord } from './records'
-import { firebaseConfig, keys, type Attachment, type SyncApp, type SyncSlice, type SyncStore } from './store'
+import { SIGNED_IN_KEY, firebaseConfig, keys, type Attachment, type SyncApp, type SyncSlice, type SyncStore } from './store'
 
 export interface Engine {
   signIn(): Promise<void>
@@ -338,8 +338,11 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
   }
 
   onAuthStateChanged(auth, user => {
-    if (user) void connect(user)
-    else {
+    if (user) {
+      // Every app now knows someone's signed in, and connects too.
+      store(SIGNED_IN_KEY, user.uid)
+      void connect(user)
+    } else {
       stop()
       useSync.setState({ phase: 'signedOut', email: undefined, choice: undefined })
     }
@@ -366,6 +369,8 @@ export function createEngine(app: SyncApp, useSync: SyncStore, attachment: Attac
       stop()
       store(k.user, null)
       store(k.pending, null)
+      // The sign-in is shared, so this stops sync in every app on this device.
+      store(SIGNED_IN_KEY, null)
       await fbSignOut(auth)
       useSync.setState({ phase: 'signedOut', email: undefined, choice: undefined, error: undefined })
     },
