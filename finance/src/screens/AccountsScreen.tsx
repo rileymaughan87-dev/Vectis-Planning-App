@@ -326,6 +326,7 @@ function AccountEditor({ account, onClose }: { account?: Account; onClose: () =>
   const { accounts, addAccount, updateAccount, makePrimary, deleteAccount } = useAccounts()
   const { home, international } = useMoneyTools()
   const [currency, setCurrency] = useState(account?.currency ?? home)
+  const [walletCard, setWalletCard] = useState(account?.walletCard ?? '')
   const [name, setName] = useState(account?.name ?? '')
   const [kind, setKind] = useState<AccountKind>(account?.kind ?? 'current')
   const [text, setText] = useState(amountText(0))
@@ -339,7 +340,7 @@ function AccountEditor({ account, onClose }: { account?: Account; onClose: () =>
     if (!ok) return
     // Your home currency is stored as none, so changing home later carries those accounts with it.
     const own = international && currency !== home ? currency : undefined
-    if (account) updateAccount({ ...account, name: name.trim(), kind, currency: international ? own : account.currency })
+    if (account) updateAccount({ ...account, name: name.trim(), kind, currency: international ? own : account.currency, walletCard: walletCard.trim() || undefined })
     else addAccount(name, kind, Math.abs(value!), own)
     onClose()
   }
@@ -365,6 +366,14 @@ function AccountEditor({ account, onClose }: { account?: Account; onClose: () =>
         <EditorBox title={info.owed ? 'Owed now' : 'In it now'}>
           <input inputMode="decimal" value={text} onChange={e => setText(e.target.value)} aria-label="Balance now" onKeyDown={e => e.key === 'Enter' && save()} style={{ fontSize: 22, textAlign: 'center' }} />
           <p className="help">As your bank shows it today. This is the first check; later ones show how it changes.</p>
+        </EditorBox>
+      )}
+      {account && (kind === 'current' || kind === 'credit') && (
+        <EditorBox title="Apple Wallet">
+          <Field label="Card name in Wallet (optional)">
+            <input value={walletCard} onChange={e => setWalletCard(e.target.value)} placeholder={name || 'As Wallet shows it'} />
+          </Field>
+          <p className="help">Payments with this card, logged from the Apple Wallet Shortcut, go to this account. Leave empty if the account's name already appears in the card's name.</p>
         </EditorBox>
       )}
       {account && kind === 'current' && currentCount > 1 && (

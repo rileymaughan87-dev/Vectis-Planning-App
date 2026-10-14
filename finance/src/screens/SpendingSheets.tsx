@@ -14,17 +14,20 @@ import { useEntries } from '../store/entries'
 import { useCurrency } from '../store/settings'
 import { useSpending } from '../store/spending'
 import { useMoneyTools } from '../store/money'
+import { accountForCard, type WalletLog } from '../model/walletLink'
 
 /** The quick log: amount first (the keyboard opens on it), an optional note, the day. Also edits one. */
-export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry; onClose: () => void }) {
+export function LogSpendingSheet({ editing, wallet, onClose }: { editing?: SpendingEntry; wallet?: WalletLog; onClose: () => void }) {
   const { entries, log, update, remove } = useSpending()
-  const [text, setText] = useState(amountText(editing?.amount ?? 0))
-  const [note, setNote] = useState(editing?.note ?? '')
+  const tools = useMoneyTools()
+  const [text, setText] = useState(amountText(editing?.amount ?? wallet?.amount ?? 0))
+  const [note, setNote] = useState(editing?.note ?? wallet?.note ?? '')
   const [date, setDate] = useState(dayKey(editing ? parseDate(editing.date) : new Date()))
   const accounts = useAccounts(s => s.accounts)
   const spendable = spendableAccounts(accounts)
-  const [accountID, setAccountID] = useState(editing?.accountID ?? spendingAccount(accounts)?.id)
-  const tools = useMoneyTools()
+  // From Apple Wallet: the account the card belongs to.
+  const [accountID, setAccountID] = useState(() =>
+    editing?.accountID ?? (wallet ? accountForCard(wallet, tools.accounts, tools.currencyOf, tools.international)?.id : undefined) ?? spendingAccount(accounts)?.id)
   const value = parseAmount(text)
   const ok = value !== null && value > 0 && Boolean(date)
   const notes = recentNotes(entries).filter(n => n !== note)
@@ -37,14 +40,22 @@ export function LogSpendingSheet({ editing, onClose }: { editing?: SpendingEntry
     // The main current account is the default, so it's left unset (spending logged before accounts existed reads the same way).
     const account = accountID === spendingAccount(accounts)?.id ? undefined : accountID
     if (editing) update({ ...editing, amount: Math.abs(value!), note: note.trim(), accountID: account, date: date === dayKey(parseDate(editing.date)) ? editing.date : toISO(when) })
-    else log(Math.abs(value!), note, when, account)
+    else log(Math.abs(value!), note, when, account, wallet ? 'shortcut' : 'manual')
     onClose()
   }
 
   return (
     <Sheet title={editing ? 'Edit spending' : 'Log spending'} compact onClose={onClose} right={{ label: editing ? 'Save' : 'Log', onClick: save, disabled: !ok }}>
+      {wallet && (
+        <p className="caption" style={{ margin: 0, textAlign: 'center' }}>
+          From Apple Wallet{wallet.card ? ` · ${wallet.card}` : ''} — check it, then tap Log it.
+          {wallet.currency && tools.international && wallet.currency !== tools.currencyOf(tools.accounts.find(a => a.id === accountID))
+            ? ` The payment was in ${wallet.currency}; this account is in ${tools.currencyOf(tools.accounts.find(a => a.id === accountID))} — put in what it cost there.`
+            : ''}
+        </p>
+      )}
       <input
-        autoFocus={!editing} inputMode="decimal" value={text} onChange={e => setText(e.target.value)} aria-label="Amount"
+        autoFocus={!editing && !wallet?.amount} inputMode="decimal" value={text} onChange={e => setText(e.target.value)} aria-label="Amount"
         placeholder={tools.international ? `0.00 ${tools.currencyOf(tools.accounts.find(a => a.id === accountID))}` : '0.00'}
         onKeyDown={e => e.key === 'Enter' && save()} style={{ fontSize: 26, textAlign: 'center' }}
       />

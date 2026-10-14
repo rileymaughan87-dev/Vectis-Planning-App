@@ -86,6 +86,28 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance: logging from Apple Wallet (14 Oct 2026)
+
+Riley's choice: the sheet opens filled in, and you tap once.
+
+- **The link.** An iPhone Shortcuts **Transaction** automation (iOS 17+,
+  Run Immediately) opens
+  `…/finance/?log&amount=…&note=…&card=…`, each part URL-encoded from
+  the transaction's Amount, Merchant and Card.
+  - `model/walletLink.ts` (tested) has `readLogLink` (the amount, with
+    its currency taken from a symbol or code) and `accountForCard`.
+  - The account is chosen by `Account.walletCard`, then by the account's
+    name inside the card's name, then (international mode) by the
+    payment's currency, else the main account.
+  - Entries are saved with `source: 'shortcut'`.
+- **Safari.** The link opens in Safari, which keeps its own storage. It
+  works because of sync: sign in once in Finance in Safari, and it takes
+  the synced data with no choice to make. Logs then sync to the Home
+  Screen app.
+- **In the app.** Setup steps are in Finance Settings → "Log from Apple
+  Wallet". Each current account and card has an optional "Card name in
+  Wallet" in the account editor.
+
 ## Sync: one sign-in for every app (14 Oct 2026)
 
 Riley's Finance wasn't syncing: they had never signed in to it on the
@@ -801,9 +823,8 @@ is separate from a home-screen web app).
   week"; step back through earlier weeks (weeks before the pot started
   say so); recent notes as one-tap chips; the day can't be in the
   future; `?log` opens the app straight on Log spending (manifest
-  shortcut on Android). Apple Pay / Shortcuts logging isn't possible
-  from a home-screen web app (Safari storage is separate) — `?log` is
-  the quick route. 7 more tests (33 Finance).
+  shortcut on Android). Apple Pay / Shortcuts logging: built 14 Oct 2026
+  via sync (see "logging from Apple Wallet"). 7 more tests (33 Finance).
 - **The Finance port is complete (F0–F4).** Riley re-enters data by hand.
 
 ## Note editor upgrade (7–8 Oct 2026) — all three stages done

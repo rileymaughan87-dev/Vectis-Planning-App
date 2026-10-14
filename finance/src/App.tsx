@@ -19,6 +19,7 @@ import { CalendarScreen } from './screens/CalendarScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
+import { readLogLink } from './model/walletLink'
 import { useSettings } from './store/settings'
 
 type Tab = 'now' | 'accounts' | 'plan' | 'calendar' | 'goals'
@@ -38,9 +39,10 @@ export default function App() {
   useFreshRates()
   const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab | 'budget' | null)?.replace('budget', 'plan') as Tab || 'now')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [quickLog, setQuickLog] = useState(() => new URLSearchParams(location.search).has('log'))
+  // "?log" opens Log spending; from an Apple Wallet Shortcut it carries the amount, shop and card (model/walletLink.ts).
+  const [quickLog, setQuickLog] = useState(() => readLogLink(location.search))
   const closeQuickLog = () => {
-    setQuickLog(false)
+    setQuickLog(null)
     // Drop "?log" so a reload doesn't open it again.
     history.replaceState(null, '', location.pathname)
   }
@@ -76,7 +78,7 @@ export default function App() {
       )}
       overlays={<>
         {settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
-        {quickLog && <LogSpendingSheet onClose={closeQuickLog} />}
+        {quickLog && <LogSpendingSheet wallet={quickLog.amount || quickLog.note || quickLog.card ? quickLog : undefined} onClose={closeQuickLog} />}
         {!settingsOpen && <SyncChoiceSheet useSync={useSync} appName="Finance" />}
       </>}
     >
