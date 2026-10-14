@@ -98,3 +98,8 @@
 
 /* International mode: a currency's rate and your own override, in Settings. */
 .rate-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px solid var(--separator); }
+
+/* The Apple Wallet Shortcut's set-up steps, in Settings. */
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.45; }
+
+.shortcut-link { display: block; margin: 6px 0; padding: 6px 8px; background: var(--surface); border: 1px solid var(--separator); overflow-wrap: anywhere; font-size: 12px; }

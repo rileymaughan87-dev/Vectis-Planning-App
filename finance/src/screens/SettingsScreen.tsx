@@ -75,6 +75,51 @@ function RateRow({ code, home, daily, own, onOwn }: { code: string; home: string
   )
 }
 
+/**
+ * Setting up logging from Apple Wallet: an iPhone Shortcuts automation that
+ * opens Finance with the payment in the link (model/walletLink.ts).
+ */
+function WalletShortcutBox() {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const base = `${location.origin}${location.pathname}?log`
+  return (
+    <EditorBox title="Log from Apple Wallet">
+      <p className="help" style={{ margin: 0 }}>
+        Pay with a Wallet card and Finance opens with the spend filled in — amount, shop and the account the card belongs to. Check
+        it and tap Log it. Needs iPhone Shortcuts (iOS 17 or later).
+      </p>
+      {!open ? (
+        <button className="text-button" style={{ alignSelf: 'flex-start' }} onClick={() => setOpen(true)}>How to set it up</button>
+      ) : (
+        <ol className="steps">
+          <li>On your iPhone, open <strong>Shortcuts</strong> → <strong>Automation</strong> → <strong>+</strong> → <strong>Transaction</strong>.</li>
+          <li>Choose your cards, choose <strong>Run Immediately</strong>, then <strong>Next</strong> → <strong>New Blank Automation</strong>.</li>
+          <li>
+            Add three <strong>URL Encode</strong> actions. In the first, tap the text and choose <strong>Shortcut Input</strong>, then tap
+            it again and pick <strong>Amount</strong>. Do the same in the second with <strong>Merchant</strong>, and the third with
+            <strong> Card</strong>.
+          </li>
+          <li>
+            Add a <strong>Text</strong> action and put in this address, then add the three URL Encoded Text results straight after
+            <code> amount=</code>, <code>note=</code> and <code>card=</code>:
+            <code className="shortcut-link">{base}&amp;amount=&amp;note=&amp;card=</code>
+            <button className="text-button" onClick={() => { void navigator.clipboard?.writeText(`${base}&amount=&note=&card=`); setCopied(true) }}>
+              {copied ? 'Copied' : 'Copy address'}
+            </button>
+          </li>
+          <li>Add <strong>Open URLs</strong> with the Text. Done.</li>
+          <li>
+            The link opens in Safari, which keeps its own copy of Finance: the first time, open Settings there and sign in with Google
+            (it takes your synced data — nothing to choose). Logs then sync to your Home Screen app.
+          </li>
+          <li>Each card goes to the account whose name it includes; for others, set the card's Wallet name on the account (Accounts → the account → edit).</li>
+        </ol>
+      )}
+    </EditorBox>
+  )
+}
+
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
   const { appearance, setAppearance, currencyOverride, setCurrency } = useSettings()
   const restoreRef = useRef<HTMLInputElement>(null)
@@ -85,6 +130,8 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       <SyncBox useSync={useSync} what="your entries, goals, logged spending and weekly pot" />
 
       <SafeToSpendSettings />
+
+      <WalletShortcutBox />
 
       <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 

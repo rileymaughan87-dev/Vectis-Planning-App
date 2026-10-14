@@ -40,6 +40,8 @@ export interface Account {
   primary: boolean
   /** International mode: the account's own currency (e.g. "USD"). Unset means your home currency. */
   currency?: string
+  /** The card's name in Apple Wallet, so a Wallet payment logs to this account (model/walletLink.ts). */
+  walletCard?: string
 }
 
 /**
@@ -81,6 +83,7 @@ function decodeAccount(r: Raw): Account {
     createdDate: str(r.createdDate, toISO(new Date())),
     primary: bool(r.primary, false),
     currency: typeof r.currency === 'string' && /^[A-Z]{3}$/.test(r.currency) ? r.currency : undefined,
+    walletCard: typeof r.walletCard === 'string' && r.walletCard.trim() ? r.walletCard.trim() : undefined,
   }
 }
 
