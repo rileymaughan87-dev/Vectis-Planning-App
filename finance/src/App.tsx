@@ -7,6 +7,8 @@
 import { useApplyTheme } from '@suite/appearance'
 import { useFreshRates } from './store/money'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
+import { SyncChoiceSheet } from '@suite/ui/SyncBox'
+import { useSync } from './store/sync'
 import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
@@ -75,6 +77,7 @@ export default function App() {
       overlays={<>
         {settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
         {quickLog && <LogSpendingSheet onClose={closeQuickLog} />}
+        {!settingsOpen && <SyncChoiceSheet useSync={useSync} appName="Finance" />}
       </>}
     >
       {tab === 'now' && <NowScreen onGo={choose} />}

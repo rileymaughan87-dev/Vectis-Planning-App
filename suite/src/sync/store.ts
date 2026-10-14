@@ -98,6 +98,14 @@ export function firebaseConfig(): Record<string, string> | null {
   }
 }
 
+/**
+ * One sign-in for every app on this site (Oct 2026): set to your account's
+ * id by whichever app signed in, cleared when you stop syncing. Each app
+ * that sees it connects too — so signing in once, in any app, turns sync on
+ * in all of them. (Firebase keeps the sign-in itself, shared by the apps.)
+ */
+export const SIGNED_IN_KEY = 'vectis-suite:signed-in'
+
 /** sync's own small notes in localStorage, under the app's prefix. */
 export const keys = (app: SyncApp) => ({
   /** Which account this device syncs with, once its first sync has settled. */
@@ -215,9 +223,14 @@ export function createSyncStore(app: SyncApp): SyncStore {
     })
   }
 
-  if (firebaseConfig() && read(k.user)) {
+  // Connect if this app syncs already, or you've signed in from any of the apps.
+  if (firebaseConfig() && (read(k.user) || read(SIGNED_IN_KEY))) {
     useSync.setState({ phase: 'connecting' })
     void loadEngine()
   }
+  // Signed in from another app open at the same time: join in.
+  if (typeof window !== 'undefined') window.addEventListener('storage', e => {
+    if (e.key === SIGNED_IN_KEY && e.newValue && firebaseConfig() && useSync.getState().phase === 'signedOut') void loadEngine()
+  })
   return useSync
 }

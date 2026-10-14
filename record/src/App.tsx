@@ -5,6 +5,8 @@
 
 import { themeColors, useApplyTheme } from '@suite/appearance'
 import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
+import { SyncChoiceSheet } from '@suite/ui/SyncBox'
+import { useSync } from './store/sync'
 import { Settings } from 'lucide-react'
 import { parseRecordLink, type RecordLink } from '@suite/links'
 import { useEffect, useState } from 'react'
@@ -87,7 +89,7 @@ export default function App() {
           />
         </>
       )}
-      overlays={settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
+      overlays={settingsOpen ? <SettingsScreen onClose={() => setSettingsOpen(false)} /> : <SyncChoiceSheet useSync={useSync} appName="Record" />}
     >
       <RecordScreen key={`${tab}:${link.n}`} section={tab} colors={colors} link={link.link && tabFor(link.link) === tab ? link.link : null} />
     </AppShell>
