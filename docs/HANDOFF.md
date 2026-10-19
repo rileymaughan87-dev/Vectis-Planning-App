@@ -86,6 +86,40 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Editors on phones: keyboard and scrolling audit (19 Oct 2026)
+
+Riley found the note format bar hiding behind the keyboard, and notes
+sometimes not scrolling.
+
+**Causes**
+1. The docked bar was placed from `visualViewport` events, which iOS
+   sends late (after the keyboard's slide, or after a scroll ends).
+2. Full-screen sheets kept their full height under the keyboard, so their
+   last lines couldn't be scrolled to.
+3. The page behind a sheet could take the swipe, so the sheet wouldn't
+   scroll until it stopped.
+4. ProseMirror only kept the caret clear of the screen edge, not of the
+   bar.
+
+**Fixes (shared, so every app benefits)**
+- `suite/src/ui/keyboard.ts` (`trackKeyboard`, started by AppShell and by
+  RichEditor) keeps `--vv-top`, `--vv-height` and `--keyboard` on <html>,
+  plus the class `keyboard-open`.
+  - It updates every frame in short bursts: on focus in or out, on
+    scrolls or touch moves while typing, and on viewport changes.
+- **The docked bar** is placed from the top:
+  `calc(--vv-top + --vv-height)` with `translateY(-100%)`. It sits on
+  the keyboard, or on the safe-area inset when the keyboard is down.
+- **While `keyboard-open`**, `.sheet-backdrop` and `.paper-page` are sized
+  to the visible area, so they end above the keyboard.
+- **Scrolling:** `.sheet-body` has `overscroll-behavior: contain`. On
+  touch screens, the page behind an open sheet doesn't scroll.
+- **The caret:** the editor's `scrollMargin` and `scrollThreshold` are 96px
+  at the bottom, which keeps the caret line clear of the bar.
+- **Checked** in the browser with an imitated keyboard (a 400px visible
+  area): the sheet ended at 400 and the bar at 353–400. A real iPhone
+  test is Riley's.
+
 ## Finance: Months view and four tabs (19 Oct 2026)
 
 Riley liked their budget spreadsheet (months across, plan vs actual,
