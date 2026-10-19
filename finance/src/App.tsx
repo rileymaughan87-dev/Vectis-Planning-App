@@ -1,6 +1,8 @@
-// Finance's top level: the suite's shared shell with its tabs — Now
-// (where it opens: safe to spend until payday), Accounts, Plan, Calendar
-// and Goals — and Settings in the side menu.
+// Finance's top level: the suite's shared shell with four tabs, one
+// question each (Oct 2026): Now (what's safe until payday, what to send
+// abroad), Months (the plan by pay period, with Calendar and every entry),
+// Accounts (balances and checks) and Goals (debts and savings) — and
+// Settings in the side menu.
 // Opening the app with "?log" goes straight to logging spending (the
 // home-screen shortcut on Android, or a bookmark anywhere).
 
@@ -14,30 +16,35 @@ import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { AccountsScreen } from './screens/AccountsScreen'
 import { NowScreen } from './screens/NowScreen'
-import { PlanScreen } from './screens/PlanScreen'
-import { CalendarScreen } from './screens/CalendarScreen'
+import { MonthsScreen } from './screens/MonthsScreen'
 import { GoalsScreen } from './screens/GoalsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
 import { readLogLink } from './model/walletLink'
 import { useSettings } from './store/settings'
 
-type Tab = 'now' | 'accounts' | 'plan' | 'calendar' | 'goals'
+type Tab = 'now' | 'months' | 'accounts' | 'goals'
 
 const tabs: ShellTab<Tab>[] = [
   { id: 'now', title: 'Now' },
+  { id: 'months', title: 'Months' },
   { id: 'accounts', title: 'Accounts' },
-  { id: 'plan', title: 'Plan' },
-  { id: 'calendar', title: 'Calendar' },
   { id: 'goals', title: 'Goals' },
 ]
+
+/** The tab to reopen; Plan, Calendar (and the older Budget) live in Months now. */
+function savedTab(): Tab {
+  const saved = sessionStorage.getItem('finance:ui:tab')
+  if (saved === 'plan' || saved === 'calendar' || saved === 'budget') return 'months'
+  return saved === 'months' || saved === 'accounts' || saved === 'goals' ? saved : 'now'
+}
 
 export default function App() {
   const appearance = useSettings(s => s.appearance)
   useApplyTheme(appearance)
   // International mode: today's exchange rate.
   useFreshRates()
-  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('finance:ui:tab') as Tab | 'budget' | null)?.replace('budget', 'plan') as Tab || 'now')
+  const [tab, setTab] = useState<Tab>(savedTab)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // "?log" opens Log spending; from an Apple Wallet Shortcut it carries the amount, shop and card (model/walletLink.ts).
   const [quickLog, setQuickLog] = useState(() => readLogLink(location.search))
@@ -70,7 +77,7 @@ export default function App() {
           <MenuRow
             icon={<Settings size={22} color="var(--text-2)" />}
             title="Settings"
-            subtitle="Appearance, your data"
+            subtitle="Money, logging, sync, your data"
             style={{ marginBottom: 8 }}
             onClick={() => { close(); setSettingsOpen(true) }}
           />
@@ -83,9 +90,8 @@ export default function App() {
       </>}
     >
       {tab === 'now' && <NowScreen onGo={choose} />}
+      {tab === 'months' && <MonthsScreen />}
       {tab === 'accounts' && <AccountsScreen />}
-      {tab === 'plan' && <PlanScreen />}
-      {tab === 'calendar' && <CalendarScreen />}
       {tab === 'goals' && <GoalsScreen />}
     </AppShell>
   )

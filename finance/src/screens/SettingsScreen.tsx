@@ -1,7 +1,7 @@
 // Finance settings: appearance, currency (and international mode) and your data.
 
 import { AppearanceEditor } from '@suite/ui/AppearanceEditor'
-import { EditorBox, Sheet, Toggle, VButton } from '@suite/ui/components'
+import { EditorBox, Field, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { useRef, useState } from 'react'
 import { SyncBox } from '@suite/ui/SyncBox'
 import { currenciesInUse, rateToHome } from '../model/currency'
@@ -127,21 +127,24 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
-      <SyncBox useSync={useSync} what="your entries, goals, logged spending and weekly pot" />
+      {/* Money first (what changes the numbers), then logging, sync, the look and your data. */}
+      <EditorBox title="Currency and countries">
+        <Field label="Home currency (totals add up in this)">
+          <select value={currencyOverride ?? ''} onChange={e => setCurrency(e.target.value || undefined)} aria-label="Currency">
+            <option value="">Follow my region ({regionCurrency()})</option>
+            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </Field>
+        <InternationalSettings />
+      </EditorBox>
 
       <SafeToSpendSettings />
 
       <WalletShortcutBox />
 
-      <AppearanceEditor appearance={appearance} onChange={setAppearance} />
+      <SyncBox useSync={useSync} what="your entries, goals, logged spending and weekly pot" />
 
-      <EditorBox title="Currency">
-        <select value={currencyOverride ?? ''} onChange={e => setCurrency(e.target.value || undefined)} aria-label="Currency">
-          <option value="">Follow my region ({regionCurrency()})</option>
-          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <InternationalSettings />
-      </EditorBox>
+      <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 
       <EditorBox title="Your data">
         <p className="help">
