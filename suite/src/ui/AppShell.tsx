@@ -7,6 +7,10 @@
 
 import { X } from 'lucide-react'
 import { useState, type CSSProperties, type ReactNode } from 'react'
+import { trackKeyboard } from './keyboard'
+
+// Every app follows the on-screen keyboard, so sheets and the format bar stay above it.
+trackKeyboard()
 
 export interface ShellTab<T extends string> {
   id: T

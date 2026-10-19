@@ -2,7 +2,8 @@
 // underneath; Vectis styling and an adaptive toolbar on top.
 //
 // On a phone the toolbar rides just above the on-screen keyboard while
-// you're typing. On a computer it sits at the top of the editor.
+// you're typing (placed by CSS from ../../ui/keyboard.ts, which follows the
+// keyboard frame by frame). On a computer it sits at the top of the editor.
 //
 // Pictures: a photo from the library or camera, a scanned page, or a
 // drawing, each kept on the device (store/attachments.ts) with only its
@@ -20,6 +21,7 @@ import {
   Underline, Undo2,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react'
+import { trackKeyboard } from '../../ui/keyboard'
 import { newID } from '../../ids'
 import type { DocNode } from '../noteDoc'
 import { loadAttachment, saveAttachment } from '../attachments'
@@ -28,6 +30,14 @@ import { DrawingSheet } from './DrawingSheet'
 import { decode, preparePhoto, type Picture } from './images'
 import { ScanSheet } from './ScanSheet'
 import { PARAGRAPH_STYLES, applyStyle, canIndent, currentStyle, editorExtensions, focusKey, indent, mathKey, setSectionFocus } from './extensions'
+
+trackKeyboard()
+
+/**
+ * Room kept around the caret when the editor scrolls to it: below, enough to
+ * stay clear of the docked format bar (and a line more); above, a line.
+ */
+const CARET_ROOM = { top: 24, bottom: 96, left: 0, right: 0 }
 
 export function RichEditor(props: {
   initial: DocNode
@@ -55,6 +65,9 @@ export function RichEditor(props: {
     autofocus: props.autofocus ? 'end' : false,
     editorProps: {
       attributes: { class: 'note-doc', 'aria-label': props.label, role: 'textbox', 'aria-multiline': 'true' },
+      // Keep the line you're typing on clear of the format bar above the keyboard.
+      scrollMargin: CARET_ROOM,
+      scrollThreshold: CARET_ROOM,
     },
     onUpdate: ({ editor }) => onChange(editor.getJSON() as DocNode),
   })
@@ -198,24 +211,6 @@ function useIsTouch() {
   return touch
 }
 
-/** How far the on-screen keyboard pushes up from the bottom of the window. */
-function useKeyboardInset(active: boolean) {
-  const [inset, setInset] = useState(0)
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!active || !vv) return
-    const update = () => setInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop))
-    update()
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    return () => {
-      vv.removeEventListener('resize', update)
-      vv.removeEventListener('scroll', update)
-    }
-  }, [active])
-  return inset
-}
-
 function EditorToolbar({ editor, pictures }: { editor: Editor; pictures: Pictures }) {
   const touch = useIsTouch()
   const s = useEditorState({
@@ -242,7 +237,6 @@ function EditorToolbar({ editor, pictures }: { editor: Editor; pictures: Picture
       canOutdent: canIndent(e, false),
     }),
   })
-  const inset = useKeyboardInset(touch && s.focused)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // The most relevant tools first; the rest are a swipe away.
@@ -317,7 +311,6 @@ function EditorToolbar({ editor, pictures }: { editor: Editor; pictures: Picture
   return (
     <div
       className={`editor-toolbar ${touch ? 'docked' : 'inline'}`}
-      style={touch ? { bottom: inset } : undefined}
       role="toolbar"
       aria-label="Formatting"
     >
@@ -361,7 +354,6 @@ function PaperToolbar({ editor, pictures }: { editor: Editor; pictures: Pictures
       canRedo: e.can().redo(),
     }),
   })
-  const inset = useKeyboardInset(touch && s.focused)
   // On a phone it only shows while typing (and while a section's in focus, to step out of it).
   if (touch && !s.focused && !s.focusOn) return null
 
@@ -376,7 +368,7 @@ function PaperToolbar({ editor, pictures }: { editor: Editor; pictures: Pictures
   ]
 
   return (
-    <div className={`editor-toolbar paper-toolbar ${touch ? 'docked' : 'inline'}`} style={touch ? { bottom: inset } : undefined} role="toolbar" aria-label="Formatting">
+    <div className={`editor-toolbar paper-toolbar ${touch ? 'docked' : 'inline'}`} role="toolbar" aria-label="Formatting">
       <div className="toolbar-fixed">
         <Tool label="Undo" disabled={!s.canUndo} onPress={run(() => chain().undo().run())}><Undo2 size={17} /></Tool>
         <Tool label="Redo" disabled={!s.canRedo} onPress={run(() => chain().redo().run())}><Redo2 size={17} /></Tool>
