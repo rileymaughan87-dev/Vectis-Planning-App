@@ -24,7 +24,7 @@ import { LogSpendingSheet } from './SpendingSheets'
 
 const shortDate = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
 
-export function NowScreen({ onGo }: { onGo: (tab: 'accounts' | 'calendar') => void }) {
+export function NowScreen({ onGo }: { onGo: (tab: 'accounts' | 'months') => void }) {
   const { audits, transfers } = useAccounts()
   const events = useEntries(s => s.events)
   const goals = useGoals(s => s.goals)
@@ -102,8 +102,8 @@ export function NowScreen({ onGo }: { onGo: (tab: 'accounts' | 'calendar') => vo
         )}
         {!f.payday && (
           <div className="notice">
-            Add your pay as a repeating entry (in Calendar) and this runs until payday. For now it looks 30 days ahead.
-            <div style={{ marginTop: 6 }}><button className="text-button" onClick={() => onGo('calendar')}>Go to Calendar</button></div>
+            Add your pay as a repeating entry (in Months) and this runs until payday. For now it looks 30 days ahead.
+            <div style={{ marginTop: 6 }}><button className="text-button" onClick={() => onGo('months')}>Go to Months</button></div>
           </div>
         )}
 

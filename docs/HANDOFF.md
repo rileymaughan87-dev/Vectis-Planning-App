@@ -86,6 +86,46 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance: Months view and four tabs (19 Oct 2026)
+
+Riley liked their budget spreadsheet (months across, plan vs actual,
+debts counting down) and found Finance's features spread out. Their
+choices: columns start on payday, and four tabs.
+
+- **Tabs:** Now · **Months** · Accounts · Goals. Months holds a toggle
+  for Months (the grid), Calendar and Entries (the old Plan list), so
+  planning and editing happen in one place. Old saved tabs (plan,
+  calendar, budget) open Months.
+  - Settings: Currency and countries (home currency and international),
+    Safe to spend, Log from Apple Wallet, Sync, Appearance, Your data.
+- **The grid** (`model/months.ts`, tested on data shaped like Riley's):
+  - `payPeriods` makes one column per pay period, from the main pay's
+    dates (stepped by its frequency) to the day before the next; calendar
+    months if there's no repeating pay. It shows 1 past period plus 10
+    ahead, and the current column is shaded.
+  - `monthsGrid` gives the rows:
+    - Coming in and Going out: entries grouped by title and currency, so
+      a one-off pay and the repeating pay after it share a row.
+    - Goals and debts: each goal's planned and confirmed payments.
+    - Spent: logged spending, in home currency.
+    - Left over: in home currency.
+    - To send: what each other-currency current account needs per
+      period so it never goes below zero. Past columns show logged
+      transfers.
+    - Still owed per debt, plus a total in home currency; Saved per
+      saving or set-aside.
+  - Rows keep their own currency; totals convert. Amber means only an
+    amount that varies and isn't confirmed. Tapping a row opens its entry
+    or goal.
+  - The first column is frozen (sticky) for phones.
+- **From Riley's data (backup, 19 Oct):**
+  - Dec and Jan come out about £225 short, from the $1,150 card payments.
+  - The Visa set-aside is funded by Riley's fiancée.
+  - Rent from March is an estimate (moving after the April wedding,
+    joint income after).
+  - Riley's chosen main account is HSBC Current; they set this in the
+    app.
+
 ## Finance: logging from Apple Wallet (14 Oct 2026)
 
 Riley's choice: the sheet opens filled in, and you tap once.

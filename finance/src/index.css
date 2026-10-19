@@ -103,3 +103,45 @@
 .steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.45; }
 
 .shortcut-link { display: block; margin: 6px 0; padding: 6px 8px; background: var(--surface); border: 1px solid var(--separator); overflow-wrap: anywhere; font-size: 12px; }
+
+/* The Months tab: a bar to switch between the grid, Calendar and Entries. */
+.months-bar { padding: 4px 20px 16px; }
+
+/* The grid: one column per pay period, like a spreadsheet. The first column stays put while the months scroll. */
+/* Edge to edge, so the frozen first column sits at the screen's edge with nothing showing behind it. */
+.months-scroll { overflow-x: auto; margin: 0 -20px; -webkit-overflow-scrolling: touch; }
+
+.months-grid { border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 100%; }
+
+.months-grid th, .months-grid td { padding: 6px 10px; border-bottom: 1px solid var(--rule-soft, var(--separator)); text-align: right; white-space: nowrap; }
+
+.months-grid thead th { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--text-2); vertical-align: bottom; border-bottom: 1px solid var(--separator); }
+
+.months-grid thead .from { color: var(--text-3); }
+
+.months-grid tbody th, .months-grid thead th:first-child {
+  position: sticky; left: 0; z-index: 1; text-align: left; font-weight: 400; background: var(--bg); min-width: 128px; max-width: 160px; padding-left: 20px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+.months-grid .now { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+
+.months-grid .past { color: var(--text-2); }
+
+.months-grid .section-row th, .months-grid .section-row td { background: var(--surface-raised); padding-top: 10px; }
+
+.months-grid .section-row th { color: var(--text); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.months-grid .total-row th, .months-grid .total-row td { border-top: 1px solid var(--separator); font-weight: 600; }
+
+.months-grid .total-row.strong td, .months-grid .total-row.strong th { color: var(--text); }
+
+.months-grid .short { color: var(--danger); }
+
+.months-grid .row-link { color: inherit; text-align: left; padding: 0; font: inherit; }
+
+.months-grid .row-link:hover { color: var(--brand); text-decoration: underline; }
+
+.months-grid .empty-cell { text-align: left; color: var(--text-2); white-space: normal; }
+
+.months-legend { margin: 0; }
