@@ -3,8 +3,9 @@
 // occurrence: `occurrencesInMonth` works out which days one falls on, the
 // same way Planner handles a repeating goal.
 //
-// Saved in the iPhone app's JSON shape (finance_events.json), with one
-// addition: "fortnightly" for pay that comes every two weeks.
+// Saved in the iPhone app's JSON shape (finance_events.json), with
+// additions: "fortnightly" for pay that comes every two weeks, and
+// percentage set-asides on pay (tithing, saving, investing — Oct 2026).
 
 import { addDays, dayKey, daysBetween, parseDate, startOfDay, toISO, weekday, type ISODate } from '@suite/dates'
 import { bool, list, num, oneOf, optNum, optStr, record, str, type Raw } from '@suite/decode'
@@ -14,6 +15,21 @@ export type EntryType = 'income' | 'expense'
 /** Only meaningful for expenses. Fixed bills vs spending you can flex. */
 export type ExpenseCategory = 'fixed' | 'flexible'
 export type Frequency = 'none' | 'monthly' | 'weekly' | 'fortnightly'
+
+export type SetAsideKind = 'giving' | 'saving' | 'investing'
+
+/**
+ * A share of a pay entry set aside each time it lands: "10% tithing".
+ * Worked out from each occurrence's amount (the confirmed figure once it's
+ * in), never stored as an amount of its own.
+ */
+export interface SetAsideRule {
+  id: string
+  title: string
+  /** 0–100. */
+  percent: number
+  kind: SetAsideKind
+}
 
 export interface FinanceEvent {
   id: string
@@ -39,6 +55,10 @@ export interface FinanceEvent {
    * so its currency. Unset means the main current account.
    */
   accountID?: string
+  /** Web only, pay entries: shares set aside each time it lands (tithing, saving…). */
+  setAsides?: SetAsideRule[]
+  /** "yyyy-MM-dd|ruleID" for set-asides skipped on one occurrence. */
+  skippedSetAsides?: string[]
 }
 
 export interface LineItem {
@@ -53,6 +73,16 @@ export interface LineItem {
 const ENTRY_TYPES = ['income', 'expense'] as const
 const CATEGORIES = ['fixed', 'flexible'] as const
 const FREQUENCIES = ['none', 'monthly', 'weekly', 'fortnightly'] as const
+const SET_ASIDE_KINDS = ['giving', 'saving', 'investing'] as const
+
+function decodeSetAside(r: Raw): SetAsideRule {
+  return {
+    id: str(r.id, newID()),
+    title: str(r.title, ''),
+    percent: Math.min(100, Math.max(0, num(r.percent, 10))),
+    kind: oneOf(r.kind, SET_ASIDE_KINDS, 'giving'),
+  }
+}
 
 export function decodeFinanceEvent(r: Raw): FinanceEvent {
   const entryType = oneOf(r.entryType, ENTRY_TYPES, 'expense')
@@ -70,6 +100,12 @@ export function decodeFinanceEvent(r: Raw): FinanceEvent {
     confirmedAmounts: record(r.confirmedAmounts, x => optNum(x)),
     endDate: optStr(r.endDate),
     accountID: optStr(r.accountID),
+    // Only on pay, and only when there are any (so older entries read back exactly as saved).
+    ...(() => {
+      const rules = entryType === 'income' ? list(r.setAsides, decodeSetAside) : []
+      const skipped = Array.isArray(r.skippedSetAsides) ? r.skippedSetAsides.filter((x): x is string => typeof x === 'string') : []
+      return { ...(rules.length ? { setAsides: rules } : {}), ...(rules.length && skipped.length ? { skippedSetAsides: skipped } : {}) }
+    })(),
   }
 }
 
@@ -200,6 +236,48 @@ export function lineItemsInMonth(events: FinanceEvent[], month: Date): LineItem[
       || (a.event.entryType === b.event.entryType ? 0 : a.event.entryType === 'income' ? -1 : 1)
       || a.event.title.localeCompare(b.event.title))
 }
+
+/** One set-aside from one pay: "Tithing, 10% of £2,000 on 28 Nov". */
+export interface SetAsideItem {
+  event: FinanceEvent
+  rule: SetAsideRule
+  date: Date
+  amount: number
+  /** Follows the pay: an estimate until the pay's real amount is in. */
+  confirmed: boolean
+}
+
+const setAsideKey = (date: Date, ruleID: string) => `${dayKey(date)}|${ruleID}`
+
+/** Every set-aside from pay landing in a month (skipped ones left out), in date order. */
+export function setAsideItems(events: FinanceEvent[], month: Date): SetAsideItem[] {
+  const out: SetAsideItem[] = []
+  for (const item of lineItemsInMonth(events.filter(e => e.entryType === 'income' && e.setAsides?.length), month)) {
+    for (const rule of item.event.setAsides ?? []) {
+      if (item.event.skippedSetAsides?.includes(setAsideKey(item.date, rule.id))) continue
+      const amount = Math.round(item.amount * rule.percent) / 100
+      if (amount > 0) out.push({ event: item.event, rule, date: item.date, amount, confirmed: item.confirmed })
+    }
+  }
+  return out
+}
+
+/** Whether a set-aside is skipped on one pay day. */
+export const isSetAsideSkipped = (event: FinanceEvent, date: Date, ruleID: string) =>
+  Boolean(event.skippedSetAsides?.includes(setAsideKey(date, ruleID)))
+
+/** The same entry with one day's set-aside skipped or back on. */
+export function withSetAsideSkipped(event: FinanceEvent, date: Date, ruleID: string, skipped: boolean): FinanceEvent {
+  const key = setAsideKey(date, ruleID)
+  const rest = (event.skippedSetAsides ?? []).filter(k => k !== key)
+  const next = skipped ? [...rest, key] : rest
+  const { skippedSetAsides: _old, ...without } = event
+  void _old
+  return next.length ? { ...without, skippedSetAsides: next } : without
+}
+
+/** "10% of pay" — how a rule reads under its name. */
+export const setAsideText = (rule: SetAsideRule) => `${Number.isInteger(rule.percent) ? rule.percent : rule.percent.toFixed(1)}% of pay`
 
 export function lineItemsOn(events: FinanceEvent[], day: Date): LineItem[] {
   const key = dayKey(day)

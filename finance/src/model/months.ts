@@ -11,7 +11,7 @@
 
 import { addDays, addMonths, parseDate, startOfDay } from '@suite/dates'
 import { expectedBalance, movementsBetween, onBalance, spendingAccount, type Account, type Audit, type MoneyData } from './accounts'
-import { lineItemsInMonth, type FinanceEvent } from './entries'
+import { lineItemsInMonth, setAsideItems, setAsideText, type FinanceEvent } from './entries'
 import { mainPay } from './forward'
 import { schedule, type FinanceGoal } from './goals'
 
@@ -33,7 +33,25 @@ export interface Row {
   currency: string
   /** What tapping the row opens. */
   ref?: { type: 'entry' | 'goal'; id: string }
+  /** A short line under the name: "10% of pay". */
+  note?: string
   cells: (Cell | null)[]
+}
+
+/**
+ * The grid's sections, in order: what comes in, what goes out (bills and
+ * everyday living), what's set aside, debt payments, what's still owed,
+ * what to send abroad, what's saved. Each with a subtotal per period in
+ * home currency where adding up makes sense.
+ */
+export type GroupID = 'in' | 'out' | 'setAside' | 'debts' | 'owed' | 'send' | 'saved'
+
+export interface Group {
+  id: GroupID
+  title: string
+  rows: Row[]
+  /** Per period, in home currency; null where the rows are in different currencies' own terms (To send). */
+  subtotal: Cell[] | null
 }
 
 export interface MonthsGrid {
@@ -57,6 +75,19 @@ export interface MonthsGrid {
   owedTotal: Cell[]
   /** Saved (or put aside) by the end of each period, per saving goal. */
   saved: Row[]
+  /** Pay's percentage set-asides (tithing, saving…), one row per name; included in totalOut. */
+  setAsides: Row[]
+  /** Fixed bills and flexible living costs (together, `outgoing`). */
+  bills: Row[]
+  living: Row[]
+  /** The sections the grid shows, in order (empty ones left out). */
+  groups: Group[]
+}
+
+/** How a period's left over reads: everything has a job, room not planned yet, or short. */
+export function leftOverNote(cell: Cell): 'all planned' | 'not planned yet' | 'short' {
+  if (Math.abs(cell.amount) < 0.5) return 'all planned'
+  return cell.amount > 0 ? 'not planned yet' : 'short'
 }
 
 export interface MonthsOptions {
@@ -125,9 +156,9 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
   const toHome = (c: Cell, currency: string): Cell => ({ amount: options.toHome(c.amount, currency), estimate: c.estimate })
 
   // Entries, one row per title and currency (a one-off pay and the repeating pay after it share a row).
-  const entryRows = (type: 'income' | 'expense') => {
+  const entryRows = (type: 'income' | 'expense', keep: (e: FinanceEvent) => boolean = () => true) => {
     const groups = new Map<string, FinanceEvent[]>()
-    for (const e of data.events.filter(x => x.entryType === type)) {
+    for (const e of data.events.filter(x => x.entryType === type && keep(x))) {
       const key = `${e.title.trim().toLowerCase()}|${options.entryCurrency(e)}`
       groups.set(key, [...(groups.get(key) ?? []), e])
     }
@@ -147,6 +178,29 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
   }
   const income = entryRows('income')
   const outgoing = entryRows('expense')
+  const bills = entryRows('expense', e => e.expenseCategory !== 'flexible')
+  const living = entryRows('expense', e => e.expenseCategory === 'flexible')
+
+  // Shares set aside from pay, one row per name and currency; tapping opens the pay.
+  const setAsideGroups = new Map<string, { title: string; currency: string; note: string; pay: FinanceEvent; cells: (Cell | null)[] }>()
+  periods.forEach((p, i) => {
+    for (let m = new Date(p.start.getFullYear(), p.start.getMonth(), 1); m < p.end; m = addMonths(m, 1)) {
+      for (const s of setAsideItems(data.events, m)) {
+        if (!inPeriod(s.date, p)) continue
+        const currency = options.entryCurrency(s.event)
+        const key = `${s.rule.title.trim().toLowerCase()}|${currency}`
+        const row = setAsideGroups.get(key) ?? { title: s.rule.title || 'Set aside', currency, note: setAsideText(s.rule), pay: s.event, cells: periods.map(() => null) }
+        // The row opens the latest pay (the one still running), like the other rows.
+        if (s.event.date > row.pay.date) row.pay = s.event
+        const was = row.cells[i]
+        row.cells[i] = { amount: round2((was?.amount ?? 0) + s.amount), estimate: Boolean(was?.estimate) || !s.confirmed }
+        setAsideGroups.set(key, row)
+      }
+    }
+  })
+  const setAsides: Row[] = [...setAsideGroups].map(([key, r]) => ({
+    key: `set-${key}`, title: r.title, currency: r.currency, note: r.note, ref: { type: 'entry', id: r.pay.id }, cells: r.cells,
+  }))
 
   // Goal and debt payments, from each goal's plan (on its real balance, if linked).
   const real = data.goals.map(g => onBalance(g, data.accounts, data.audits, data, today))
@@ -174,7 +228,7 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
   // Totals in home currency.
   const homeCells = (rows: Row[]) => rows.map(r => r.cells.map(c => (c ? toHome(c, r.currency) : null)))
   const inCells = homeCells(income)
-  const outCells = [...homeCells(outgoing), ...homeCells(goals), ...(spending ? [spending.cells] : [])]
+  const outCells = [...homeCells(outgoing), ...homeCells(setAsides), ...homeCells(goals), ...(spending ? [spending.cells] : [])]
   const totalIn = periods.map((_, i) => sumCells(inCells, i))
   const totalOut = periods.map((_, i) => sumCells(outCells, i))
   const leftOver = periods.map((_, i) => ({ amount: round2(totalIn[i].amount - totalOut[i].amount), estimate: totalIn[i].estimate || totalOut[i].estimate }))
@@ -227,7 +281,25 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
   }
   const owedTotal = periods.map((_, i) => sumCells(owed.map(r => [toHome(r.cells[i]!, r.currency)]), 0))
 
-  return { periods, current, byPay, income, outgoing, goals, spending, leftOver, totalIn, totalOut, transfers, owed, owedTotal, saved }
+  // The sections, in the order the grid shows them.
+  const debtIDs = new Set(real.filter(g => g.kind === 'debt').map(g => g.id))
+  const debtPayments = goals.filter(r => debtIDs.has(r.ref!.id))
+  const savingPayments = goals.filter(r => !debtIDs.has(r.ref!.id))
+  const subtotal = (rows: Row[]) => periods.map((_, i) => sumCells(homeCells(rows), i))
+  const outRows = [...bills, ...living, ...(spending ? [spending] : [])]
+  const setAsideRows = [...setAsides, ...savingPayments]
+  const candidates: Group[] = [
+    { id: 'in', title: 'Coming in', rows: income, subtotal: totalIn },
+    { id: 'out', title: 'Going out', rows: outRows, subtotal: subtotal(outRows) },
+    { id: 'setAside', title: 'Set aside', rows: setAsideRows, subtotal: subtotal(setAsideRows) },
+    { id: 'debts', title: 'Debts', rows: debtPayments, subtotal: subtotal(debtPayments) },
+    { id: 'owed', title: 'Still owed', rows: owed, subtotal: owedTotal },
+    { id: 'send', title: 'To send', rows: transfers, subtotal: null },
+    { id: 'saved', title: 'Saved', rows: saved, subtotal: subtotal(saved) },
+  ]
+  const groups = candidates.filter(g => g.rows.length)
+
+  return { periods, current, byPay, income, outgoing, goals, spending, leftOver, totalIn, totalOut, transfers, owed, owedTotal, saved, setAsides, bills, living, groups }
 }
 
 /** "Nov" for a period (the month most of it falls in), and "28 Oct" for where it starts. */
