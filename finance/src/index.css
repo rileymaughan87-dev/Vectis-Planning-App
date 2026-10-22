@@ -107,41 +107,127 @@
 /* The Months tab: a bar to switch between the grid, Calendar and Entries. */
 .months-bar { padding: 4px 20px 16px; }
 
-/* The grid: one column per pay period, like a spreadsheet. The first column stays put while the months scroll. */
-/* Edge to edge, so the frozen first column sits at the screen's edge with nothing showing behind it. */
-.months-scroll { overflow-x: auto; margin: 0 -20px; -webkit-overflow-scrolling: touch; }
+/*
+ * Text shades of the fixed semantic colours that pass 4.5:1 on paper (the
+ * fill colours stay as they are for marks and bars); lighter ones in dark.
+ */
+:root { --text-estimate: #9a5a12; --text-income: #247536; --text-short: #b0392d; }
 
-.months-grid { border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 100%; }
-
-.months-grid th, .months-grid td { padding: 6px 10px; border-bottom: 1px solid var(--rule-soft, var(--separator)); text-align: right; white-space: nowrap; }
-
-.months-grid thead th { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--text-2); vertical-align: bottom; border-bottom: 1px solid var(--separator); }
-
-.months-grid thead .from { color: var(--text-3); }
-
-.months-grid tbody th, .months-grid thead th:first-child {
-  position: sticky; left: 0; z-index: 1; text-align: left; font-weight: 400; background: var(--bg); min-width: 128px; max-width: 160px; padding-left: 20px;
-  overflow: hidden; text-overflow: ellipsis;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --text-estimate: #e2a85e; --text-income: #72c785; --text-short: #f08d80; }
 }
 
-.months-grid .now { background: color-mix(in srgb, var(--brand) 7%, transparent); }
+:root[data-theme='dark'] { --text-estimate: #e2a85e; --text-income: #72c785; --text-short: #f08d80; }
+
+/* An amount that varies and isn't confirmed: dotted, not colour alone. */
+.est { color: var(--text-estimate); text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+/*
+ * The grid (option A): months across, sticky in both directions — the
+ * months and "Left over" stay at the top, the names stay at the left. It
+ * scrolls inside its own box so the header can stick.
+ */
+.months-scroll {
+  overflow: auto; margin: 0 -20px; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  max-height: calc(100dvh - 60px - 64px - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  border-top: 1px solid var(--separator); border-bottom: 1px solid var(--separator);
+}
+
+.months-grid { border-collapse: separate; border-spacing: 0; font-size: 14px; font-variant-numeric: tabular-nums; table-layout: fixed; }
+
+.months-grid .label-col { width: 108px; }
+
+.months-grid .amount-col { width: 84px; }
+
+.months-grid th, .months-grid td { padding: 0 8px; height: 44px; border-bottom: 1px solid var(--rule-soft); text-align: right; white-space: nowrap; background: var(--bg); }
+
+/* The names, frozen at the left. */
+.months-grid tbody th, .months-grid thead th:first-child {
+  position: sticky; left: 0; z-index: 2; text-align: left; font-weight: 400; padding-left: 20px; overflow: hidden; text-overflow: ellipsis;
+  border-right: 1px solid var(--separator);
+}
+
+/* The months and Left over, frozen at the top. */
+.months-grid thead th, .months-grid thead td { position: sticky; z-index: 3; }
+
+.months-grid .period-row > * { top: 0; height: 44px; border-bottom: 1px solid var(--separator); }
+
+.months-grid .left-row > * { top: 44px; height: 56px; border-bottom: 1px solid var(--separator); }
+
+.months-grid thead th:first-child { z-index: 4; }
+
+.period-month { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
+
+.period-from { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
+
+.months-grid .left-row th { font-family: var(--font-serif); font-style: italic; font-size: 16px; color: var(--text); }
+
+.left-figure { font-family: var(--font-serif); font-size: 20px; line-height: 1.1; color: var(--text); }
+
+.left-note { font-size: 11px; color: var(--text-2); }
+
+.months-grid .left-row .room .left-figure { color: var(--brand); }
+
+.months-grid .left-row .short .left-figure, .months-grid .left-row .short .left-note { color: var(--text-short); }
+
+/* Short and still an estimate: short's colour, estimate's dots. */
+.months-grid .left-row .short .est { color: var(--text-short); }
+
+/* Now: a stronger tint, and a 2px blue bar along the top of its column head. */
+.months-grid .now { background: color-mix(in srgb, var(--brand) 12%, var(--bg)); }
+
+.months-grid .period-row .now { box-shadow: inset 0 2px 0 var(--brand); }
+
+.months-grid .period-row .now .period-month { color: var(--brand); font-weight: 600; }
 
 .months-grid .past { color: var(--text-2); }
 
-.months-grid .section-row th, .months-grid .section-row td { background: var(--surface-raised); padding-top: 10px; }
+/* A section: its index and italic title, the pivot rule beneath, and its subtotal per month. */
+.months-grid .group-row > * { height: 40px; background: var(--surface-raised, var(--surface)); border-bottom: 1px solid var(--brand); font-weight: 500; }
 
-.months-grid .section-row th { color: var(--text); font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.months-grid .group-row .now { background: color-mix(in srgb, var(--brand) 12%, var(--surface-raised, var(--surface))); }
 
-.months-grid .total-row th, .months-grid .total-row td { border-top: 1px solid var(--separator); font-weight: 600; }
+.months-grid .group-row th { position: sticky; }
 
-.months-grid .total-row.strong td, .months-grid .total-row.strong th { color: var(--text); }
+.months-grid .group-row th::before {
+  content: ''; position: absolute; left: 14px; bottom: -3px; width: 5px; height: 5px; border-radius: 50%; background: var(--brand);
+}
 
-.months-grid .short { color: var(--danger); }
+.group-head { display: inline-flex; align-items: baseline; gap: 6px; }
 
-.months-grid .row-link { color: inherit; text-align: left; padding: 0; font: inherit; }
+.group-index { font-family: var(--font-mono); font-size: 11px; color: var(--brand); font-weight: 400; }
 
-.months-grid .row-link:hover { color: var(--brand); text-decoration: underline; }
+.group-title { font-family: var(--font-serif); font-style: italic; font-size: 16px; font-weight: 500; color: var(--text); }
 
-.months-grid .empty-cell { text-align: left; color: var(--text-2); white-space: normal; }
+.group-toggle { padding: 0; font: inherit; color: inherit; height: 100%; width: 100%; text-align: left; }
+
+.group-toggle svg { align-self: center; color: var(--text-2); }
+
+.months-grid .row-link { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; width: 100%; min-height: 44px; padding: 0; font: inherit; color: inherit; text-align: left; overflow: hidden; }
+
+.row-title { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+.row-note { font-size: 11px; color: var(--text-2); }
+
+.months-grid .row-link:hover .row-title { color: var(--brand); text-decoration: underline; }
+
+.months-grid .empty-cell { text-align: left; color: var(--text-2); white-space: normal; padding: 12px 20px; height: auto; }
 
 .months-legend { margin: 0; }
+
+/* Wide screens: the sidebar layout, no top or tab bar; the whole grid fits, so no swipe hint. */
+@media (min-width: 900px) {
+  .months-scroll { margin: 0; max-height: calc(100dvh - 160px); border: 1px solid var(--separator); }
+  .months-grid tbody th, .months-grid thead th:first-child { padding-left: 12px; }
+  .months-grid .label-col { width: 160px; }
+  .swipe-hint { display: none; }
+}
+
+/* A pay's set-asides (tithing, saving…) in the entry editor. */
+.set-aside { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--rule-soft); }
+
+.set-aside-fields { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+
+.percent-field { display: inline-flex; align-items: center; gap: 4px; }
+
+.percent-field input { width: 72px; text-align: right; }

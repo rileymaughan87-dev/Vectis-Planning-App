@@ -5,12 +5,12 @@
 // Finance rework: what's safe to spend is on Now, what happened on Accounts.)
 
 import { dayKey, isSameDay } from '@suite/dates'
-import { SectionBox, Sheet, VButton } from '@suite/ui/components'
+import { SectionBox, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { MonthGrid } from '@suite/ui/MonthGrid'
 import { startOfMonth } from '@suite/months'
 import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { lineItemsInMonth, repeatText, type LineItem } from '../model/entries'
+import { isSetAsideSkipped, lineItemsInMonth, repeatText, setAsideItems, setAsideText, withSetAsideSkipped, type LineItem, type SetAsideItem } from '../model/entries'
 import { goalPaymentsInMonth, isDue, kindInfo, type GoalPayment } from '../model/goals'
 import { amountText, formatMoney, formatSigned, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
@@ -24,14 +24,17 @@ import { GoalPaymentSheet, type PaymentTarget } from './GoalSheets'
 const MAX_VISIBLE = 3
 const dayTitle = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 
-/** One line on the calendar: an entry's occurrence or a goal payment. */
-type Row = { kind: 'entry'; item: LineItem } | { kind: 'goal'; payment: GoalPayment }
+/** One line on the calendar: an entry's occurrence, a share set aside from pay, or a goal payment. */
+type Row = { kind: 'entry'; item: LineItem } | { kind: 'setAside'; item: SetAsideItem } | { kind: 'goal'; payment: GoalPayment }
 
-const rowDate = (r: Row) => (r.kind === 'entry' ? r.item.date : r.payment.date)
-const rowKey = (r: Row) => (r.kind === 'entry' ? `${r.item.event.id}:${dayKey(r.item.date)}` : `goal:${r.payment.goalID}:${dayKey(r.payment.date)}`)
-const rowTitle = (r: Row) => (r.kind === 'entry' ? r.item.event.title : r.payment.title) || 'Untitled'
+const rowDate = (r: Row) => (r.kind === 'goal' ? r.payment.date : r.item.date)
+const rowKey = (r: Row) => r.kind === 'entry' ? `${r.item.event.id}:${dayKey(r.item.date)}`
+  : r.kind === 'setAside' ? `set:${r.item.event.id}:${r.item.rule.id}:${dayKey(r.item.date)}`
+  : `goal:${r.payment.goalID}:${dayKey(r.payment.date)}`
+const rowTitle = (r: Row) => (r.kind === 'entry' ? r.item.event.title : r.kind === 'setAside' ? r.item.rule.title : r.payment.title) || 'Untitled'
 const rowColor = (r: Row) => r.kind === 'entry'
   ? (!r.item.confirmed ? UNCONFIRMED : r.item.event.entryType === 'income' ? INCOME : EXPENSE)
+  : r.kind === 'setAside' ? (!r.item.confirmed ? UNCONFIRMED : kindInfo.setAside.accent)
   : (isDue(r.payment) ? UNCONFIRMED : kindInfo[r.payment.kind].accent)
 
 /** In minus out for a day, and whether any of it is still an estimate (Index style: one amount per day cell). */
@@ -41,6 +44,9 @@ function dayNet(rows: Row[]): { net: number; estimate: boolean } {
   for (const r of rows) {
     if (r.kind === 'entry') {
       net += r.item.event.entryType === 'income' ? r.item.amount : -r.item.amount
+      if (!r.item.confirmed) estimate = true
+    } else if (r.kind === 'setAside') {
+      net -= r.item.amount
       if (!r.item.confirmed) estimate = true
     } else {
       net -= r.payment.amount
@@ -61,20 +67,23 @@ export function CalendarScreen() {
   const [editor, setEditor] = useState<EntryEditorTarget | null>(null)
   const [confirming, setConfirming] = useState<LineItem | null>(null)
   const [payment, setPayment] = useState<PaymentTarget | null>(null)
+  const [setAside, setSetAside] = useState<SetAsideItem | null>(null)
 
   const rowsIn = (m: Date): Row[] => [
     ...lineItemsInMonth(events, m).map(item => ({ kind: 'entry', item }) as Row),
+    ...setAsideItems(events, m).map(item => ({ kind: 'setAside', item }) as Row),
     ...goalPaymentsInMonth(goals, m).map(payment => ({ kind: 'goal', payment }) as Row),
   ].sort((a, b) => rowDate(a).getTime() - rowDate(b).getTime())
   const rowsOn = (d: Date) => rowsIn(d).filter(r => isSameDay(rowDate(r), d))
 
   const rows = rowsIn(month)
   const today = new Date()
-  const waiting = rows.filter(r => (r.kind === 'entry' ? !r.item.confirmed && r.item.date <= today : isDue(r.payment, today)))
+  const waiting = rows.filter(r => (r.kind === 'entry' ? !r.item.confirmed && r.item.date <= today : r.kind === 'goal' && isDue(r.payment, today)))
 
   /** A varying amount or a goal payment opens its quick sheet; anything else, the editor. */
   const open = (r: Row) => {
     if (r.kind === 'goal') setPayment({ mode: r.payment.confirmed ? 'recorded' : 'confirm', payment: r.payment })
+    else if (r.kind === 'setAside') setSetAside(r.item)
     else if (r.item.event.amountVaries) setConfirming(r.item)
     else setEditor({ mode: 'edit', event: r.item.event, occurrence: r.item.date })
   }
@@ -157,6 +166,13 @@ export function CalendarScreen() {
       )}
       {editor && <EntryEditor target={editor} onClose={() => setEditor(null)} />}
       {payment && <GoalPaymentSheet target={payment} onClose={() => setPayment(null)} />}
+      {setAside && (
+        <SetAsideSheet
+          item={setAside}
+          onClose={() => setSetAside(null)}
+          onEdit={() => { setEditor({ mode: 'edit', event: setAside.event, occurrence: setAside.date }); setSetAside(null) }}
+        />
+      )}
       {confirming && (
         <ConfirmAmount
           item={confirming}
@@ -171,6 +187,7 @@ export function CalendarScreen() {
 
 function CalendarRow({ row, currency, showDate, onClick }: { row: Row; currency: string; showDate?: boolean; onClick: () => void }) {
   if (row.kind === 'entry') return <EntryRow item={row.item} currency={currency} showDate={showDate} onClick={onClick} />
+  if (row.kind === 'setAside') return <SetAsideRow item={row.item} showDate={showDate} onClick={onClick} />
   return <PaymentRow payment={row.payment} currency={currency} showDate={showDate} onClick={onClick} />
 }
 
@@ -254,6 +271,54 @@ function ConfirmAmount({ item, onClose, onEdit }: { item: LineItem; currency: st
       <VButton kind="primary" accent="var(--primary)" onClick={save} disabled={value === null}>Save</VButton>
       {item.confirmed && <VButton onClick={() => { clearConfirmation(item.event.id, item.date); onClose() }}>Back to the estimate</VButton>}
       <button className="text-button" onClick={onEdit}>Edit the entry itself</button>
+    </Sheet>
+  )
+}
+
+/** A share set aside from a pay: "Tithing · 10% of pay". */
+function SetAsideRow({ item, showDate, onClick }: { item: SetAsideItem; showDate?: boolean; onClick: () => void }) {
+  const currency = useMoneyTools().entryCurrency(item.event)
+  return (
+    <button className="money-row" onClick={onClick}>
+      <span className="row" style={{ gap: 10 }}>
+        <span className="swatch" style={{ background: item.confirmed ? kindInfo.setAside.accent : UNCONFIRMED }} />
+        <span className="grow" style={{ minWidth: 0 }}>
+          <div className="ellipsis">{item.rule.title || 'Set aside'}</div>
+          <div className="mono muted">
+            {showDate && `${item.date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })} · `}
+            {setAsideText(item.rule)}{item.confirmed ? '' : ' · estimate'}
+          </div>
+        </span>
+        <span style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{formatSigned(item.amount, currency, '-')}</div>
+        </span>
+        <ChevronRight size={16} className="muted" />
+      </span>
+    </button>
+  )
+}
+
+/** One pay's set-aside: what it comes to, and skipping it just this once. */
+function SetAsideSheet({ item, onClose, onEdit }: { item: SetAsideItem; onClose: () => void; onEdit: () => void }) {
+  const { events, updateEvent } = useEntries()
+  const currency = useMoneyTools().entryCurrency(item.event)
+  const live = events.find(e => e.id === item.event.id) ?? item.event
+  const skipped = isSetAsideSkipped(live, item.date, item.rule.id)
+  return (
+    <Sheet title={item.rule.title || 'Set aside'} compact onClose={onClose} leftLabel="Done">
+      <div style={{ textAlign: 'center' }}>
+        <div className="headline-number">{formatMoney(item.amount, currency)}</div>
+        <div className="caption">
+          {setAsideText(item.rule)} — {live.title || 'pay'} on {dayTitle(item.date)}{item.confirmed ? '' : ' (from the estimate until the pay is confirmed)'}
+        </div>
+      </div>
+      <Toggle
+        label="Skip it this time"
+        checked={skipped}
+        onChange={on => updateEvent(withSetAsideSkipped(live, item.date, item.rule.id, on))}
+      />
+      <p className="help">Skipping leaves this one pay's {item.rule.title || 'set-aside'} out; every other pay keeps it.</p>
+      <button className="text-button" onClick={onEdit}>Edit the pay and its set-asides</button>
     </Sheet>
   )
 }

@@ -6,10 +6,12 @@
 
 import { dayFromKey, dayKey, parseDate, startOfDay, toISO, weekday } from '@suite/dates'
 import { EditorBox, Field, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
+import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { isLaterOccurrence, makeFinanceEvent, repeatText, type EntryType, type ExpenseCategory, type FinanceEvent, type Frequency } from '../model/entries'
+import { newID } from '@suite/ids'
+import { isLaterOccurrence, makeFinanceEvent, repeatText, type EntryType, type ExpenseCategory, type FinanceEvent, type Frequency, type SetAsideKind, type SetAsideRule } from '../model/entries'
 import { entryAccount, spendableAccounts } from '../model/accounts'
-import { amountText, parseAmount } from '../model/money'
+import { amountText, formatAmount, parseAmount } from '../model/money'
 import { useEntries } from '../store/entries'
 import { useMoneyTools } from '../store/money'
 
@@ -23,7 +25,7 @@ type Repeat = 'once' | 'weekly' | 'fortnightly' | 'monthly'
 const longDate = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 
 export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; onClose: () => void }) {
-  const { addEvent, updateEvent, deleteEvent, endFrom, changeFrom } = useEntries()
+  const { events, addEvent, updateEvent, deleteEvent, endFrom, changeFrom } = useEntries()
   const original = target.mode === 'edit' ? target.event : null
   const occurrence = target.mode === 'edit' ? target.occurrence : undefined
 
@@ -37,6 +39,8 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
   const [amountVaries, setAmountVaries] = useState(original?.amountVaries ?? false)
   const [endDate, setEndDate] = useState(original?.endDate)
   const [askScope, setAskScope] = useState(false)
+  // Pay: shares set aside each time it lands (tithing, saving, investing).
+  const [setAsides, setSetAsides] = useState<SetAsideRule[]>(original?.setAsides ?? [])
   // International mode: which account it's paid from or into (and so its currency).
   const tools = useMoneyTools()
   const accountChoices = tools.international ? spendableAccounts(tools.accounts) : []
@@ -61,6 +65,7 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
       weekday: frequency === 'weekly' ? weekday(anchor) : undefined,
       amountVaries: repeats && amountVaries,
       endDate: repeats ? endDate : undefined,
+      setAsides: entryType === 'income' && setAsides.length ? setAsides.map(r => ({ ...r, title: r.title.trim() || 'Set aside' })) : undefined,
       // The main current account is the default, so it's saved as none.
       ...(tools.international ? { accountID: accountID && accountID !== entryAccount({} as FinanceEvent, tools.accounts)?.id ? accountID : undefined } : {}),
     }
@@ -150,6 +155,16 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
         )}
       </EditorBox>
 
+      {entryType === 'income' && (
+        <SetAsidesBox
+          rules={setAsides}
+          onChange={setSetAsides}
+          pay={parsed ?? 0}
+          currency={tools.currencyOf(account)}
+          hasTithingEntry={events.some(e => e.entryType === 'expense' && /tith/i.test(e.title))}
+        />
+      )}
+
       {original && !confirmDelete && (
         <VButton kind="destructive" onClick={() => (original.repeats ? setConfirmDelete(true) : (deleteEvent(original.id), onClose()))}>
           {original.repeats ? 'Stop or delete…' : 'Delete entry'}
@@ -183,4 +198,65 @@ export function EntryEditor({ target, onClose }: { target: EntryEditorTarget; on
 /** Whether saving would change anything about the entry itself. */
 function changed(original: FinanceEvent, f: Partial<FinanceEvent>): boolean {
   return (Object.keys(f) as (keyof FinanceEvent)[]).some(k => JSON.stringify(f[k]) !== JSON.stringify(original[k]))
+}
+
+const KINDS: { value: SetAsideKind; label: string }[] = [
+  { value: 'giving', label: 'Giving' }, { value: 'saving', label: 'Saving' }, { value: 'investing', label: 'Investing' },
+]
+
+/**
+ * "Set aside from this pay": a share of each pay, worked out as it lands —
+ * the real amount once it's confirmed — and taken off before anything else.
+ * Nothing is added unless you add it; 10% tithing is one tap away.
+ */
+function SetAsidesBox({ rules, onChange, pay, currency, hasTithingEntry }: {
+  rules: SetAsideRule[]
+  onChange: (rules: SetAsideRule[]) => void
+  pay: number
+  currency: string
+  hasTithingEntry: boolean
+}) {
+  const patch = (id: string, p: Partial<SetAsideRule>) => onChange(rules.map(r => (r.id === id ? { ...r, ...p } : r)))
+  const add = (rule: Omit<SetAsideRule, 'id'>) => onChange([...rules, { ...rule, id: newID() }])
+  const hasTithing = rules.some(r => /tith/i.test(r.title))
+  return (
+    <EditorBox title="Set aside from this pay">
+      {rules.map(r => (
+        <div key={r.id} className="set-aside">
+          <div className="set-aside-fields">
+            <input value={r.title} onChange={e => patch(r.id, { title: e.target.value })} placeholder="e.g. Tithing" aria-label="Name" />
+            <label className="percent-field">
+              <input
+                type="number" inputMode="decimal" min={0} max={100} step={0.5} value={r.percent} aria-label={`${r.title || 'Set-aside'} percent`}
+                onChange={e => patch(r.id, { percent: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })}
+              />
+              <span>%</span>
+            </label>
+            <button className="icon-button" onClick={() => onChange(rules.filter(x => x.id !== r.id))} aria-label={`Remove ${r.title || 'set-aside'}`} title="Remove">
+              <Trash2 size={16} />
+            </button>
+          </div>
+          <Segmented<SetAsideKind> label="Kind" value={r.kind} onChange={kind => patch(r.id, { kind })} options={KINDS} />
+          {pay > 0 && (
+            <span className="caption">
+              {r.percent}% of {formatAmount(pay, currency)} = {formatAmount(Math.round(pay * r.percent) / 100, currency)}
+            </span>
+          )}
+        </div>
+      ))}
+      <div className="button-row">
+        {!hasTithing && (
+          <VButton small accent="var(--brand)" onClick={() => add({ title: 'Tithing', percent: 10, kind: 'giving' })}>Add 10% tithing</VButton>
+        )}
+        <VButton small accent="var(--brand)" onClick={() => add({ title: '', percent: 10, kind: 'saving' })}>Add a set-aside</VButton>
+      </div>
+      {hasTithingEntry && rules.length > 0 && (
+        <p className="help">You also have a Tithing entry of its own. If this replaces it, delete that one so it isn't counted twice.</p>
+      )}
+      <p className="help">
+        Worked out from each pay as it lands — the real amount once you confirm it — and set aside before anything else. It shows in
+        Months under Set aside and comes off safe to spend.
+      </p>
+    </EditorBox>
+  )
 }

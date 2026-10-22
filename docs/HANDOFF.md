@@ -86,6 +86,51 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance: Months made readable (option A) and percentage set-asides (22 Oct 2026)
+
+From Riley's design handoff (`months-view-handoff.md`, options A/B/C plus
+a debt runway). This pass did the handoff's steps 1–3; C, B and the
+runway are next if Riley wants them.
+
+**Contrast and number format**
+- Text shades of the semantic colours that pass 4.5:1 on paper:
+  `--text-estimate #9A5A12`, `--text-income #247536`,
+  `--text-short #B0392D`, with lighter dark-mode shades (in
+  `finance/src/index.css`). The fill colours are unchanged.
+- Estimates are dotted-underlined (`.est`), not shown by colour alone.
+- `formatAmount` shows whole pounds unless an amount has pence. Empty
+  cells are blank.
+
+**Option A grid (`MonthsScreen.tsx`)**
+- The grid box scrolls both ways. The month row and a **pinned Left
+  over row** stick at the top; the names stick at the left.
+- Left over is a serif figure with "all planned", "not planned yet" (in
+  blue) or "short". An empty month is blank.
+- Now: a 12% tint and a 2px blue bar, and the grid opens on it.
+- Sections come from `monthsGrid().groups`, numbered 01… with the pivot
+  rule and a subtotal per month: Coming in, Going out (bills, living,
+  logged spending), Set aside (pay set-asides and saving goals), Debts,
+  Still owed, To send, Saved.
+- Debts, Still owed and Saved start folded; open/closed is kept in
+  `sessionStorage`.
+- Rows are 44px high; columns 84px, labels 108px (160px on wide screens).
+
+**Percentage set-asides**
+- `FinanceEvent.setAsides` (pay only) and `skippedSetAsides`, decoded
+  only when present. `setAsideItems` works out each pay × percent, as an
+  estimate until the pay is confirmed.
+- Where they show up:
+  - Balances and safe to spend (`movementsBetween`), as money going out.
+  - Months under Set aside (`setAsides` rows with the note "10% of pay";
+    `totalOut` includes them).
+  - Calendar as their own rows; tapping one gives "Skip it this time"
+    (`withSetAsideSkipped`) and the amount.
+  - The Entries list notes them on the pay's row.
+- The pay editor's "Set aside from this pay" has name, percent and kind
+  (Giving / Saving / Investing), a live preview, and "Add 10% tithing".
+  It mentions an existing Tithing entry.
+- Tests: `model/setAsides.test.ts`.
+
 ## Editors on phones: keyboard and scrolling audit (19 Oct 2026)
 
 Riley found the note format bar hiding behind the keyboard, and notes

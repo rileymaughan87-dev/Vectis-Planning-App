@@ -42,6 +42,12 @@ export function formatMoneyWhole(amount: number, currency: string): string {
   return formatter(currency, true).format(amount)
 }
 
+/** "£1,235" or "£104.25": pence only when there are some (grids and their totals). */
+export function formatAmount(amount: number, currency: string): string {
+  const hasPence = Math.abs(Math.round(amount * 100) % 100) > 0
+  return (hasPence ? formatter(currency, false) : formatter(currency, true)).format(amount)
+}
+
 /** "+£600.00" / "−£1,200.00", with a real minus sign. */
 export function formatSigned(amount: number, currency: string, sign: '+' | '-'): string {
   return (sign === '+' ? '+' : '−') + formatMoney(Math.abs(amount), currency)

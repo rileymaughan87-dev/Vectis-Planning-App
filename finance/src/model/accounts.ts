@@ -16,7 +16,7 @@
 import { addMonths, dayKey, parseDate, startOfDay, toISO, type ISODate } from '@suite/dates'
 import { bool, list, num, oneOf, optNum, str, type Raw } from '@suite/decode'
 import { newID } from '@suite/ids'
-import { lineItemsInMonth, type FinanceEvent } from './entries'
+import { lineItemsInMonth, setAsideItems, type FinanceEvent } from './entries'
 import { schedule, type FinanceGoal } from './goals'
 import type { SpendingEntry } from './spending'
 
@@ -199,6 +199,11 @@ export function movementsBetween(account: Account, data: MoneyData, after: Date,
         // On a card, a bill adds to what's owed; money in pays it down.
         const sign = (item.event.entryType === 'income' ? 1 : -1) * (accountKindInfo[account.kind].owed ? -1 : 1)
         out.push({ date: item.date, title: item.event.title || 'Untitled', amount: sign * item.amount, estimate: !item.confirmed })
+      }
+      // A share set aside from pay (tithing, saving) goes out the same day, like a planned bill.
+      for (const s of setAsideItems(mine, m)) {
+        if (!inRange(s.date)) continue
+        out.push({ date: s.date, title: s.rule.title || 'Set aside', amount: accountKindInfo[account.kind].owed ? s.amount : -s.amount, estimate: !s.confirmed })
       }
     }
   }

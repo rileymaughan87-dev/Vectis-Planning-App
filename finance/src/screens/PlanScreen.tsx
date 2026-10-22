@@ -52,7 +52,10 @@ export function PlanScreen() {
           <button key={r.event.id} className="money-row row" style={{ gap: 10 }} onClick={() => setEditor({ mode: 'edit', event: r.event, occurrence: r.next })}>
             <span className="grow" style={{ minWidth: 0 }}>
               <div className="ellipsis">{r.event.title || 'Untitled'}</div>
-              <div className="mono muted">{repeatText(r.event)} · next {nextText(r.next)}</div>
+              <div className="mono muted">
+                {repeatText(r.event)} · next {nextText(r.next)}
+                {r.event.setAsides?.length ? ` · sets aside ${r.event.setAsides.map(x => `${x.percent}% ${x.title.toLowerCase()}`).join(', ')}` : ''}
+              </div>
             </span>
             <span className="amount" style={{ color: r.event.amountVaries ? UNCONFIRMED : undefined }}>{formatMoney(r.event.amount, tools.entryCurrency(r.event))}</span>
             <ChevronRight size={14} className="muted" />
