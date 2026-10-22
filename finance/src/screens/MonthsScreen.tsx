@@ -1,9 +1,11 @@
-// The Months tab (Oct 2026): planning in one place. Months is the grid —
-// one column per pay period, like Riley's budget spreadsheet — with the
-// Calendar and the full list of entries beside it, so adding, editing and
-// confirming all happen here.
+// The Months tab (Oct 2026): planning in one place. Months opens on the
+// overview on a phone (option C: the months ahead as a strip, and the
+// chosen month as a statement) and on the full sheet on a wide screen
+// (option A: one column per pay period, like Riley's budget spreadsheet);
+// either switches to the other. The Calendar and the full list of entries
+// sit beside it, so adding, editing and confirming all happen here.
 
-import { Segmented } from '@suite/ui/components'
+import { Segmented, Sheet } from '@suite/ui/components'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { formatAmount } from '../model/money'
@@ -17,6 +19,8 @@ import { useSpending } from '../store/spending'
 import { CalendarScreen } from './CalendarScreen'
 import { EntryEditor, type EntryEditorTarget } from './EntryEditor'
 import { GoalEditor } from './GoalSheets'
+import { DebtRunwayView } from './DebtRunway'
+import { MonthsOverview } from './MonthsOverview'
 import { PlanScreen } from './PlanScreen'
 
 type View = 'grid' | 'calendar' | 'list'
@@ -41,14 +45,17 @@ export function MonthsScreen() {
           options={[{ value: 'grid', label: 'Months' }, { value: 'calendar', label: 'Calendar' }, { value: 'list', label: 'Entries' }]}
         />
       </div>
-      {view === 'grid' && <div className="page"><Grid /></div>}
+      {view === 'grid' && <div className="page"><MonthsView /></div>}
       {view === 'calendar' && <CalendarScreen />}
       {view === 'list' && <PlanScreen />}
     </div>
   )
 }
 
-function Grid() {
+type Mode = 'overview' | 'sheet'
+
+/** The grid's numbers, and what opens from it: shared by the overview and the full sheet. */
+function MonthsView() {
   const { audits, transfers } = useAccounts()
   const events = useEntries(s => s.events)
   const goals = useGoals(s => s.goals)
@@ -57,7 +64,20 @@ function Grid() {
   const tools = useMoneyTools()
   const [editing, setEditing] = useState<EntryEditorTarget | null>(null)
   const [goalID, setGoalID] = useState<string | null>(null)
-  const [open, setOpen] = useState<Record<string, boolean>>(readOpen)
+  const [runway, setRunway] = useState(false)
+  // A phone opens on the overview, a wide screen on the full sheet; the choice is kept while the app's open.
+  const [mode, setMode] = useState<Mode>(() => {
+    const saved = sessionStorage.getItem('finance:ui:months-mode')
+    return saved === 'overview' || saved === 'sheet' ? saved : matchMedia('(min-width: 900px)').matches ? 'sheet' : 'overview'
+  })
+  const chooseMode = (m: Mode) => {
+    setMode(m)
+    try {
+      sessionStorage.setItem('finance:ui:months-mode', m)
+    } catch {
+      // Just won't be remembered.
+    }
+  }
 
   const grid = useMemo(() => monthsGrid(
     { accounts: tools.accounts, audits, events, goals, spending, transfers },
@@ -73,12 +93,37 @@ function Grid() {
     },
   ), [tools, audits, transfers, events, goals, spending, paydayEntryID])
 
-  const openRow = (r: Row) => {
-    if (r.ref?.type === 'entry') {
-      const e = events.find(x => x.id === r.ref!.id)
+  const openRef = (ref: Row['ref']) => {
+    if (ref?.type === 'entry') {
+      const e = events.find(x => x.id === ref.id)
       if (e) setEditing({ mode: 'edit', event: e })
-    } else if (r.ref?.type === 'goal') setGoalID(r.ref.id)
+    } else if (ref?.type === 'goal') setGoalID(ref.id)
   }
+  const goal = goals.find(g => g.id === goalID)
+
+  return (
+    <>
+      {mode === 'overview'
+        ? <MonthsOverview grid={grid} onOpen={openRef} onSheet={() => chooseMode('sheet')} onRunway={() => setRunway(true)} />
+        : <Grid grid={grid} onOpen={r => openRef(r.ref)} onOverview={() => chooseMode('overview')} onRunway={() => setRunway(true)} />}
+      <button className="text-button" style={{ alignSelf: 'flex-start' }} onClick={() => setEditing({ mode: 'new', date: new Date() })}>
+        <Plus size={14} style={{ verticalAlign: -2 }} /> Add an entry
+      </button>
+      {editing && <EntryEditor target={editing} onClose={() => setEditing(null)} />}
+      {goal && <GoalEditor target={{ mode: 'edit', goal }} onClose={() => setGoalID(null)} />}
+      {runway && (
+        <Sheet title="Debt runway" onClose={() => setRunway(false)} leftLabel="Done">
+          <DebtRunwayView onOpen={id => { setRunway(false); setGoalID(id) }} />
+        </Sheet>
+      )}
+    </>
+  )
+}
+
+/** The full sheet (option A). */
+function Grid({ grid, onOpen: openRow, onOverview, onRunway }: { grid: MonthsGrid; onOpen: (r: Row) => void; onOverview: () => void; onRunway: () => void }) {
+  const tools = useMoneyTools()
+  const [open, setOpen] = useState<Record<string, boolean>>(readOpen)
   const toggle = (id: GroupID) => setOpen(o => {
     const next = { ...o, [id]: !isOpen(o, id) }
     try {
@@ -96,12 +141,15 @@ function Grid() {
     const label = box?.querySelector<HTMLElement>('.period-row .corner')
     if (box && now && label) box.scrollLeft += now.getBoundingClientRect().left - label.getBoundingClientRect().right
   }, [grid.current, grid.periods.length])
-  const goal = goals.find(g => g.id === goalID)
   const nothing = !grid.income.length && !grid.outgoing.length && !grid.goals.length && !grid.setAsides.length
   const cols = grid.periods.length
 
   return (
     <>
+      <div className="months-switch">
+        <button className="text-button" onClick={onOverview}>‹ Overview</button>
+        {grid.owed.length > 0 && <button className="text-button" onClick={onRunway}>Debt runway ›</button>}
+      </div>
       <div className="months-scroll" role="region" aria-label="Months" tabIndex={0} ref={scrollRef}>
         <table className="months-grid">
           <colgroup>
@@ -167,11 +215,6 @@ function Grid() {
         Rows are in their own currency; totals in {tools.home}.{' '}
         <span className="est">Dotted amounts</span> vary and aren't confirmed yet. Tap a row to change it.
       </p>
-      <button className="text-button" style={{ alignSelf: 'flex-start' }} onClick={() => setEditing({ mode: 'new', date: new Date() })}>
-        <Plus size={14} style={{ verticalAlign: -2 }} /> Add an entry
-      </button>
-      {editing && <EntryEditor target={editing} onClose={() => setEditing(null)} />}
-      {goal && <GoalEditor target={{ mode: 'edit', goal }} onClose={() => setGoalID(null)} />}
     </>
   )
 }
