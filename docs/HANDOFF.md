@@ -86,6 +86,44 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance: Months overview (option C) and debt runway (22 Oct 2026)
+
+The rest of Riley's Months handoff. Option B's statement is the detail
+panel inside C.
+
+- **Model** (`model/overview.ts`, tested in `overview.test.ts` on the
+  spreadsheet's figures):
+  - `periodStatement`: one period's in, its four groups (Bills = fixed
+    expenses, Living = flexible plus logged spending, Set aside = pay
+    set-asides plus saving goals, Debts = debt payments) with shares,
+    left over / short, and still owed with its change over the period.
+  - `roomInPlan`: prefers the period from which every later one has
+    unplanned money, reporting the least of them (so "at least £X a
+    month" is true); falls back to a single month.
+  - `debtRunway`: each debt's remaining amount, payment and first/last
+    payment; owed on the 1st of each month to the month after the last
+    payment (1–10 years); unplanned debts left at the end, honestly.
+- **Months** (`MonthsScreen`/`MonthsView`): a phone opens on the
+  overview, a wide screen on the full sheet (A). Each links to the other;
+  the choice is kept in `sessionStorage` as `finance:ui:months-mode`.
+- **Overview** (`MonthsOverview.tsx`):
+  - **01 The months ahead:** up to 8 non-empty periods from now, as
+    stacked buttons scaled to the larger of in and out. A hatched,
+    dashed-outline top marks what's not planned yet; the selected column
+    gets the surface fill and a blue outline.
+  - **02 <Month>:** a Newsreader 44 figure and a plain sentence, the
+    allocation bar, and groups with % and subtotal. Lines open their
+    entry or goal.
+  - Then a "Still owed after…" card, a calm "Room in the plan" card, and
+    "Open the full sheet ›".
+- **Debt runway** (`DebtRunway.tsx`):
+  - In a sheet from Months ("Debt runway ›") and as a section in Goals.
+  - Per-debt bars on one axis with year marks; a hatched "none planned
+    yet" bar for debts with no plan.
+  - Total owed, month by month, ending "£X left in …" or "Paid off by …".
+  - Group colours are fixed: Bills `#0068B5`, Living `#7C9473`, Set aside
+    `#6B4C7A`, Debts `#C9922E`.
+
 ## Finance: Months made readable (option A) and percentage set-asides (22 Oct 2026)
 
 From Riley's design handoff (`months-view-handoff.md`, options A/B/C plus

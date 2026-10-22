@@ -15,6 +15,7 @@ import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
 import { useMoneyTools } from '../store/money'
 import { useSpending } from '../store/spending'
+import { DebtRunwayView } from './DebtRunway'
 import { GoalEditor, GoalPaymentSheet, type GoalEditorTarget, type PaymentTarget } from './GoalSheets'
 
 const monthYear = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -44,6 +45,11 @@ export function GoalsScreen() {
           </SectionBox>
         )
       })}
+      {goals.some(g => g.kind === 'debt') && (
+        <SectionBox title="Debt runway" accent={kindInfo.debt.accent}>
+          <DebtRunwayView onOpen={id => { const g = goals.find(x => x.id === id); if (g) setEditor({ mode: 'edit', goal: g }) }} />
+        </SectionBox>
+      )}
       {editor && <GoalEditor target={editor} onClose={() => setEditor(null)} />}
       {payment && <GoalPaymentSheet target={payment} onClose={() => setPayment(null)} />}
     </div>
