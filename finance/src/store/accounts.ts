@@ -5,6 +5,7 @@ import { toISO } from '@suite/dates'
 import { newID } from '@suite/ids'
 import { create } from 'zustand'
 import { decodeAccounts, decodeAudits, decodeTransfers, type Account, type AccountKind, type Audit, type GapNote, type Transfer } from '../model/accounts'
+import { withBankAudits, type BankAudit } from '../model/bankLink'
 import { Filename, storage } from './persist'
 
 interface AccountsState {
@@ -26,6 +27,8 @@ interface AccountsState {
   /** Records what the bank says now, with what was expected and what any gap was put down to. */
   audit(accountID: string, balance: number, expected: number | undefined, gap: GapNote | undefined): void
   deleteAudit(id: string): void
+  /** Balance checks from linked banks (store/bankLink.ts). */
+  applyBankChecks(checks: { accountID: string; audit: BankAudit }[], id: () => string): void
 }
 
 export const useAccounts = create<AccountsState>()(set => ({
@@ -59,6 +62,7 @@ export const useAccounts = create<AccountsState>()(set => ({
   audit: (accountID, balance, expected, gap) =>
     set(s => ({ audits: [...s.audits, { id: newID(), accountID, date: toISO(new Date()), balance, expected, gap }] })),
   deleteAudit: id => set(s => ({ audits: s.audits.filter(a => a.id !== id) })),
+  applyBankChecks: (checks, id) => set(s => ({ audits: withBankAudits(s.audits, checks, new Date(), id) })),
 }))
 
 useAccounts.subscribe((state, prev) => {

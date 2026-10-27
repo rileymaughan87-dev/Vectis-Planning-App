@@ -8,8 +8,9 @@ import { parseDate, toISO } from '@suite/dates'
 import { EditorBox, Field, SectionBox, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { Check, ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { useBank } from '../store/bankLink'
 import {
-  ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, sinceText, spendingAccount,
+  ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, sinceText, spendingAccount, tracksSpending,
   type Account, type AccountKind, type GapNote, type MoneyData,
 } from '../model/accounts'
 import { CURRENCIES, amountText, formatAmount, parseAmount } from '../model/money'
@@ -39,7 +40,6 @@ function useMoneyData(): MoneyData {
 }
 
 /** Gaps at an audit only mean something where spending runs through: the main current account and cards. */
-const tracksSpending = (account: Account, accounts: Account[]) => account.kind === 'credit' || spendingAccount(accounts)?.id === account.id
 
 export function AccountsScreen() {
   const audits = useAccounts(s => s.audits)
@@ -72,6 +72,7 @@ export function AccountsScreen() {
           <PaydayCard plan={plan} />
 
           <SectionBox title="Accounts" accent="var(--brand)">
+            <LiveStatus />
             {ordered.map(a => (
               <AccountCard
                 key={a.id}
@@ -197,6 +198,25 @@ function PaydayCard({ plan }: { plan: Payday }) {
   )
 }
 
+/** Live balances: when the banks were last asked, and a way to ask again. */
+function LiveStatus() {
+  const linked = useAccounts(s => s.accounts.some(a => a.link))
+  const { phase, checkedAt, error, problems, refresh } = useBank()
+  if (!linked) return null
+  return (
+    <div className="live-status">
+      <div className="row spread">
+        <span className="mono muted">
+          {phase === 'loading' ? 'Asking your banks…' : checkedAt ? `Live · ${new Date(checkedAt).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}` : 'Live balances'}
+        </span>
+        <button className="text-button" disabled={phase === 'loading'} onClick={() => void refresh()}>Check now</button>
+      </div>
+      {error && <div className="notice error">{error}</div>}
+      {problems.map(p => <div key={p} className="notice">{p}</div>)}
+    </div>
+  )
+}
+
 function AccountCard({ account, money, data, everyday, onLog, onAudit, onOpen }: {
   account: Account
   money: (n: number) => string
@@ -225,7 +245,7 @@ function AccountCard({ account, money, data, everyday, onLog, onAudit, onOpen }:
           <div className="account-balance">
             {money(last.balance)}{info.owed && <span className="headline-suffix"> owed</span>}
           </div>
-          <span className="mono muted">Checked {sinceText(last.date)}</span>
+          <span className="mono muted">{last.source === 'bank' ? 'From the bank' : 'Checked'} {sinceText(last.date)}</span>
           {changed && <span className="caption">Expected now: <span className="amount">{money(exp!.expected)}</span>{info.owed ? ' owed' : ''}</span>}
         </>
       ) : <span className="caption">Not checked yet.</span>}

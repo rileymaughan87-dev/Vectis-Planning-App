@@ -45,6 +45,8 @@ export interface Account {
   walletCard?: string
   /** The everyday account (groceries, fuel, fun): spends log here, and it shows what's left until payday. */
   everyday?: boolean
+  /** Live balances: the linked bank account it follows ("eb:…" or "sf:…", model/bankLink.ts). */
+  link?: string
 }
 
 /**
@@ -74,6 +76,8 @@ export interface Audit {
   /** What Finance expected then; unset for an account's first audit. */
   expected?: number
   gap?: GapNote
+  /** "bank" when it came from a linked bank, not typed in. */
+  source?: 'bank'
 }
 
 // MARK: - Reading saved data
@@ -88,6 +92,7 @@ function decodeAccount(r: Raw): Account {
     currency: typeof r.currency === 'string' && /^[A-Z]{3}$/.test(r.currency) ? r.currency : undefined,
     walletCard: typeof r.walletCard === 'string' && r.walletCard.trim() ? r.walletCard.trim() : undefined,
     ...(r.everyday === true ? { everyday: true } : {}),
+    ...(typeof r.link === 'string' && r.link ? { link: r.link } : {}),
   }
 }
 
@@ -107,6 +112,7 @@ function decodeAudit(r: Raw): Audit | null {
     balance: num(r.balance, 0),
     expected: optNum(r.expected),
     gap: r.gap === 'everyday' || r.gap === 'extraIn' || r.gap === 'left' ? r.gap : undefined,
+    ...(r.source === 'bank' ? { source: 'bank' as const } : {}),
   }
 }
 
@@ -375,3 +381,6 @@ export function sinceText(iso: ISODate, today: Date = new Date()): string {
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+
+/** Whether a balance check compares with what was expected: the main current account (spending runs through it) and cards. */
+export const tracksSpending = (account: Account, accounts: Account[]) => account.kind === 'credit' || spendingAccount(accounts)?.id === account.id

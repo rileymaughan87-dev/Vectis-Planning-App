@@ -12,7 +12,7 @@ import { AppShell, MenuRow, type ShellTab } from '@suite/ui/AppShell'
 import { SyncChoiceSheet } from '@suite/ui/SyncBox'
 import { useSync } from './store/sync'
 import { Settings } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { APP_NAME } from './brand'
 import { AccountsScreen } from './screens/AccountsScreen'
 import { BudgetScreen } from './screens/BudgetScreen'
@@ -21,6 +21,7 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
 import { readLogLink } from './model/walletLink'
 import { useSettings } from './store/settings'
+import { useBank } from './store/bankLink'
 
 type Tab = 'budget' | 'accounts' | 'savings'
 
@@ -53,6 +54,25 @@ export default function App() {
     history.replaceState(null, '', location.pathname)
   }
 
+  // Live balances: back from a UK bank's approval page with ?code=…&state=… (or ?error=…).
+  const [bankNote, setBankNote] = useState<string | null>(null)
+  const syncPhase = useSync(s => s.phase)
+  useEffect(() => {
+    if (syncPhase !== 'live') return
+    const q = new URLSearchParams(location.search)
+    const code = q.get('code')
+    const state = q.get('state')
+    const failed = q.get('error')
+    if ((code && state) || failed) {
+      history.replaceState(null, '', location.pathname)
+      setSettingsOpen(true)
+      if (failed) setBankNote(`The bank didn’t link: ${q.get('error_description') ?? failed}`)
+      else useBank.getState().finishUK(code!, state!).then(setBankNote, e => setBankNote(e instanceof Error ? e.message : String(e)))
+      return
+    }
+    useBank.getState().refreshIfStale()
+  }, [syncPhase])
+
   const choose = (t: Tab) => {
     setTab(t)
     try {
@@ -83,7 +103,7 @@ export default function App() {
         </>
       )}
       overlays={<>
-        {settingsOpen && <SettingsScreen onClose={() => setSettingsOpen(false)} />}
+        {settingsOpen && <SettingsScreen onClose={() => { setSettingsOpen(false); setBankNote(null) }} note={bankNote} />}
         {quickLog && <LogSpendingSheet wallet={quickLog.amount || quickLog.note || quickLog.card ? quickLog : undefined} onClose={closeQuickLog} />}
         {!settingsOpen && <SyncChoiceSheet useSync={useSync} appName="Finance" />}
       </>}

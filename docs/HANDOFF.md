@@ -86,6 +86,41 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance: live balances (27 Oct 2026)
+
+Riley asked for live data from HSBC, Monzo, Fidelity (US) and America
+First. Read-only, through a small server, since a static site can't hold
+bank secrets.
+
+- **Server** (`functions/`, Firebase Cloud Functions in europe-west2;
+  needs the Blaze plan):
+  - Callable functions `bankList`, `bankStart`, `bankFinish`,
+    `simplefinConnect`, `bankBalances` and `bankUnlink`.
+  - Links are kept at Firestore `bankLinks/{uid}`, which no rule lets
+    clients read.
+  - UK banks use Enable Banking (free restricted mode; JWT signed with
+    the app's private key, held as the secrets `ENABLE_BANKING_APP_ID`
+    and `ENABLE_BANKING_KEY`).
+  - US banks use SimpleFIN Bridge (a setup token is claimed for an access
+    URL, which is stored server-side).
+- **Finance:**
+  - Logic: `model/bankLink.ts` (pick a booked balance, owed accounts
+    positive; turn it into a balance check, replacing today's bank
+    check; renew notes).
+  - Store: `store/bankLink.ts` (calls through the sync sign-in; refreshes
+    on open at most every 30 min).
+  - Settings → Live balances (`screens/LiveBalances.tsx`): link a bank,
+    and pick which account each bank account follows (`Account.link`).
+  - Accounts tab: "Live · time" with Check now. Checks are marked
+    `Audit.source = 'bank'`.
+  - The return from a UK bank (`?code&state`) is handled in `App.tsx`.
+- **Not live until Riley does `docs/live-balances.md`:** Blaze, Enable
+  Banking app and key, SimpleFIN, secrets, deploy. Until then the box
+  says the server didn't answer.
+- Not tested against the real banks yet (no keys on this machine): the
+  parsing and signing are unit-tested (`functions/src/links.test.ts`,
+  run with `npm test` in `functions/`).
+
 ## Finance pivot: Budget · Accounts · Savings (27 Oct 2026)
 
 Riley's call: Finance felt spread out, so it's now three tabs with one job

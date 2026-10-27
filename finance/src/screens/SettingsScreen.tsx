@@ -4,6 +4,7 @@ import { AppearanceEditor } from '@suite/ui/AppearanceEditor'
 import { EditorBox, Field, Sheet, Toggle, VButton } from '@suite/ui/components'
 import { useRef, useState } from 'react'
 import { SyncBox } from '@suite/ui/SyncBox'
+import { LiveBalancesBox } from './LiveBalances'
 import { currenciesInUse, rateToHome } from '../model/currency'
 import { CURRENCIES, amountText, parseAmount, regionCurrency } from '../model/money'
 import { useMoneyTools } from '../store/money'
@@ -141,13 +142,14 @@ function PaydaySettings() {
   )
 }
 
-export function SettingsScreen({ onClose }: { onClose: () => void }) {
+export function SettingsScreen({ onClose, note }: { onClose: () => void; note?: string | null }) {
   const { appearance, setAppearance, currencyOverride, setCurrency } = useSettings()
   const restoreRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
 
   return (
     <Sheet title="Settings" onClose={onClose} leftLabel="Done">
+      {note && <div className="notice">{note}</div>}
       {/* Money first (what changes the numbers), then logging, sync, the look and your data. */}
       <EditorBox title="Currency and countries">
         <Field label="Home currency (totals add up in this)">
@@ -163,7 +165,9 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
 
       <WalletShortcutBox />
 
-      <SyncBox useSync={useSync} what="your entries, goals, logged spending and weekly pot" />
+      <SyncBox useSync={useSync} what="your accounts, budget, goals and logged spending" />
+
+      <LiveBalancesBox />
 
       <AppearanceEditor appearance={appearance} onChange={setAppearance} />
 
