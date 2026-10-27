@@ -19,6 +19,8 @@ interface AccountsState {
   updateAccount(account: Account): void
   /** Makes this the current account pay and bills go through. */
   makePrimary(id: string): void
+  /** Makes this the everyday spending account (or none). */
+  makeEveryday(id: string | undefined): void
   /** Removes the account and its audit history. */
   deleteAccount(id: string): void
   /** Records what the bank says now, with what was expected and what any gap was put down to. */
@@ -42,6 +44,13 @@ export const useAccounts = create<AccountsState>()(set => ({
   },
   updateAccount: account => set(s => ({ accounts: s.accounts.map(a => (a.id === account.id ? account : a)) })),
   makePrimary: id => set(s => ({ accounts: s.accounts.map(a => ({ ...a, primary: a.id === id })) })),
+  makeEveryday: id => set(s => ({
+    accounts: s.accounts.map(a => {
+      const { everyday: _was, ...rest } = a
+      void _was
+      return a.id === id ? { ...rest, everyday: true } : rest
+    }),
+  })),
   deleteAccount: id => set(s => ({
     accounts: s.accounts.filter(a => a.id !== id),
     audits: s.audits.filter(a => a.accountID !== id),

@@ -56,5 +56,5 @@ export function accountForCard(log: WalletLog, accounts: Account[], currencyOf: 
     const inCurrency = spendable.find(a => currencyOf(a) === log.currency)
     if (inCurrency) return inCurrency
   }
-  return spendingAccount(accounts)
+  return accounts.find(a => a.everyday) ?? spendingAccount(accounts)
 }

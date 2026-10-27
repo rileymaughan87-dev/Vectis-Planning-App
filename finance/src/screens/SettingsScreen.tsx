@@ -12,7 +12,9 @@ import { useSync } from '../store/sync'
 import { backups } from '../store/persist'
 import { useSettings } from '../store/settings'
 import { useAccounts } from '../store/accounts'
-import { SafeToSpendSettings } from './NowScreen'
+import { useEntries } from '../store/entries'
+import { payOptions } from '../model/forward'
+import { dayKey } from '@suite/dates'
 
 /**
  * International mode: accounts in more than one currency. Your home currency
@@ -120,6 +122,25 @@ function WalletShortcutBox() {
   )
 }
 
+/** Which pay is payday: the columns in Budget and the payday card in Accounts run from it. */
+function PaydaySettings() {
+  const events = useEntries(s => s.events)
+  const { paydayEntryID, setPayday } = useSettings()
+  const options = payOptions(events)
+  const automatic = options.length > 0 && !options.some(e => e.id === paydayEntryID)
+  return (
+    <EditorBox title="Payday">
+      <Field label="Payday is when this arrives">
+        <select value={automatic ? '' : paydayEntryID} onChange={e => setPayday(e.target.value || undefined)} disabled={options.length === 0}>
+          <option value="">{options.length ? 'Your biggest repeating pay' : 'No pay added yet'}</option>
+          {options.map(e => <option key={e.id} value={e.id}>{e.title || 'Untitled'}{e.repeats ? '' : ` (${dayKey(new Date(e.date))})`}</option>)}
+        </select>
+      </Field>
+      <p className="help">Budget runs from one payday to the next, and Accounts shows what to send to each account when it lands.</p>
+    </EditorBox>
+  )
+}
+
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
   const { appearance, setAppearance, currencyOverride, setCurrency } = useSettings()
   const restoreRef = useRef<HTMLInputElement>(null)
@@ -138,7 +159,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
         <InternationalSettings />
       </EditorBox>
 
-      <SafeToSpendSettings />
+      <PaydaySettings />
 
       <WalletShortcutBox />
 

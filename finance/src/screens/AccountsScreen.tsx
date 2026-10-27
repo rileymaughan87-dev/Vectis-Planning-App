@@ -1,25 +1,30 @@
-// The Accounts tab (Finance rework, stage 1): where you stand, each account
-// with its last audited balance, and auditing — typing in what the bank
-// says, any gap noted in one tap. Each audit is kept, so an account's
-// history shows it rising (savings) or falling (debts) over time.
+// The Accounts tab (Finance pivot, Oct 2026), kept simple: at payday, what
+// to send to each account (model/payday.ts) with a Sent tap; then each
+// account with its balance, and the everyday account with what's left
+// until payday. Checking a balance — typing in what the bank says — keeps
+// it all honest; each check is kept as the account's history.
 
-import { parseDate } from '@suite/dates'
+import { parseDate, toISO } from '@suite/dates'
 import { EditorBox, Field, SectionBox, Segmented, Sheet, Toggle, VButton } from '@suite/ui/components'
-import { ChevronRight, Plus } from 'lucide-react'
+import { Check, ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
 import {
-  ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, monthlyStanding, sinceText, spendingAccount, standing,
+  ACCOUNT_KINDS, accountKindInfo, describeGap, expectedBalance, history, latestAudit, sinceText, spendingAccount,
   type Account, type AccountKind, type GapNote, type MoneyData,
 } from '../model/accounts'
-import { CURRENCIES, amountText, parseAmount } from '../model/money'
+import { CURRENCIES, amountText, formatAmount, parseAmount } from '../model/money'
+import { kindInfo, schedule } from '../model/goals'
+import { everydayAccount, everydayLeft, payday, type Payday } from '../model/payday'
 import { useAccounts } from '../store/accounts'
+import { useSettings } from '../store/settings'
+import { LogSpendingSheet } from './SpendingSheets'
 import { useEntries } from '../store/entries'
 import { useGoals } from '../store/goals'
 import { useSpending } from '../store/spending'
 import { UNCONFIRMED } from '../ui/semantic'
 import { useMoneyTools } from '../store/money'
 
-const SHORT_KIND: Record<AccountKind, string> = { current: 'Current', savings: 'Savings', credit: 'Card', loan: 'Loan' }
+const SHORT_KIND: Record<AccountKind, string> = { current: 'Current', savings: 'Savings', investment: 'Invest', credit: 'Card', loan: 'Loan' }
 const dateText = (iso: string) => parseDate(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
 
 /** Everything the expected balance is worked out from. */
@@ -40,39 +45,31 @@ export function AccountsScreen() {
   const audits = useAccounts(s => s.audits)
   const tools = useMoneyTools()
   const { accounts } = tools
-  // Totals are in your home currency; each account in its own.
-  const money = (n: number) => tools.money(n)
-  const mixed = new Set(accounts.map(a => tools.currencyOf(a))).size > 1
   const data = useMoneyData()
+  const paydayEntryID = useSettings(s => s.paydayEntryID)
   const [editing, setEditing] = useState<{ account?: Account } | null>(null)
   const [auditing, setAuditing] = useState<Account | null>(null)
   const [viewing, setViewing] = useState<Account | null>(null)
-  const { have, owe } = standing(accounts, audits, tools.inHome)
+  const [logging, setLogging] = useState(false)
   const ordered = ACCOUNT_KINDS.flatMap(k => accounts.filter(a => a.kind === k))
   // Gone once deleted from its own editor.
   const viewed = viewing ? accounts.find(a => a.id === viewing.id) : undefined
+  const plan = payday({ ...data, audits }, { paydayEntryID, convert: tools.byAccount })
+  const everyday = plan.kind === 'ready' ? everydayAccount(data, plan.period) : undefined
 
   return (
     <div className="page finance-accounts">
       {accounts.length === 0 ? (
         <SectionBox title="Accounts" accent="var(--brand)">
           <p className="help" style={{ margin: 0 }}>
-            Add the accounts you want to keep an eye on — a current account, savings, a credit card, a loan. Type in what's in each
-            (or owed) now; then, whenever you like, check it against your bank. Finance works out what it expected in between, and over
-            time you'll see savings go up and debts come down.
+            Add the accounts you use — where pay lands, where bills go out, your everyday spending account, savings. Then Finance
+            shows what to send to each at payday.
           </p>
           <VButton kind="primary" accent="var(--brand)" onClick={() => setEditing({})}><Plus size={16} /> Add your first account</VButton>
         </SectionBox>
       ) : (
         <>
-          <SectionBox title="Where you stand" accent="var(--brand)">
-            <div className="standing">
-              <div><span className="mono muted">You have</span><span className="standing-figure">{money(have)}</span></div>
-              {owe > 0 && <div><span className="mono muted">You owe</span><span className="standing-figure">{money(owe)}</span></div>}
-              {owe > 0 && <div><span className="mono muted">Altogether</span><span className="standing-figure">{have - owe < 0 ? '−' : ''}{money(Math.abs(have - owe))}</span></div>}
-            </div>
-            <p className="help" style={{ margin: 0 }}>From each account's last check{mixed ? `, in ${tools.home} at today's rate` : ''}.</p>
-          </SectionBox>
+          <PaydayCard plan={plan} />
 
           <SectionBox title="Accounts" accent="var(--brand)">
             {ordered.map(a => (
@@ -81,14 +78,14 @@ export function AccountsScreen() {
                 account={a}
                 money={n => tools.forAccount(n, a)}
                 data={data}
+                everyday={everyday?.id === a.id && plan.kind === 'ready' ? everydayLeft(a, data, plan.period) : undefined}
+                onLog={() => setLogging(true)}
                 onAudit={() => setAuditing(a)}
                 onOpen={() => setViewing(a)}
               />
             ))}
             <VButton accent="var(--brand)" onClick={() => setEditing({})}><Plus size={16} /> Add an account</VButton>
           </SectionBox>
-
-          <OverTime money={money} />
         </>
       )}
 
@@ -103,66 +100,113 @@ export function AccountsScreen() {
         />
       )}
       {auditing && <AuditSheet account={auditing} money={n => tools.forAccount(n, auditing)} data={data} onClose={() => setAuditing(null)} />}
+      {logging && <LogSpendingSheet onClose={() => setLogging(false)} />}
     </div>
   )
 }
 
+const shortDate = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+
 /**
- * Month by month, from checks: what's saved and what's owed at the end of
- * each month, and the change since the month before. Real, not planned —
- * it fills in as you check your balances.
+ * At payday: the pay landing, what to send to each account (each with a
+ * Sent tap), goal payments, and what stays. One look, one list.
  */
-function OverTime({ money }: { money: (n: number) => string }) {
-  const audits = useAccounts(s => s.audits)
-  const { accounts, inHome } = useMoneyTools()
-  const months = monthlyStanding(accounts, audits, new Date(), inHome)
-  const hasSavings = accounts.some(a => a.kind === 'savings')
-  const hasDebt = accounts.some(a => accountKindInfo[a.kind].owed)
-  if (!months.length || (!hasSavings && !hasDebt)) return null
-  const first = months[0]
-  const last = months[months.length - 1]
-  const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${money(Math.abs(n))}`
-  const monthName = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' })
-  const max = Math.max(...months.map(m => Math.max(m.saved, m.owed)), 1)
+function PaydayCard({ plan }: { plan: Payday }) {
+  const tools = useMoneyTools()
+  const addTransfer = useAccounts(s => s.addTransfer)
+  const recordPayment = useGoals(s => s.recordPayment)
+
+  if (plan.kind !== 'ready') {
+    return (
+      <SectionBox title="Payday" accent="var(--brand)">
+        <p className="help" style={{ margin: 0 }}>
+          {plan.kind === 'noPay'
+            ? 'Add your pay in Budget (as a repeating entry, paid into the account it lands in) and this shows what to send to each account at payday.'
+            : 'Add the account your pay lands in.'}
+        </p>
+      </SectionBox>
+    )
+  }
+  // Whole pounds unless there are pence, as in Budget.
+  const amt = (n: number, a: Account) => formatAmount(n, tools.currencyOf(a))
+  const pay = (n: number) => amt(n, plan.payAccount)
+  const sends = plan.topUps.filter(t => t.need > 0)
+  const unchecked = plan.topUps.filter(t => !t.checked)
 
   return (
-    <SectionBox title="Over time" accent="var(--brand)" subtitle={months.length > 1 ? `Since ${monthName(first.month)}` : undefined}>
-      {months.length > 1 && (
-        <div className="over-time-summary">
-          {hasSavings && <div><span className="mono muted">Savings</span><span className="standing-figure">{signed(last.saved - first.saved)}</span></div>}
-          {hasDebt && <div><span className="mono muted">Owed</span><span className="standing-figure">{signed(last.owed - first.owed)}</span></div>}
-        </div>
-      )}
-      <div className="over-time">
-        {[...months].reverse().slice(0, 12).map((m, i, list) => {
-          const before = list[i + 1]
+    <SectionBox title="Payday" accent="var(--brand)" subtitle={plan.passed ? `Was ${shortDate(plan.period.start)}` : shortDate(plan.period.start)}>
+      <p className="payday-lead">
+        <span className={plan.payEstimate ? 'est' : undefined}>{pay(plan.payAmount)}</span> lands in {plan.payAccount.name || 'your main account'}. Send:
+      </p>
+      <div className="payday-rows">
+        {sends.map(t => {
+          const done = t.remaining <= 0
           return (
-            <div key={m.month.toISOString()} className="over-time-row">
-              <span className="mono muted">{monthName(m.month)}</span>
-              <span className="over-time-bars">
-                {hasSavings && (
-                  <span className="over-time-bar">
-                    <span style={{ width: `${(m.saved / max) * 100}%`, background: 'var(--primary)' }} />
-                    <span className="caption2">{money(m.saved)} saved{before ? ` · ${signed(m.saved - before.saved)}` : ''}</span>
-                  </span>
-                )}
-                {hasDebt && (
-                  <span className="over-time-bar">
-                    <span style={{ width: `${(m.owed / max) * 100}%`, background: 'var(--tertiary)' }} />
-                    <span className="caption2">{money(m.owed)} owed{before ? ` · ${signed(m.owed - before.owed)}` : ''}</span>
-                  </span>
-                )}
+            <div key={t.account.id} className={`payday-row${done ? ' is-done' : ''}`}>
+              <span className="payday-to">
+                <span>→ {t.account.name || 'Account'}</span>
+                <span className="caption2">
+                  {amt(t.budget, t.account)} until next payday{t.carry > 0 ? ` − ${amt(t.carry, t.account)} already there` : ''}
+                </span>
               </span>
+              <span className="payday-amount">
+                <span>{amt(done ? t.need : t.remaining, t.account)}</span>
+                {t.remainingInPay && t.account.currency !== plan.payAccount.currency ? <span className="caption2">≈ {pay(t.remainingInPay)}</span> : null}
+              </span>
+              {done
+                ? <span className="payday-done" aria-label="Sent"><Check size={16} /> Sent</span>
+                : (
+                  <VButton small accent="var(--brand)" onClick={() => addTransfer({
+                    date: toISO(new Date()), fromAccountID: plan.payAccount.id, toAccountID: t.account.id,
+                    amountIn: t.remaining, amountOut: t.remainingInPay ?? t.remaining,
+                  })}>Sent</VButton>
+                )}
             </div>
           )
         })}
+        {plan.goals.map(g => (
+          <div key={g.goal.id} className={`payday-row${g.done ? ' is-done' : ''}`}>
+            <span className="payday-to">
+              <span>→ {g.to?.name ?? g.goal.title}</span>
+              <span className="caption2">{g.goal.kind === 'debt' ? 'Payment' : kindInfo[g.goal.kind].label}{g.to ? ` · ${g.goal.title}` : ''}</span>
+            </span>
+            <span className="payday-amount"><span>{amt(g.amount, plan.payAccount)}</span></span>
+            {g.done
+              ? <span className="payday-done" aria-label="Done"><Check size={16} /> Done</span>
+              : <VButton small accent="var(--brand)" onClick={() => g.dates.forEach(d => {
+                const planned = schedule(g.goal).find(p => p.date.getTime() === d.getTime())
+                recordPayment(g.goal.id, d, planned?.amount ?? g.goal.paymentAmount)
+              })}>Done</VButton>}
+          </div>
+        ))}
+        {!sends.length && !plan.goals.length && <p className="help" style={{ margin: 0 }}>Nothing to send: every account is covered until the next payday.</p>}
       </div>
-      <p className="help" style={{ margin: 0 }}>Where things stood at each month's end, from your checks.</p>
+      <div className={`payday-stays${plan.stays < 0 ? ' short' : ''}`}>
+        <span>{plan.stays < 0 ? 'Short this month' : `Stays in ${plan.payAccount.name || 'your main account'}`}</span>
+        <span className="payday-stays-figure">{plan.stays < 0 ? `−${pay(-plan.stays)}` : pay(plan.stays)}</span>
+      </div>
+      <span className="caption">
+        {plan.stays < 0
+          ? 'Just information: what goes out this pay period comes to more than the pay. Budget shows where.'
+          : `After its own bills (${pay(plan.ownBudget)}) and everything above.`}
+      </span>
+      {unchecked.length > 0 && (
+        <div className="notice">Check {unchecked.map(t => t.account.name).join(' and ')}'s balance for an exact amount — for now it's counted from nothing.</div>
+      )}
     </SectionBox>
   )
 }
 
-function AccountCard({ account, money, data, onAudit, onOpen }: { account: Account; money: (n: number) => string; data: MoneyData; onAudit: () => void; onOpen: () => void }) {
+function AccountCard({ account, money, data, everyday, onLog, onAudit, onOpen }: {
+  account: Account
+  money: (n: number) => string
+  data: MoneyData
+  /** The everyday account: what's left of its budget until payday. */
+  everyday?: { budget: number; spent: number; left: number }
+  onLog: () => void
+  onAudit: () => void
+  onOpen: () => void
+}) {
   const audits = useAccounts(s => s.audits)
   const last = latestAudit(audits, account.id)
   const info = accountKindInfo[account.kind]
@@ -174,7 +218,7 @@ function AccountCard({ account, money, data, onAudit, onOpen }: { account: Accou
     <div className="card account-card">
       <button className="row spread" style={{ width: '100%', textAlign: 'left', alignItems: 'baseline' }} onClick={onOpen}>
         <span style={{ fontWeight: 500, fontSize: 15 }}>{account.name || info.label}</span>
-        <span className="mono muted">{SHORT_KIND[account.kind]}{isMain && data.accounts.filter(a => a.kind === 'current').length > 1 ? ' · main' : ''}</span>
+        <span className="mono muted">{everyday ? 'Everyday' : SHORT_KIND[account.kind]}{isMain && data.accounts.filter(a => a.kind === 'current').length > 1 ? ' · main' : ''}</span>
       </button>
       {last ? (
         <>
@@ -185,8 +229,17 @@ function AccountCard({ account, money, data, onAudit, onOpen }: { account: Accou
           {changed && <span className="caption">Expected now: <span className="amount">{money(exp!.expected)}</span>{info.owed ? ' owed' : ''}</span>}
         </>
       ) : <span className="caption">Not checked yet.</span>}
+      {everyday && everyday.budget > 0 && (
+        <div className="everyday-left">
+          <span><strong className={everyday.left < 0 ? 'short-text' : undefined}>{everyday.left < 0 ? `−${money(-everyday.left)}` : money(everyday.left)}</strong> {everyday.left < 0 ? 'over' : 'left'} of {money(everyday.budget)} until payday</span>
+          <div className="progress-track" aria-hidden="true"><div className="progress-fill" style={{ width: `${Math.min(100, (everyday.spent / everyday.budget) * 100)}%` }} /></div>
+        </div>
+      )}
       <div className="row spread">
-        <VButton small kind="primary" accent="var(--brand)" onClick={onAudit}>Check balance</VButton>
+        {everyday
+          ? <VButton small kind="primary" accent="var(--brand)" onClick={onLog}>Log spending</VButton>
+          : <VButton small kind="primary" accent="var(--brand)" onClick={onAudit}>Check balance</VButton>}
+        {everyday && <button className="text-button" onClick={onAudit}>Check balance</button>}
         <button className="text-button" onClick={onOpen}>History <ChevronRight size={14} style={{ verticalAlign: -2 }} /></button>
       </div>
     </div>
@@ -323,7 +376,7 @@ function AccountDetail({ account, money, onClose, onAudit, onEdit }: { account: 
 }
 
 function AccountEditor({ account, onClose }: { account?: Account; onClose: () => void }) {
-  const { accounts, addAccount, updateAccount, makePrimary, deleteAccount } = useAccounts()
+  const { accounts, addAccount, updateAccount, makePrimary, makeEveryday, deleteAccount } = useAccounts()
   const { home, international } = useMoneyTools()
   const [currency, setCurrency] = useState(account?.currency ?? home)
   const [walletCard, setWalletCard] = useState(account?.walletCard ?? '')
@@ -377,7 +430,13 @@ function AccountEditor({ account, onClose }: { account?: Account; onClose: () =>
         </EditorBox>
       )}
       {account && kind === 'current' && currentCount > 1 && (
-        <Toggle label="Main account for pay and bills" checked={isMain} onChange={on => on && makePrimary(account.id)} />
+        <Toggle label="Main account (pay lands here)" checked={isMain} onChange={on => on && makePrimary(account.id)} />
+      )}
+      {account && (kind === 'current' || kind === 'credit') && (
+        <>
+          <Toggle label="Everyday spending (groceries, fuel, fun)" checked={Boolean(account.everyday)} onChange={on => makeEveryday(on ? account.id : undefined)} />
+          <p className="help">Spends you log go here, and it shows what's left of its budget until payday.</p>
+        </>
       )}
       {account && (
         <VButton kind="destructive" onClick={() => { if (confirm('Delete this account and its history?')) { deleteAccount(account.id); onClose() } }}>
