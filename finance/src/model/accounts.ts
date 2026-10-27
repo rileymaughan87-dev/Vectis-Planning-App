@@ -20,13 +20,14 @@ import { lineItemsInMonth, setAsideItems, type FinanceEvent } from './entries'
 import { schedule, type FinanceGoal } from './goals'
 import type { SpendingEntry } from './spending'
 
-export type AccountKind = 'current' | 'savings' | 'credit' | 'loan'
+export type AccountKind = 'current' | 'savings' | 'investment' | 'credit' | 'loan'
 
-export const ACCOUNT_KINDS: AccountKind[] = ['current', 'savings', 'credit', 'loan']
+export const ACCOUNT_KINDS: AccountKind[] = ['current', 'savings', 'investment', 'credit', 'loan']
 
 export const accountKindInfo: Record<AccountKind, { label: string; owed: boolean; placeholder: string; help: string }> = {
   current: { label: 'Current account', owed: false, placeholder: 'e.g. HSBC current', help: 'Where pay lands and bills go out.' },
   savings: { label: 'Savings', owed: false, placeholder: 'e.g. Easy-access saver', help: 'Watch it grow, audit by audit.' },
+  investment: { label: 'Investments', owed: false, placeholder: 'e.g. Stocks and shares ISA', help: 'Check its value now and then to see it grow.' },
   credit: { label: 'Credit card', owed: true, placeholder: 'e.g. Amex', help: 'What you owe on it. Spending you log on the card adds to it.' },
   loan: { label: 'Loan or other debt', owed: true, placeholder: 'e.g. Car loan', help: 'What you still owe. Watch it fall, audit by audit.' },
 }
@@ -42,6 +43,8 @@ export interface Account {
   currency?: string
   /** The card's name in Apple Wallet, so a Wallet payment logs to this account (model/walletLink.ts). */
   walletCard?: string
+  /** The everyday account (groceries, fuel, fun): spends log here, and it shows what's left until payday. */
+  everyday?: boolean
 }
 
 /**
@@ -84,6 +87,7 @@ function decodeAccount(r: Raw): Account {
     primary: bool(r.primary, false),
     currency: typeof r.currency === 'string' && /^[A-Z]{3}$/.test(r.currency) ? r.currency : undefined,
     walletCard: typeof r.walletCard === 'string' && r.walletCard.trim() ? r.walletCard.trim() : undefined,
+    ...(r.everyday === true ? { everyday: true } : {}),
   }
 }
 
@@ -286,7 +290,9 @@ export function onBalance(goal: FinanceGoal, accounts: Account[], audits: Audit[
 export const goalAccounts = (accounts: Account[], kind: FinanceGoal['kind']) =>
   kind === 'debt'
     ? accounts.filter(a => accountKindInfo[a.kind].owed)
-    : [...accounts.filter(a => a.kind === 'savings'), ...accounts.filter(a => a.kind === 'current')]
+    : kind === 'investment'
+      ? [...accounts.filter(a => a.kind === 'investment'), ...accounts.filter(a => a.kind === 'savings')]
+      : [...accounts.filter(a => a.kind === 'savings'), ...accounts.filter(a => a.kind === 'investment'), ...accounts.filter(a => a.kind === 'current')]
 
 // MARK: - Over time
 

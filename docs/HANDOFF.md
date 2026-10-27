@@ -86,6 +86,34 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Finance pivot: Budget · Accounts · Savings (27 Oct 2026)
+
+Riley's call: Finance felt spread out, so it's now three tabs with one job
+each. **Removed:** Now, the Months overview (option C) and debt runway,
+the weekly pot, the Entries list, Plan and Goals screens (the sections
+below about those describe code that's gone).
+
+- **Budget** (`BudgetScreen.tsx`): the spreadsheet by pay period (the
+  `monthsGrid` model) — Coming in, Bills, Everyday (planned living plus
+  "Spent so far"), Set aside, Debts, and "At payday, send" (each other
+  current account's share of the plan). Each row says which account it
+  lands in or comes out of; tap to change. A Calendar view sits beside it.
+- **Accounts** (`AccountsScreen.tsx`, model `payday.ts`): a Payday card —
+  pay lands in the main account, then "→ account … amount" for each
+  other account, **topped up to its budget** (budget for the period minus
+  what's expected to be in it at payday, minus transfers already sent),
+  plus goal payments from the pay account, then what stays. "Sent"
+  records the transfer; "Done" records goal payments. The **everyday
+  account** (flag in the account editor, else the one with most flexible
+  spending) shows what's left until payday; spends are logged by hand or
+  the Apple Wallet shortcut, and the balance is checked before payday.
+- **Savings** (`SavingsScreen.tsx`): Savings, Investments, Debts as cards
+  with a sparkline (recorded solid, plan dotted), Record payment and Plan
+  payments. New goal kind **investment** (works like savings; with no aim
+  it's open-ended — no finish date, graph shows two years) and account
+  kind **investment**.
+- Payday choice moved to Settings. Old saved tabs map to the new ones.
+
 ## Finance: Months overview (option C) and debt runway (22 Oct 2026)
 
 The rest of Riley's Months handoff. Option B's statement is the detail

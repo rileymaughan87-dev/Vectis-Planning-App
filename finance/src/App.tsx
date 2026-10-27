@@ -1,10 +1,10 @@
-// Finance's top level: the suite's shared shell with four tabs, one
-// question each (Oct 2026): Now (what's safe until payday, what to send
-// abroad), Months (the plan by pay period, with Calendar and every entry),
-// Accounts (balances and checks) and Goals (debts and savings) — and
-// Settings in the side menu.
+// Finance's top level (pivot, Oct 2026): the suite's shared shell with
+// three tabs, one job each — Budget (the plan by pay period, like a
+// spreadsheet, and its calendar), Accounts (what's in each and what to send
+// at payday) and Savings (savings, investments and debts, with their
+// graphs) — and Settings in the side menu.
 // Opening the app with "?log" goes straight to logging spending (the
-// home-screen shortcut on Android, or a bookmark anywhere).
+// Apple Wallet Shortcut, the home-screen shortcut on Android, or a bookmark).
 
 import { useApplyTheme } from '@suite/appearance'
 import { useFreshRates } from './store/money'
@@ -15,28 +15,27 @@ import { Settings } from 'lucide-react'
 import { useState } from 'react'
 import { APP_NAME } from './brand'
 import { AccountsScreen } from './screens/AccountsScreen'
-import { NowScreen } from './screens/NowScreen'
-import { MonthsScreen } from './screens/MonthsScreen'
-import { GoalsScreen } from './screens/GoalsScreen'
+import { BudgetScreen } from './screens/BudgetScreen'
+import { SavingsScreen } from './screens/SavingsScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { LogSpendingSheet } from './screens/SpendingSheets'
 import { readLogLink } from './model/walletLink'
 import { useSettings } from './store/settings'
 
-type Tab = 'now' | 'months' | 'accounts' | 'goals'
+type Tab = 'budget' | 'accounts' | 'savings'
 
 const tabs: ShellTab<Tab>[] = [
-  { id: 'now', title: 'Now' },
-  { id: 'months', title: 'Months' },
+  { id: 'budget', title: 'Budget' },
   { id: 'accounts', title: 'Accounts' },
-  { id: 'goals', title: 'Goals' },
+  { id: 'savings', title: 'Savings' },
 ]
 
-/** The tab to reopen; Plan, Calendar (and the older Budget) live in Months now. */
+/** The tab to reopen. Older tabs map onto the new ones: Now, Months, Plan and Calendar are Budget; Goals is Savings. */
 function savedTab(): Tab {
   const saved = sessionStorage.getItem('finance:ui:tab')
-  if (saved === 'plan' || saved === 'calendar' || saved === 'budget') return 'months'
-  return saved === 'months' || saved === 'accounts' || saved === 'goals' ? saved : 'now'
+  if (saved === 'accounts') return 'accounts'
+  if (saved === 'savings' || saved === 'goals') return 'savings'
+  return 'budget'
 }
 
 export default function App() {
@@ -89,10 +88,9 @@ export default function App() {
         {!settingsOpen && <SyncChoiceSheet useSync={useSync} appName="Finance" />}
       </>}
     >
-      {tab === 'now' && <NowScreen onGo={choose} />}
-      {tab === 'months' && <MonthsScreen />}
+      {tab === 'budget' && <BudgetScreen />}
       {tab === 'accounts' && <AccountsScreen />}
-      {tab === 'goals' && <GoalsScreen />}
+      {tab === 'savings' && <SavingsScreen />}
     </AppShell>
   )
 }

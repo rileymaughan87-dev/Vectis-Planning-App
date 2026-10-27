@@ -1,17 +1,15 @@
-// Logging spending and setting up the weekly pot, from SpendingSheets.swift.
-// New compared with the iPhone app: the notes you use most are one tap
-// away when logging, and the day can't be set in the future.
+// Logging spending, from SpendingSheets.swift — into the everyday account
+// unless another is chosen (by hand, or from the Apple Wallet Shortcut).
+// The notes you use most are one tap away, and the day can't be set in
+// the future.
 
 import { dayFromKey, dayKey, parseDate, toISO } from '@suite/dates'
-import { EditorBox, Field, Sheet, VButton } from '@suite/ui/components'
+import { Field, Sheet, VButton } from '@suite/ui/components'
 import { useState } from 'react'
-import { runningRepeatingFlexible, weeklyFlexibleEstimate } from '../model/entries'
-import { amountText, formatMoney, formatMoneyWhole, parseAmount } from '../model/money'
+import { amountText, parseAmount } from '../model/money'
 import { recentNotes, type SpendingEntry } from '../model/spending'
 import { spendableAccounts, spendingAccount } from '../model/accounts'
 import { useAccounts } from '../store/accounts'
-import { useEntries } from '../store/entries'
-import { useCurrency } from '../store/settings'
 import { useSpending } from '../store/spending'
 import { useMoneyTools } from '../store/money'
 import { accountForCard, type WalletLog } from '../model/walletLink'
@@ -27,7 +25,9 @@ export function LogSpendingSheet({ editing, wallet, onClose }: { editing?: Spend
   const spendable = spendableAccounts(accounts)
   // From Apple Wallet: the account the card belongs to.
   const [accountID, setAccountID] = useState(() =>
-    editing?.accountID ?? (wallet ? accountForCard(wallet, tools.accounts, tools.currencyOf, tools.international)?.id : undefined) ?? spendingAccount(accounts)?.id)
+    editing?.accountID ?? (wallet ? accountForCard(wallet, tools.accounts, tools.currencyOf, tools.international)?.id : undefined)
+      // Spends go to the everyday account unless you choose another.
+      ?? accounts.find(a => a.everyday)?.id ?? spendingAccount(accounts)?.id)
   const value = parseAmount(text)
   const ok = value !== null && value > 0 && Boolean(date)
   const notes = recentNotes(entries).filter(n => n !== note)
@@ -75,73 +75,6 @@ export function LogSpendingSheet({ editing, wallet, onClose }: { editing?: Spend
       )}
       <VButton kind="primary" accent="var(--primary)" onClick={save} disabled={!ok}>{editing ? 'Save' : 'Log it'}</VButton>
       {editing && <VButton kind="destructive" onClick={() => { remove(editing.id); onClose() }}>Delete</VButton>}
-    </Sheet>
-  )
-}
-
-/**
- * Starting or changing the weekly pot. When starting, it says exactly
- * which repeating flexible entries the pot takes over, and suggests an
- * amount from what they add up to.
- */
-export function PotSetupSheet({ onClose }: { onClose: () => void }) {
-  const { pot, startPot, setPotAmount, stopPot } = useSpending()
-  const { events, endRepeatingFlexible } = useEntries()
-  const currency = useCurrency()
-  const [text, setText] = useState(amountText(pot.isActive ? pot.weeklyAmount : 0))
-  const value = parseAmount(text)
-  const ok = value !== null && value > 0
-  const handOver = runningRepeatingFlexible(events)
-  const estimate = weeklyFlexibleEstimate(events)
-  const per = (f: string) => (f === 'weekly' ? 'a week' : f === 'fortnightly' ? 'every 2 weeks' : 'a month')
-
-  const save = () => {
-    if (!ok) return
-    if (pot.isActive) setPotAmount(Math.abs(value!))
-    else {
-      endRepeatingFlexible(new Date())
-      startPot(Math.abs(value!))
-    }
-    onClose()
-  }
-
-  return (
-    <Sheet title={pot.isActive ? 'Weekly pot' : 'Set up a weekly pot'} onClose={onClose} right={{ label: pot.isActive ? 'Save' : 'Start', onClick: save, disabled: !ok }}>
-      <EditorBox title="Each week" accent="var(--primary)">
-        <Field label="For all flexible spending">
-          <input autoFocus inputMode="decimal" value={text} onChange={e => setText(e.target.value)} placeholder="0" style={{ fontSize: 19 }} />
-        </Field>
-        <p className="help">Groceries, eating out, fuel, little things — one amount instead of planning each one. It starts fresh each week; going over one week doesn't carry forward.</p>
-        {!pot.isActive && estimate > 0 && (
-          <div className="row spread">
-            <span className="caption">Your flexible entries come to about {formatMoneyWhole(estimate, currency)} a week</span>
-            <button className="text-button" onClick={() => setText(amountText(Math.ceil(estimate)))}>Use this</button>
-          </div>
-        )}
-      </EditorBox>
-
-      {!pot.isActive ? (
-        <EditorBox title="What changes" accent="var(--primary)">
-          {handOver.length === 0 ? (
-            <p className="help">The pot starts today. Log spending as it happens and you'll see what's left each week.</p>
-          ) : (
-            <>
-              <p className="help">These repeating entries stop from today and the pot covers them instead, so nothing is counted twice. Earlier months keep them as they were.</p>
-              {handOver.map(e => (
-                <div key={e.id} className="row spread list-row">
-                  <span>{e.title}</span>
-                  <span className="muted">{formatMoney(e.amount, currency)} {per(e.frequency)}</span>
-                </div>
-              ))}
-            </>
-          )}
-        </EditorBox>
-      ) : (
-        <>
-          <VButton kind="destructive" onClick={() => { stopPot(); onClose() }}>Stop the weekly pot</VButton>
-          <p className="help">Spending you've logged stays in the record. Entries the pot replaced don't come back — add them again if you want them.</p>
-        </>
-      )}
     </Sheet>
   )
 }

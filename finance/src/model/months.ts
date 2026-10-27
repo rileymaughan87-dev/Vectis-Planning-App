@@ -98,6 +98,8 @@ export interface MonthsOptions {
   entryCurrency: (e: FinanceEvent) => string
   /** Any amount into home currency (unconverted if there's no rate). */
   toHome: (amount: number, currency: string) => number
+  /** A line under each entry's name, e.g. which account it comes out of. */
+  entryNote?: (e: FinanceEvent) => string | undefined
   before?: number
   after?: number
 }
@@ -172,7 +174,7 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
       if (cells.every(c => c === null)) continue
       // The row opens the entry that's still running (or the latest).
       const open = [...events].sort((a, b) => b.date.localeCompare(a.date))[0]
-      rows.push({ key, title: events[0].title || 'Untitled', currency: options.entryCurrency(events[0]), ref: { type: 'entry', id: open.id }, cells })
+      rows.push({ key, title: events[0].title || 'Untitled', currency: options.entryCurrency(events[0]), ref: { type: 'entry', id: open.id }, note: options.entryNote?.(open), cells })
     }
     return rows
   }
@@ -223,12 +225,15 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
     const accountOf = (id?: string) => data.accounts.find(a => a.id === id)
     return { amount: round2(es.reduce((a, e) => a + options.toHome(e.amount, options.currencyOf(accountOf(e.accountID))), 0)), estimate: false }
   })
-  const spending: Row | null = spendCells.some(Boolean) ? { key: 'spending', title: 'Logged spending', currency: options.home, cells: spendCells } : null
+  const spending: Row | null = spendCells.some(Boolean)
+    ? { key: 'spending', title: 'Spent so far', note: 'logged', currency: options.home, cells: spendCells }
+    : null
 
   // Totals in home currency.
   const homeCells = (rows: Row[]) => rows.map(r => r.cells.map(c => (c ? toHome(c, r.currency) : null)))
   const inCells = homeCells(income)
-  const outCells = [...homeCells(outgoing), ...homeCells(setAsides), ...homeCells(goals), ...(spending ? [spending.cells] : [])]
+  // Logged spending is what the everyday budget gets spent on, so it's shown but not counted again.
+  const outCells = [...homeCells(outgoing), ...homeCells(setAsides), ...homeCells(goals)]
   const totalIn = periods.map((_, i) => sumCells(inCells, i))
   const totalOut = periods.map((_, i) => sumCells(outCells, i))
   const leftOver = periods.map((_, i) => ({ amount: round2(totalIn[i].amount - totalOut[i].amount), estimate: totalIn[i].estimate || totalOut[i].estimate }))
@@ -290,7 +295,7 @@ export function monthsGrid(data: MoneyData & { audits: Audit[] }, options: Month
   const setAsideRows = [...setAsides, ...savingPayments]
   const candidates: Group[] = [
     { id: 'in', title: 'Coming in', rows: income, subtotal: totalIn },
-    { id: 'out', title: 'Going out', rows: outRows, subtotal: subtotal(outRows) },
+    { id: 'out', title: 'Going out', rows: outRows, subtotal: subtotal([...bills, ...living]) },
     { id: 'setAside', title: 'Set aside', rows: setAsideRows, subtotal: subtotal(setAsideRows) },
     { id: 'debts', title: 'Debts', rows: debtPayments, subtotal: subtotal(debtPayments) },
     { id: 'owed', title: 'Still owed', rows: owed, subtotal: owedTotal },

@@ -10,10 +10,10 @@ import { addDays, addMonths, dayFromKey, dayKey, parseDate, startOfDay, toISO, w
 import { list, num, oneOf, optNum, optStr, record, str, type Raw } from '@suite/decode'
 import { newID } from '@suite/ids'
 
-export type GoalKind = 'savings' | 'setAside' | 'debt'
+export type GoalKind = 'savings' | 'setAside' | 'investment' | 'debt'
 export type GoalFrequency = 'monthly' | 'weekly' | 'fortnightly'
 
-export const GOAL_KINDS: GoalKind[] = ['savings', 'setAside', 'debt']
+export const GOAL_KINDS: GoalKind[] = ['savings', 'setAside', 'investment', 'debt']
 
 export const kindInfo: Record<GoalKind, { label: string; section: string; target: string; placeholder: string; empty: string; accent: string }> = {
   savings: {
@@ -23,6 +23,10 @@ export const kindInfo: Record<GoalKind, { label: string; section: string; target
   setAside: {
     label: 'Set-aside', section: 'Set-asides', target: 'Amount needed', placeholder: 'e.g. Christmas', accent: 'var(--secondary)',
     empty: "A cost that comes round now and then — spread it out so it isn't a surprise.",
+  },
+  investment: {
+    label: 'Investment', section: 'Investments', target: 'Aim (optional)', placeholder: 'e.g. Stocks and shares ISA', accent: 'var(--primary)',
+    empty: 'Money you put in regularly to grow over time.',
   },
   // Tertiary rather than a red: a debt you're paying off isn't a warning.
   debt: {
@@ -106,6 +110,9 @@ export function amountPaid(goal: FinanceGoal): number {
   return (goal.kind === 'debt' ? 0 : goal.startingAmount) + recorded
 }
 
+/** An investment with no aim: it keeps going and never finishes. */
+export const openEnded = (goal: FinanceGoal) => goal.kind === 'investment' && goal.targetAmount <= 0
+
 export const amountRemaining = (goal: FinanceGoal) => Math.max(goal.targetAmount - amountPaid(goal), 0)
 export const isComplete = (goal: FinanceGoal) => goal.targetAmount > 0 && amountRemaining(goal) < 0.005
 export const progress = (goal: FinanceGoal) => (goal.targetAmount > 0 ? Math.min(amountPaid(goal) / goal.targetAmount, 1) : 0)
@@ -139,13 +146,16 @@ const MAX_PAYMENTS = 520
  */
 export function schedule(goal: FinanceGoal): GoalPayment[] {
   const out: GoalPayment[] = []
-  let stillNeeded = amountRemaining(goal)
+  // An investment with no aim keeps going: about five years of payments are planned.
+  const open = openEnded(goal)
+  let stillNeeded = open ? Infinity : amountRemaining(goal)
+  const limit = open ? { weekly: 260, fortnightly: 130, monthly: 60 }[goal.frequency] : MAX_PAYMENTS
   const visited = new Set<string>()
   const lastRecorded = Object.keys(goal.payments).sort().at(-1) ?? ''
   const pay = (date: Date, amount: number, confirmed: boolean): GoalPayment =>
     ({ goalID: goal.id, title: goal.title, kind: goal.kind, date, amount, confirmed })
 
-  for (let n = 0; n < MAX_PAYMENTS; n++) {
+  for (let n = 0; n < limit; n++) {
     const date = plannedDate(goal, n)
     const key = dayKey(date)
     const planDone = stillNeeded < 0.005 || goal.paymentAmount <= 0
@@ -167,9 +177,39 @@ export function schedule(goal: FinanceGoal): GoalPayment[] {
   return out.sort((a, b) => a.date.getTime() - b.date.getTime())
 }
 
+export interface SeriesPoint {
+  date: Date
+  /** Saved (or put in) so far — or still owed, for a debt. */
+  value: number
+  /** Still the plan rather than a recorded payment. */
+  planned: boolean
+}
+
+/**
+ * The goal over time, for its graph: saved going up (or owed coming down)
+ * with each recorded payment, then the plan carrying it on. Starts the day
+ * before the first payment, from what was there (or owed) then.
+ */
+export function goalSeries(goal: FinanceGoal, payments: GoalPayment[] = schedule(goal)): SeriesPoint[] {
+  const debt = goal.kind === 'debt'
+  let value = debt ? goal.targetAmount : goal.startingAmount
+  const first = payments[0]?.date ?? startOfDay(parseDate(goal.firstPaymentDate))
+  // Start one payment's gap before the first, so the line climbs rather than jumping.
+  const gap = payments[1] ? Math.round((payments[1].date.getTime() - first.getTime()) / 86_400_000) : 30
+  const out: SeriesPoint[] = [{ date: addDays(first, -Math.max(1, gap)), value, planned: false }]
+  // An investment with no aim never finishes: show the next two years.
+  const until = openEnded(goal) ? addDays(new Date(), 730) : undefined
+  for (const p of payments) {
+    if (until && p.date > until) break
+    value += debt ? -p.amount : p.amount
+    out.push({ date: p.date, value: Math.max(0, Math.round(value * 100) / 100), planned: !p.confirmed })
+  }
+  return out
+}
+
 /** The last planned payment — when the goal is on course to be done. */
 export function projectedFinish(goal: FinanceGoal, payments: GoalPayment[] = schedule(goal)): Date | undefined {
-  if (isComplete(goal)) return undefined
+  if (isComplete(goal) || openEnded(goal)) return undefined
   return payments.filter(p => !p.confirmed).at(-1)?.date
 }
 
