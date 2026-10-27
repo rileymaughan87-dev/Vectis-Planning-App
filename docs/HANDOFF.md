@@ -86,6 +86,36 @@ laptop.
 - **Never suggest removing a Home Screen web app on iPhone** — it deletes
   that app's data.
 
+## Phone audit: keyboard and scrolling (27 Oct 2026)
+
+Riley reported keyboard and scrolling bugs across the apps on iPhone. All
+four apps were checked at 360px: no sideways overflow on any tab or
+editor, and one scroll area per screen. Fixes (shared, in `suite/`):
+
+- **Tapping a box zoomed the page.** Every form box is 15px, and iOS
+  zooms on anything under 16px, then often stays zoomed or shifted.
+  `keyboard.ts` adds `maximum-scale=1` to the viewport on iOS only. iOS
+  still allows pinch-zoom; on Android it would block it, so it isn't
+  added there.
+- **The page stayed shifted after the keyboard closed.** iOS slides the
+  whole page up to show a box and doesn't always slide it back. The apps
+  never scroll the page itself, so when the keyboard goes (or focus
+  leaves every box) the page is put back.
+- **Boxes near the bottom couldn't be scrolled above the keyboard.**
+  `.keyboard-open .content` gets padding the height of the keyboard.
+  When the keyboard opens, the focused box is scrolled into view in its
+  own scroller; sheets shrink to fit above it.
+- **A sheet opened from another jumped the first to the top.** It came
+  from focusing the new sheet; it now uses `preventScroll`.
+- `.content` has `overscroll-behavior-y: contain`, so reaching the end
+  doesn't drag the app's bars along.
+- Home page heights use `100svh`, so Safari's toolbars don't add a
+  scroll.
+
+Can't be reproduced without an iPhone. Riley should check: typing in
+Planner's event editor and Finance's Log spending, then closing the
+keyboard; Record notes, as before.
+
 ## Finance pivot: Budget · Accounts · Savings (27 Oct 2026)
 
 Riley's call: Finance felt spread out, so it's now three tabs with one job

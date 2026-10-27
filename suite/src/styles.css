@@ -188,7 +188,11 @@ input[type='checkbox'] { width: auto; }
 
 .menu-button { margin-right: -8px; }
 
-.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 24px; -webkit-overflow-scrolling: touch; }
+.content {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 24px; -webkit-overflow-scrolling: touch;
+  /* Reaching the end doesn't drag the whole app (and its bars) along on a phone. */
+  overscroll-behavior-y: contain;
+}
 
 .page { padding: 0 20px 24px; display: flex; flex-direction: column; gap: 32px; counter-reset: section; }
 
@@ -414,6 +418,9 @@ input[type='checkbox'] { width: auto; }
  * everything in them can be scrolled to rather than running on underneath.
  */
 .keyboard-open .sheet-backdrop { top: var(--vv-top, 0px); bottom: auto; height: var(--vv-height, 100dvh); }
+
+/* The page under the keyboard: room to scroll its last boxes up above it (iPhone keeps the page full height). */
+.keyboard-open .content { padding-bottom: var(--keyboard, 0px); }
 
 /* An editor's section: the same head as a page section, slightly smaller. */
 .editor-box { display: flex; flex-direction: column; gap: 12px; }
