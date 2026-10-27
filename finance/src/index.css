@@ -268,3 +268,13 @@
 .sparkline-base { stroke: var(--rule-soft); stroke-width: 1; vector-effect: non-scaling-stroke; }
 
 .sparkline-today { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
+
+/* Live balances (Settings and Accounts) */
+.live-status { display: flex; flex-direction: column; gap: 6px; }
+.live-group { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-top: 1px solid var(--separator); }
+.live-row { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; }
+.live-row .ellipsis { min-width: 0; }
+.bank-list { display: flex; flex-direction: column; }
+.bank-choice { text-align: left; padding: 12px 4px; border-bottom: 1px solid var(--separator); font: inherit; color: var(--text); background: none; }
+.bank-choice:disabled { opacity: 0.6; }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }

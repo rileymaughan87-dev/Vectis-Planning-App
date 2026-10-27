@@ -40,6 +40,10 @@ tool; they share design, sign-in and (where it helps) data.
   (styles, `AppShell`, `MonthGrid`, components, dates, decode, storage,
   appearance, backups). Change shared pieces here, never in one app
   (`suite/README.md`).
+- `functions/` — Firebase Cloud Functions for Finance's **live balances**
+  (Oct 2026): Enable Banking (UK: HSBC, Monzo) and SimpleFIN (US: America
+  First, Fidelity), read-only. Not an npm workspace; Riley deploys it with
+  `npm run deploy` in that folder. Setup: `docs/live-balances.md`.
 - One GitHub Pages deploy builds them all (`.github/workflows/deploy-web.yml`):
   home at `/`, Planner at `/planner/`, Finance at `/finance/`, Record at
   `/record/`. Each app's

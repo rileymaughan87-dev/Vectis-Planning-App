@@ -8,3 +8,7 @@ xcuserdata/
 node_modules/
 dist/
 *.local
+
+# Firebase functions build output
+functions/lib/
+.firebase/
