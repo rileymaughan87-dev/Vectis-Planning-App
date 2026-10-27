@@ -227,7 +227,8 @@ export function Sheet(props: {
     }
     document.addEventListener('keydown', onKey)
     // Move focus into the sheet, unless a box in it already took it with autoFocus.
-    if (!ref.current?.contains(document.activeElement)) ref.current?.focus()
+    // Without scrolling: a sheet opened from inside another would otherwise jump that one back to the top.
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus({ preventScroll: true })
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
